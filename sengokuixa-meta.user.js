@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.4
+// @version        1.0.1.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -7332,6 +7332,7 @@ style: '' + <><![CDATA[
 //. main
 main: function() {
 	this.autoPager();
+	this.contextmenu();
 },
 
 //. autoPager
@@ -7352,6 +7353,27 @@ autoPager: function() {
 			Display.info('全ページ読み込み完了');
 		}
 	});
+},
+
+//. contextmenu
+contextmenu: function() {
+	$('.ig_deck_smallcardbox').contextMenu(function() {
+		var $a = $(this).find('A');
+
+		if ( $a.length == 0 ) { return; }
+
+		var card_no = $a.attr('href').match(/cardWindow_(\d+)/)[ 1 ],
+			card = new LargeCard( $('#cardWindow_' + card_no ) ),
+			menu = {};
+
+		menu['武将名'] = $('<div class="imc_contextmenu_title">' + card.name + '</div>');
+		menu[ '取引で「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+		card.skillList.forEach(function( skill ) {
+				menu[ '取引で「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
+		});
+
+		return menu;
+	}, true);
 }
 
 });
