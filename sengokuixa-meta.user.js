@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.5
+// @version        1.0.1.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -5840,6 +5840,8 @@ style: '' + <><![CDATA[
 TH.imc_speed { font-size: 12px; }
 .imc_move_type { padding-top: 10px; padding-bototm: 10px; text-align: center }
 .imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }
+
+.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer;
 ]]></>,
 
 //. main
@@ -5888,6 +5890,22 @@ layouter2: function() {
 	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">部隊スキル</th></tr>');
 	$('#data_gofight_skill_unit').removeAttr('id').css({ marginTop: '10px' })
 	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">武将スキル</th></tr>');
+
+	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
+	.one('click', function() {
+		var $form = $('#input_troop');
+
+		$(this).attr('disabled', true);
+
+		Page.form('/facility/confluence_list.php', {
+			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
+			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
+			unit_select: $form.find('INPUT[name="unit_select"]').val(),
+			radio_move_type: 320,
+			x: '',
+			y: ''
+		});
+	});
 },
 
 //. showSpeed
@@ -5973,6 +5991,33 @@ sendAll: function() {
 			return $.post( '/facility/send_troop.php#ptop', post_data );
 		});
 	};
+}
+
+});
+
+//■ /facility/confluence_list
+Page.registerAction( 'facility', 'confluence_list', {
+
+//. style
+style: '' + <><![CDATA[
+.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer;
+]]></>,
+
+main: function() {
+	$('<span class="imc_button">通常攻撃</span>').appendTo('#ig_deckboxInner > .center.mb10')
+	.one('click', function() {
+		var $form = $('#search_form');
+
+		Page.form('/facility/send_troop.php#ptop', {
+			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
+			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
+			unit_select: $form.find('INPUT[name="unit_select"]').val(),
+			radio_move_type: 302,
+			x: '',
+			y: '',
+			btn_preview: 'true'
+		});
+	});
 }
 
 });
