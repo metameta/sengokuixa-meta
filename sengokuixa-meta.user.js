@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.6
+// @version        1.0.1.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -5031,7 +5031,125 @@ BUTTON.imc_receive { position: relative; top: -25px; left: 395px; }
 
 .common_box3 LABEL { position: relative; top: -6px; font-size: 14px; padding: 2px 4px; }
 .common_box3:hover LABEL { background-color: #f9dea1; }
-]]></>
+]]></>,
+
+//. main
+main: function() {
+	this.autoPager();
+
+	var $box = $('.ig_decksection_mid .common_box3').has('A');
+	if ( $box.length == 0 ) { return; }
+
+	this.layouter( $box );
+},
+
+//. autoPager
+autoPager: function() {
+	var self = this;
+
+	$.autoPager({
+		next: 'UL.pager LI.last A:first',
+		container: '.ig_decksection_mid',
+		loaded: function( html ) {
+			var $box = $(html).find('#ig_boxInner'),
+				$div = $box.find('.common_box3'),
+				$card = $box.children('[id^="cardWindow_"]');
+
+			self.layouter( $div );
+
+			$('.ig_decksection_mid').append( $div );
+			$('#ig_boxInner').append( $card );
+		},
+		ended: function() {
+			Display.info('全ページ読み込み完了');
+		}
+	});
+},
+
+//. layouter
+layouter: function( $div ) {
+	var $button = $('<button class="imc_receive">選択したプレゼントを受け取る</button>');
+	$('.ig_decksection_top').append( $button );
+	$button.click( this.receive );
+
+	$div.each(function() {
+		var $a = $(this).find('A[href^="/user/present.php"]');
+		if ( $a.length == 0 ) { return; }
+
+		var pid = $a.attr('href').match(/id=(\d+)/)[ 1 ],
+			html = '';
+
+		html += '<label style="color: black; cursor: pointer;">';
+		html += '<input type="checkbox" value="' + pid + '" /> 受け取る</label>';
+
+		$a.after( html );
+	})
+	.click(function( event ) {
+		var $a = $( event.target ).closest('A'),
+			$input = $(this).find('INPUT'),
+			flag;
+
+		if ( $a.length == 1 ) { return; }
+
+		flag = $input.attr('checked');
+		$input.attr( 'checked', !flag );
+	});
+},
+
+//. receive
+receive: function() {
+	var pid_list = [],
+		result, ol;
+
+	$('.ig_decksection_mid').find('INPUT:checked').each(function() {
+		pid_list.push( $(this).val() );
+	});
+
+	if ( pid_list.length == 0 ) {
+		Display.info('選択されていません。');
+		return false;
+	}
+
+	result = confirm('選択したプレゼントを受け取りますか？');
+	if ( !result ) { return false; }
+
+	//オーバーレイ表示
+	ol = Display.dialog();
+	ol.message('受け取り処理開始...');
+
+	$.Deferred().resolve()
+	.pipe(function() {
+		var pid = pid_list.shift();
+		if ( !pid ) { return; }
+
+		return $.get( '/user/present.php?id=' + pid )
+		.pipe(function( html ) {
+			var match = html.match(/alert\(["'](.+)["']\)/);
+			if ( match ) {
+				ol.message( match[ 1 ].replace('\n', '') );
+			}
+			else {
+				return $.Deferred().reject();
+			}
+
+			var dfd = $.Deferred();
+			setTimeout( function() { dfd.resolve(); }, 300 );
+			return dfd;
+		})
+		.pipe( arguments.callee );
+	})
+	.done(function() {
+		ol.message('受け取り処理終了').message('ページを更新します...');
+	})
+	.fail(function() {
+		ol.message('受け取り処理失敗').message('処理を中断します。');
+	})
+	.always(function() {
+		Page.move( '/user/present.php' );
+	});
+
+	return false;
+}
 
 });
 
@@ -8523,7 +8641,6 @@ function() {
 Page.registerExtention(
 	'/user/ranking',
 	'/user/ranking_history',
-	'/user/present',
 	'/user/present_history',
 	'/card/trade',
 	'/card/trade_card',
