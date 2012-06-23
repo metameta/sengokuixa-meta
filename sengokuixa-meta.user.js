@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.8
+// @version        1.0.1.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -1939,26 +1939,25 @@ function analyzeReport() {
 
 	//表示の中心からの距離
 	list.forEach(function( value ) {
-		value.distance = Util.getDistance( Map.info, value.point );
+		value.showDist = Util.getDistance( Map.info, value.point );
 	});
 
 	//同盟+城主名でソート
 	list.sort(function( a, b ) {
 		return ( a.alliance + a.user > b.alliance + b.user )
-			|| ( a.alliance + a.user == b.alliance + b.user && a.distance > b.distance );
+			|| ( a.alliance + a.user == b.alliance + b.user && a.showDist > b.showDist );
 	})
 
 	var html = list.map(function( obj ) {
 		//表示の中心からの距離
-		var distance = Util.getDistance( Map.info, obj.point ),
-			color;
+		var color;
 
 		switch ( obj.discriminant ) {
 			case '敵': color = '#f99'; break;
 			case '味方': color = '#9f9'; break;
 			case '同盟': color = '#9cf'; break;
 			case '自分': color = '#ddd'; break;
-			default: color = 'transparent '; break;
+			default: color = 'transparent'; break;
 		}
 
 		return '<tr style="cursor: pointer;" idx="' + obj.idx + '" areaid="' + obj.id + '">' +
@@ -1970,7 +1969,7 @@ function analyzeReport() {
 			'<td style="background-color: ' + color + '">' + obj.discriminant + '</td>' +
 			'<td>' + obj.population + '</td>' +
 			'<td>' + obj.point + '</td>' +
-			'<td>' + obj.distance.toRound( 2 ) + '</td>' +
+			'<td>' + obj.showDist.toRound( 2 ) + '</td>' +
 		'</tr>';
 	}).join('');
 
