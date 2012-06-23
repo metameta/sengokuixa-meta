@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.7
+// @version        1.0.1.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -5330,6 +5330,10 @@ Page.registerAction( 'land', {
 
 //. main
 main: function() {
+	var $img = $('#frontia_information_footer').find('IMG[src$="btn_naisei.png"]');
+	//本領・所領のland表示の場合は処理しない
+	if ( $img.length > 0 ) { return; }
+
 	this.getBuildStatus();
 },
 
