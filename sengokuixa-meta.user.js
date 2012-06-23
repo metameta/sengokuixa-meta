@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.9
+// @version        1.0.1.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -5976,6 +5976,7 @@ main: function() {
 			break;
 		case '出陣確認':
 			this.layouter2();
+			this.confluence();
 			break;
 	}
 },
@@ -6011,22 +6012,6 @@ layouter2: function() {
 	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">部隊スキル</th></tr>');
 	$('#data_gofight_skill_unit').removeAttr('id').css({ marginTop: '10px' })
 	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">武将スキル</th></tr>');
-
-	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
-	.one('click', function() {
-		var $form = $('#input_troop');
-
-		$(this).attr('disabled', true);
-
-		Page.form('/facility/confluence_list.php', {
-			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
-			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
-			unit_select: $form.find('INPUT[name="unit_select"]').val(),
-			radio_move_type: 320,
-			x: '',
-			y: ''
-		});
-	});
 },
 
 //. showSpeed
@@ -6112,6 +6097,25 @@ sendAll: function() {
 			return $.post( '/facility/send_troop.php#ptop', post_data );
 		});
 	};
+},
+
+//. confluence
+confluence: function() {
+	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
+	.one('click', function() {
+		var $form = $('#input_troop');
+
+		$(this).attr('disabled', true);
+
+		Page.form('/facility/confluence_list.php', {
+			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
+			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
+			unit_select: $form.find('INPUT[name="unit_select"]').val(),
+			radio_move_type: 320,
+			x: '',
+			y: ''
+		});
+	});
 }
 
 });
