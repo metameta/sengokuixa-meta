@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.10
+// @version        1.0.1.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        http://code.jquery.com/jquery-1.7.2.min.js
@@ -5028,18 +5028,33 @@ style: '' + <><![CDATA[
 
 BUTTON.imc_receive { position: relative; top: -25px; left: 395px; }
 
-.common_box3 LABEL { position: relative; top: -6px; font-size: 14px; padding: 2px 4px; }
+.common_box3 LABEL { position: relative; top: -6px; font-size: 14px; padding: 2px 4px; border-radius: 3px; }
 .common_box3:hover LABEL { background-color: #f9dea1; }
 ]]></>,
 
 //. main
 main: function() {
+	//「すべてのプレゼントを受け取る」ボタンが有るかどうか
+	if ( $('#ig_allbtn').length == 0 ) { return; }
+
+	var $button = $('<button class="imc_receive">選択したプレゼントを受け取る</button>');
+	$('.ig_decksection_top').append( $button );
+	$button.click( this.receive );
+
+	$('#ig_boxInner')
+	.on('click', '.common_box3', function( event ) {
+		var $a = $( event.target ).closest('A'),
+			$input = $(this).find('INPUT'),
+			flag;
+
+		if ( $a.length == 1 ) { return; }
+
+		flag = $input.attr('checked');
+		$input.attr( 'checked', !flag );
+	});
+
 	this.autoPager();
-
-	var $box = $('.ig_decksection_mid .common_box3').has('A');
-	if ( $box.length == 0 ) { return; }
-
-	this.layouter( $box );
+	this.layouter( $('#ig_boxInner .common_box3') );
 },
 
 //. autoPager
@@ -5067,10 +5082,6 @@ autoPager: function() {
 
 //. layouter
 layouter: function( $div ) {
-	var $button = $('<button class="imc_receive">選択したプレゼントを受け取る</button>');
-	$('.ig_decksection_top').append( $button );
-	$button.click( this.receive );
-
 	$div.each(function() {
 		var $a = $(this).find('A[href^="/user/present.php"]');
 		if ( $a.length == 0 ) { return; }
@@ -5082,16 +5093,6 @@ layouter: function( $div ) {
 		html += '<input type="checkbox" value="' + pid + '" /> 受け取る</label>';
 
 		$a.after( html );
-	})
-	.click(function( event ) {
-		var $a = $( event.target ).closest('A'),
-			$input = $(this).find('INPUT'),
-			flag;
-
-		if ( $a.length == 1 ) { return; }
-
-		flag = $input.attr('checked');
-		$input.attr( 'checked', !flag );
 	});
 },
 
