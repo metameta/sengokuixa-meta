@@ -1,10 +1,10 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.1.12
+// @version        1.0.1.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
-// @require        http://code.jquery.com/jquery-1.7.2.min.js
+// @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
 // ==/UserScript==
 
 /*
