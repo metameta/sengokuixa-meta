@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.1
+// @version        1.0.2.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -148,6 +148,10 @@ var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener
 });
 '1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
 	MetaStorage.registerStorageName( 'COORD.' + value );
+});
+
+MetaStorage.change( 'UNIT_STATUS', function( event, storageEvent ) {
+	$('#imi_unitstatus').trigger('update');
 });
 
 //■■■■■■■■■■■■■■■■■■■
@@ -431,30 +435,60 @@ getUnitStatus: function( $table ) {
 	.pipe(function() {
 		if ( $table ) { return $table; }
 
-		return $.get( '/facility/unit_status.php?dmo=all' )
+		return Page.get( '/facility/unit_status.php?dmo=all' )
 		.pipe(function( html ) {
-			return $(html).find('TABLE.table_fightlist');
+			return $(html).find('.ig_fight_statusarea');
 		});
 	})
 	.pipe(function( $table ) {
-		var data = {};
+		var list = [];
 
 		$table.each(function() {
 			var $this = $(this),
-				arrival, name, mode, count;
+				$panel = $this.find('.paneltable'),
+				$a1, $a2, name, arrival, target, base1, base2,
+				startpoint, targetpoint, startx, starty, endx, endy, country,
+				mode, count;
+
+			//部隊名
+			name = $this.find('H3').text().match(/\[(.+)\]/)[ 1 ];
 
 			//着弾時間
-			arrival = $this.find('TR:eq(0) TD:eq(0)').text() || '';
-			arrival = ( arrival.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/) || [] )[ 0 ];
+			arrival = $panel.find('TR:eq(0) TD:eq(0)').text() || '';
+			arrival = ( arrival.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/) || [ 0 ] )[ 0 ];
 
-			if ( !arrival ) { return; }
+			if ( arrival ) {
+				arrival = new Date( arrival.replace(/-/g, '/') ).getTime() / 1000;
+			}
+
+			$a1 = $panel.find('TR:eq(2) TD:eq(0) A:eq(0)');
+			$a2 = $panel.find('TR:eq(2) TD:eq(1) A:eq(0)');
+
+			if ( $a1.length != 0 && $a2.length != 0 ) {
+				//拠点
+				base1 = $a1.text().trim();
+				base2 = $a2.text().trim();
+				//座標
+				startpoint  = $a1.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
+				targetpoint = $a2.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
+				startx  = startpoint[ 1 ].toInt();
+				starty  = startpoint[ 2 ].toInt();
+				endx    = targetpoint[ 1 ].toInt();
+				endy    = targetpoint[ 2 ].toInt();
+				country = targetpoint[ 3 ].toInt();
+				//目的地
+				target = base2;
+			}
 
 			//行動
 			mode = $this.find('TR:eq(1) TD:eq(1) IMG').attr('src') || '';
-			count = $this.find('TR:eq(0) TD:eq(2)').text();
 
 			if ( mode.indexOf('_attack.png') != -1 ) {
+				count = $this.find('TR:eq(0) TD:eq(2)').text();
 				mode = ( count == '-' ) ? '陣張' : '攻撃';
+			}
+			else if ( mode.indexOf('_develop.png') != -1 ) {
+				mode = '開拓';
 			}
 			else if ( mode.indexOf('_meeting.png') != -1 ) {
 				mode = '合流';
@@ -464,23 +498,30 @@ getUnitStatus: function( $table ) {
 			}
 			else if ( mode.indexOf('_return.png') != -1 || mode.indexOf('_back.png') != -1 ) {
 				mode = '帰還';
+				target = base1;
+				[ startx, starty, endx, endy ] = [ endx, endy, startx, starty ];
 			}
 			else if ( mode.indexOf('_dungeon.png') != -1 ) {
 				mode = '探索';
+				target = $panel.find('TR:eq(1) TD:eq(2) SPAN').text().trim();
+			}
+			else if ( mode.indexOf('_move.png') != -1 ) {
+				mode = '国移';
+			}
+			else if ( mode.indexOf('_wait.png') != -1 ) {
+				mode = '待機';
+			}
+			else {
+				//modeが取得できない時は加勢待機中（IMGタグではなくcssのbackgroundを使用している為）
+				mode = '加待';
 			}
 
-			//所属拠点
-			name = $this.find('TR:eq(2) A:eq(0)').text() || '';
-
-			if ( !name ) { return; }
-
-			id = Util.getVillageByName( name ).id;
-
-			if ( !data[ id ] ) { data[ id ] = []; }
-			data[ id ].push( [ new Date( arrival.replace(/-/g, '/') ).getTime() / 1000, mode ] );
+			list.push({ name: name, mode: mode, target: target, arrival: arrival, sx: startx, sy: starty, ex: endx, ey: endy, c: country });
 		});
 
-		MetaStorage('COUNTDOWN').set('部隊', data);
+		MetaStorage('UNIT_STATUS').set('部隊', list);
+
+		$('#imi_unitstatus').trigger('update');
 	});
 },
 
@@ -1014,6 +1055,10 @@ $(EventListener)
 
 	Display.info( html );
 
+	//部隊情報更新
+	Util.getUnitStatus();
+})
+.on('actionrefresh', function() {
 	//部隊情報更新
 	Util.getUnitStatus();
 })
@@ -2413,18 +2458,10 @@ function showCountryMap( country ) {
 	CounteryMap.showBasePoint( 'coord', coordList );
 
 	//旗があるか判断
-	var $situation = $('#sideboxMain').find('TABLE.stateTable'),
-		sortieFlag = $situation.find('TD:eq(0) A').length,
-		returnFlag = $situation.find('TD:eq(1) A').length,
-		enemyFlag  = $situation.find('TD:eq(2) A').length;
+	var enemyFlag = $('#sideboxMain TABLE.stateTable TD:eq(2) A').length;
 
 	if ( enemyFlag > 0 ) {
 		Page.get( '/facility/unit_status.php?dmo=enemy' )
-		.pipe( move_analyze );
-	}
-
-	if ( sortieFlag > 0 || returnFlag > 0 ) {
-		Page.get( '/facility/unit_status.php?dmo=all' )
 		.pipe( move_analyze );
 	}
 
@@ -2468,7 +2505,7 @@ function showCountryMap( country ) {
 			}
 		});
 
-		CounteryMap.showRoute( movelist );
+		CounteryMap.showRoute( 'enemy', movelist );
 	}
 }
 
@@ -2837,10 +2874,12 @@ function showBasePoint( name, list, pointsize ) {
 }
 
 //. showRoute
-function showRoute( list ) {
-	var $canvas = newLayer( 'rute', options.mapsize, options.mapsize ),
+function showRoute( name, list ) {
+	var $canvas = newLayer( 'rute' + name, options.mapsize, options.mapsize ),
 		context = $canvas.get(0).getContext('2d'),
 		startx, starty, endx, endy;
+
+	clear( context );
 
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		startx = getCanvasX( list[ i ].startx );
@@ -4105,10 +4144,6 @@ function create( type ) {
 					finishevent = 'trainingfinish';
 					message = '・' + name;
 					break;
-				case '部隊':
-					finishevent = 'actionfinish';
-					message = '・' + name;
-					break;
 			}
 
 			$div = $( html ).data({ endtime: cd_data[ 0 ], alert: 60, finishevent: finishevent, message: message });
@@ -4546,16 +4581,19 @@ changeStatusBar: function() {
 
 //.. changeSideBar
 changeSideBar: function() {
-	var $sidebottom = $('#sideboxBottom'),
-		$seisan_div = $sidebottom.find('DIV.sideBox:eq(0)'),
-		$kyoten_div = $sidebottom.find('DIV.sideBox:eq(1)'),
-		$joutai_div = $sidebottom.find('DIV.sideBox:eq(2)').removeClass('last'),
-		$kin_div  = $('#sideboxTop > DIV.sideBox:eq(0)').addClass('last'),
-		$card_div = $('#sideboxTop > DIV.sideBox:eq(1)');
+	var $sideboxtop_div = $('#sideboxTop > DIV.sideBox'),
+		$sidebottom = $('#sideboxBottom'),
+		$sidebottom_div = $sidebottom.children('DIV.sideBox'),
+		$kin_div  = $sideboxtop_div.eq( 0 ).addClass('last'),
+		$card_div = $sideboxtop_div.eq( 1 ),
+		$joutai_div = $sideboxtop_div.eq( 2 ),
+		$seisan_div = $sidebottom_div.eq( 0 ),
+		$kyoten_div = $sidebottom_div.eq( 1 ),
+		$houkoku_div = $sidebottom_div.eq( 2 ).removeClass('last');
 
 	//二重カウントダウン防止
-	$joutai_div.find('SCRIPT').remove();
-	$sidebottom.prepend( $joutai_div ).append( $card_div ).append( $seisan_div ).append( $kin_div );
+	$houkoku_div.find('SCRIPT').remove();
+	$sidebottom.prepend( $houkoku_div ).append( $card_div ).append( $seisan_div ).append( $kin_div );
 
 	//生産量合計
 	$seisan_div.find('UL.side_make LI').each(function() {
@@ -4601,21 +4639,27 @@ createCoordLink: function() {
 		}
 	});
 
-	$('.imc_coord')
-	.click(function() {
+	$('.imc_coord').live('click', function() {
 		var $this = $(this),
-			href = $this.attr('href'),
 			x = $this.attr('x'),
-			y = $this.attr('y');
+			y = $this.attr('y'),
+			c = $this.attr('c');
 
 		if ( location.pathname == '/map.php' ) {
-			Map.move( x, y );
+			if ( !c || c == Map.info.country ) {
+				Map.move( x, y );
+			}
+			else {
+				c = ( c ) ? '&c=' + c : '';
+				location.href = '/map.php?x=' + x + '&y=' + y + c;
+			}
 		}
 		else {
-			location.href = '/map.php?x=' + x + '&y=' + y;
+			c = ( c ) ? '&c=' + c : '';
+			location.href = '/map.php?x=' + x + '&y=' + y + c;
 		}
 	})
-	.mouseenter(function() {
+	.live('mouseenter', function() {
 		var $this = $(this),
 			x = $this.attr('x'),
 			y = $this.attr('y'),
@@ -4623,7 +4667,7 @@ createCoordLink: function() {
 
 		$('#' + areaid).mouseover();
 	})
-	.mouseleave(function() {
+	.live('mouseleave', function() {
 		var $this = $(this),
 			x = $this.attr('x'),
 			y = $this.attr('y'),
@@ -6173,7 +6217,7 @@ main: function() {
 
 	if ( dmo == 'all' ) {
 		this.showModeCamp();
-		Util.getUnitStatus( $('TABLE.table_fightlist') );
+		Util.getUnitStatus( $('.ig_fight_statusarea') );
 	}
 	else if ( dmo == '' || dmo == 'sortie' ) {
 		this.showModeCamp();
@@ -6221,7 +6265,7 @@ showModeCamp: function() {
 //. analyzeRaid
 analyzeRaid: function() {
 	var storage = MetaStorage('UNIT_STATUS'),
-		list = storage.data,
+		list = storage.get('敵襲'),
 		newlist = {}, baselist = {}, alermFlg = false;
 
 	$('TABLE.table_fightlist').each(function() {
@@ -6255,9 +6299,7 @@ analyzeRaid: function() {
 		newlist[ key ] = true;
 	});
 
-	storage.begin();
-	storage.data = newlist;
-	storage.commit();
+	storage.set('敵襲', newlist);
 
 	//敵襲が来ている拠点の色を変更する
 	$('#sideboxBottom DIV.basename LI *:first-child').each(function() {
@@ -7556,6 +7598,7 @@ Page.registerAction( 'map', {
 style: '' + <><![CDATA[
 /* 地図 */
 #box { min-height: 855px; }
+#ig_mapbox_container { left: 15px; top: 130px; }
 #ig_mapbox_container #ig_cur01   { left: 700px; top: 210px; }
 #ig_mapbox_container #ig_cur01_w { left: 700px; top: 190px; }
 #ig_mapbox_container #ig_cur02   { left: 700px; top: 235px; }
@@ -7565,8 +7608,10 @@ style: '' + <><![CDATA[
 #ig_mapbox_container #ig_cur04   { left: 650px; top: 210px; }
 #ig_mapbox_container #ig_cur04_w { left: 620px; top: 190px; }
 .ig_mappanel_maindataarea { left: 5px; top: 5px; }
-#ig_mapbox_container { left: 15px; top: 130px; }
-#ig_map_country { left: 5px; top: 111px; }
+
+/* 表示国セレクタ */
+#ig_map_country { top: 13px; left: 380px; height: 20px; color: #fff; background: none; }
+#ig_map_country SELECT { margin: 0px 5px; }
 
 #ig_map_movepanel { left: 7px; top: 327px; width: 200px; height: 53px; border: solid 2px #888; background-position: -10px -14px; }
 #ig_map_movepanel FORM { top: 0px; }
@@ -7575,6 +7620,29 @@ style: '' + <><![CDATA[
 .ig_map_movepanel_inputarea { top: 27px; left: 11px; }
 .ig_map_movepanel_btnarea { top: 20px; }
 .ig_map_movepanel_btnarea INPUT ~ INPUT { display: none; }
+
+/* 部隊状況 */
+#imi_unitstatus { position: absolute; top: 110px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }
+#imi_unitstatus TABLE { width: 100%; height: 100%; }
+#imi_unitstatus TR { height: 16px; }
+#imi_unitstatus TD { padding: 0px; }
+#imi_unitstatus DIV { padding: 0px 2px; text-align: left; white-space: nowrap; overflow: hidden; }
+#imi_unitstatus A { color: #000; }
+#imi_unitstatus A:hover { background-color: #f9dea1; }
+#imi_unitstatus .imc_countdown_display { font-family: 'Verdana'; font-size: 10px; }
+#imi_unitstatus .imc_coord { font-weight: normal; }
+/* 部隊行動 */
+#imi_unitstatus .imc_attack  { background-color: #f66; }
+#imi_unitstatus .imc_camp    { background-color: #c33; color: #fff; }
+#imi_unitstatus .imc_meeting { background-color: #6cf; }
+#imi_unitstatus .imc_backup  { background-color: #09c; color: #fff; }
+#imi_unitstatus .imc_return  { background-color: #ddd; }
+#imi_unitstatus .imc_dungeon { background-color: #f96; }
+#imi_unitstatus .imc_develop { background-color: #390; color: #fff; }
+#imi_unitstatus .imc_move    { background-color: #93c; color: #fff; }
+#imi_unitstatus .imc_wait    { background-color: #9c3; }
+#imi_unitstatus .imc_backup_wait { background-color: #396; color: #fff; }
+
 /* 座標ペーストエリア */
 #imi_coord_container { position: absolute; top: 329px; left: 9px; z-index: 1001; }
 #imi_coord_container LABEL { position: absolute; width: 90px; height: 20px; font-size: 12px; padding: 6px 0px 0px 3px; background-color: #F7F7D6; font-weight: bold; text-shadow: 1px 0px 3px #ddb, -1px 0px 3px #ddb, 0px 1px 3px #ddb, 0px -1px 3px #ddb; }
@@ -7631,6 +7699,8 @@ main: function() {
 	this.layouterCoord();
 	this.layouterRanking();
 	this.layouterScore();
+	this.layouterUnitStatus();
+	this.countrySelecter();
 	Map.setup();
 	Util.keyBindMap();
 },
@@ -7693,8 +7763,6 @@ layouter: function() {
 	'</tr>';
 
 	$( html ).appendTo('DIV.ig_mappanel_dataarea TABLE');
-
-	this.countrySelecter();
 
 	//表示欄追加
 	html = '<div id="imi_container">' +
@@ -7886,6 +7954,88 @@ layouterScore: function() {
 	$( html ).appendTo('#imi_score');
 },
 
+//. layouterUnitStatus
+layouterUnitStatus: function() {
+	var html = '<div id="imi_unitstatus"><table class="imc_table">' + '<tr><td/></tr>'.repeat( 5 ) + '</table></div>';
+
+	$( html ).appendTo('#ig_mapbox');
+
+	$('#imi_unitstatus').on('update', function() {
+		var $this = $(this),
+			$table = $('<table class="imc_table"/>'),
+			date = Util.getServerTime(),
+			list = MetaStorage('UNIT_STATUS').get('部隊') || [],
+			movelist = [],
+			movecolors = { '攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f', '帰還': '#3f9', '開拓': '#063' },
+			classlist = {
+				'攻撃': 'imc_attack', '陣張': 'imc_camp', '合流': 'imc_meeting',
+				'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon',
+				'開拓': 'imc_develop', '国移': 'imc_move', '待機': 'imc_wait', '加待': 'imc_backup_wait'
+			},
+			data, $tr, classname, html;
+
+		for ( var i = 0, len = list.length; i < len; i++ ) {
+			data = list[ i ];
+			classname = classlist[ data.mode ] || '';
+
+			if ( data.mode == '探索' ) {
+				html = data.target;
+			}
+			else {
+				html = '<span class="imc_coord" x="' + data.ex + '" y="' + data.ey + '" c="' + data.c + '">' +
+					data.target + ' (' + data.ex + ',' + data.ey + ')</span>';
+			}
+
+			html = '' +
+				'<td><div style="width: 67px;"><a href="/card/deck.php?ano=' + i + '">' + data.name + '</a></div></td>' +
+				'<td><div style="width: 86px;">' + html + '</div></td>' +
+				'<td style="width: 33px;" class="' + classname + '">' + data.mode + '</td>' +
+				'<td style="width: 55px;"><span class="imc_countdown_display" /></td>';
+
+			$tr = $('<tr/>').append( html );
+
+			if ( data.mode == '待機' || data.mode == '加待' ) {
+				//待機中、カウントダウンしない
+			}
+			else if ( data.arrival < date ) {
+				//着弾時間が過去の場合、「--:--:--」の表示、10秒後に再取得
+				$tr.addClass('imc_countdown');
+				$tr.data({ endtime: date + 10, finishevent: 'actionrefresh' });
+				$tr.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
+			}
+			else {
+				//行動中
+				$tr.addClass('imc_countdown');
+				$tr.data({ endtime: data.arrival, alert: 60, finishevent: 'actionfinish', message: '・[' + data.name + ']部隊' });
+
+				//ミニマップに移動線を表示するデータ
+				if ( movecolors[ data.mode ] ) {
+					movelist.push({ startx: data.sx, starty: data.sy, endx: data.ex, endy: data.ey, color: movecolors[ data.mode ] });
+				}
+			}
+
+			$table.append( $tr );
+		}
+
+		for ( var i = list.length; i < 5; i++ ) {
+			html = '' +
+			'<td><div style="width: 67px;"><a href="/card/deck.php?ano=' + i + '">[部隊作成]</a></div></td>' +
+			'<td><div style="width: 86px;"></div></td>' +
+			'<td style="width: 33px;"></td>' +
+			'<td style="width: 55px;"></td>';
+
+			$tr = $('<tr/>').append( html );
+			$table.append( $tr );
+		}
+
+		$this.empty().append( $table );
+		Util.countDown();
+		CounteryMap.showRoute( 'unit', movelist );
+	});
+
+	Util.getUnitStatus();
+},
+
 //. countrySelecter
 countrySelecter: function() {
 	var country = Map.info.country,
@@ -7918,7 +8068,7 @@ countrySelecter: function() {
 		.appendTo( $selecter );
 	}
 
-	$('#ig_map_country').find('P.map_name').empty().append( $selecter );
+	$('#ig_map_country').empty().append('現在').append( $selecter ).append('を表示中');
 },
 
 //. fortressLink
