@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.4
+// @version        1.0.2.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2439,12 +2439,14 @@ function coordList( country ) {
 
 		return menu;
 	});
+
+	//登録座標表示
+	showCoord( country );
 }
 
 //. showCountryMap
 function showCountryMap( country ) {
-	var list = BaseList.all( country ),
-		coord = MetaStorage('COORD.' + country).data;
+	var list = BaseList.all( country );
 
 	CounteryMap.create( country, {
 		pxsize: 0.5,
@@ -2461,12 +2463,8 @@ function showCountryMap( country ) {
 		CounteryMap.showBasePoint( 'fortress', list );
 	}
 
-	var coordList = $.map( coord, function( value, key ) {
-		var array = key.split(',');
-
-		return { x: array[0].toInt(), y: array[1].toInt(), color: '#ff0' };
-	});
-	CounteryMap.showBasePoint( 'coord', coordList );
+	//登録座標表示
+	showCoord( country );
 
 	//旗があるか判断
 	var enemyFlag = $('#sideboxMain TABLE.stateTable TD:eq(2) A').length;
@@ -2518,6 +2516,20 @@ function showCountryMap( country ) {
 
 		CounteryMap.showRoute( 'enemy', movelist );
 	}
+}
+
+//. showCoord
+function showCoord( country ) {
+	var coord = MetaStorage('COORD.' + country).data,
+		coordList;
+
+	coordList = $.map( coord, function( value, key ) {
+		var array = key.split(',');
+		
+		return { x: array[0].toInt(), y: array[1].toInt(), color: '#ff0' };
+	});
+
+	CounteryMap.showBasePoint( 'coord', coordList );
 }
 
 //. showMark
@@ -2780,6 +2792,7 @@ return {
 	},
 	analyzeReport: analyzeReport,
 	showCountryMap: showCountryMap,
+	showCoord: showCoord,
 	showMark: showMark,
 	move: move
 };
@@ -2926,6 +2939,8 @@ function showBasePoint( name, list, pointsize ) {
 		canvasx, canvasy;
 
 	pointsize = pointsize || options.pointsize;
+
+	clear( context );
 
 	//拠点
 	for ( var i = 0, len = list.length; i < len; i++ ) {
@@ -4339,7 +4354,6 @@ return {
 	all: function( country ) {
 		var list = [];
 		list = $.merge( list, base( country ) );
-		list = $.merge( list, coords( country ) );
 		return list;
 	},
 	home: home,
@@ -7964,6 +7978,7 @@ layouterCoord: function() {
 
 		MetaStorage('COORD.' + country).clear();
 		$('#imi_coord_list').empty();
+		Map.showCoord( country );
 	});
 
 	//砦一覧
