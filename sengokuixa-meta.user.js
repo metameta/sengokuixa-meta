@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.3
+// @version        1.0.2.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3260,7 +3260,7 @@ updateDeckInfo: function() {
 	$('.imc_info2_free').text( freeCard );
 	$('.imc_info3').text( Math.floor( totalAtk ).toFormatNumber() ).parent().attr( 'title', dtitle );
 	$('.imc_info4').text( Math.floor( totalDef ).toFormatNumber() );
-	$('.imc_info5').text( speed ).parent().attr( 'title', stitle );
+	$('.imc_info5').text( speed.toRound( 1 ) ).parent().attr( 'title', stitle );
 },
 
 //.. assignCard
@@ -3900,11 +3900,12 @@ analyze: function( $elem ) {
 	}).get();
 	this.skillCount = this.skillList.length;
 	this.speedModify = (function() {
-		var mod = {};
+		var mod = {},
+			speedReg = /速：(\d+(?:\.\d+)?)%上昇/;
 
 		$elem.find('.skill1, .skill2, .skill3').each(function() {
 			var $this = $(this),
-				effect = ( $this.find('.ig_skill_desc').text().match(/速：(\d+)%上昇/) || [] )[1],
+				effect = ( $this.find('.ig_skill_desc').text().match( speedReg ) || [] )[1],
 				targets = $this.find('.ig_skill_desc FONT').text(),
 				target;
 
@@ -3916,7 +3917,7 @@ analyze: function( $elem ) {
 				target = targets[ i ];
 
 				if ( !mod[ target ] ) { mod[ target ] = 0; }
-				mod[ target ] += effect.toInt();
+				mod[ target ] += effect.toFloat();
 			}
 		});
 
