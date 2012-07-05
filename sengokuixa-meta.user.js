@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.6
+// @version        1.0.2.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7907,6 +7907,7 @@ layouterMapInfo: function() {
 	settings.fort_village = ( type.indexOf('|砦|村|')  != -1 ) ? 'checked' : '';
 	settings.stronghold   = ( type.indexOf('|出城|')   != -1 ) ? 'checked' : '';
 	settings.camp         = ( type.indexOf('|陣|')     != -1 ) ? 'checked' : '';
+	settings.territory    = ( type.indexOf('|領地|')   != -1 ) ? 'checked' : '';
 	settings.fall         = ( type.indexOf('|陥落|')   != -1 ) ? 'checked' : '';
 	settings.field        = ( type.indexOf('|空き地|') != -1 ) ? 'checked' : '';
 
@@ -7918,6 +7919,7 @@ layouterMapInfo: function() {
 				'<label><input type="checkbox" name="ixa_meta_type" value="|砦|村|" ' + settings.fort_village + ' />所領</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|出城|" ' + settings.stronghold + ' />出城</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|陣|" ' + settings.camp + ' />陣</label>' +
+				'<label><input type="checkbox" name="ixa_meta_type" value="|領地|" ' + settings.territory + ' />領地</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|陥落|" ' + settings.fall + ' />陥落</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|空き地|" ' + settings.field + ' />空き地</label>' +
 			'</td>' +
