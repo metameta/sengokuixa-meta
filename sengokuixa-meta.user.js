@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.5
+// @version        1.0.2.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2591,14 +2591,26 @@ function move( x, y, country ) {
 	}
 
 	if ( Env.ajax ) { return; }
-	Env.ajax = true;
 
-	var search = 'x=' + x + '&y=' + y;
+	var search, url;
 
+	search = 'x=' + x + '&y=' + y;
 	country = country || Map.info.country || '';
+
 	if ( country ) { search += '&c=' + country; }
 
-	Page.get( '/map.php?' + search )
+	url = '/map.php?' + search;
+
+	moveUrl( url ).done(function() {
+		history.pushState( null, null, url );
+	});
+}
+
+//. moveUrl
+function moveUrl( url ) {
+	Env.ajax = true;
+
+	return Page.get( url )
 	.pipe(function( html ) {
 		var $html = $(html);
 
@@ -2609,7 +2621,7 @@ function move( x, y, country ) {
 		//移動したので情報更新
 		Map.info = mapInfo();
 		analyze();
-		showCountryMap( country );
+		showCountryMap( Map.info.country );
 		showMark();
 	})
 	.always(function() {
@@ -2789,6 +2801,10 @@ return {
 		$('#imi_base_list, #imi_coord_list')
 		.on('mouseenter', 'TR', enterRow )
 		.on('mouseleave', 'TR', leaveRow );
+
+		$(window).on('popstate', function() {
+			moveUrl( location.href );
+		});
 	},
 	analyzeReport: analyzeReport,
 	showCountryMap: showCountryMap,
