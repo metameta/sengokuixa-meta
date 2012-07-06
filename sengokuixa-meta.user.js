@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.7
+// @version        1.0.2.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1925,8 +1925,8 @@ function analyzeArea( $area_list, img_list ) {
 			data.alliance  = array[5];
 			data.user      = Array.slice( array, 7, 12 ).join('/');
 			data.materials = Array.slice( array, 7, 12 ).join('');
-			//NPC扱いとする
-			data.npc = '1';
+			//NPC扱いとする（★の数をセット）
+			data.npc = array[5].length;
 		}
 		else if ( img_data.type == '領地' ) {
 			//資源情報をセットし必要攻撃力を表示させる
@@ -1974,21 +1974,33 @@ function analyzeArea( $area_list, img_list ) {
 function analyzeReport() {
 	var $tbody  = $('#imi_base_list'),
 		$table  = $('#imi_base_conditions'),
-		discriminant = $table.find('input[name="ixa_meta_discriminant"]:checked').val(),
-		alliance = $table.find('input[name="ixa_meta_alliance"]').val(),
+		discriminant = $table.find('INPUT[name="ixa_meta_discriminant"]:checked').val(),
+		alliance = $table.find('INPUT[name="ixa_meta_alliance"]').val(),
+		rank = $table.find('SELECT[name="ixa_meta_rank"]').val().toInt(),
 		type = '';
 
 	$table.find('input[name="ixa_meta_type"]').filter(':checked').each(function() { type += $(this).val(); });
 
-	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance });
+	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance, rank: rank });
 
 	var list = analyzedData.filter(function( value ) {
 		//出城エリアは非表示
 		if ( value.stronghold_area ) { return false; }
 		//条件にあてはまるものを表示
-		if ( type != '' && type.indexOf('|' + value.type + '|') == -1 ) { return false; }
 		if ( discriminant != '' && discriminant.indexOf('|' + value.discriminant + '|') == -1 ) { return false; }
 		if ( alliance != '' && alliance != value.alliance ) { return false; }
+		if ( type == '' ) {
+			return true;
+		}
+		else if ( type.indexOf('|' + value.type + '|') == -1 ) {
+			return false;
+		}
+		else if ( value.type == '空き地' ) {
+			//空き地の場合、価値によるフィルタを行う
+			if ( rank == 0 ) { return true; }
+			if ( rank <= 5 && value.npc > rank ) { return false; }
+			if ( rank >= 6 && value.npc < rank ) { return false; }
+		}
 
 		return true;
 	});
@@ -2525,7 +2537,7 @@ function showCoord( country ) {
 
 	coordList = $.map( coord, function( value, key ) {
 		var array = key.split(',');
-		
+
 		return { x: array[0].toInt(), y: array[1].toInt(), color: '#ff0' };
 	});
 
@@ -7756,6 +7768,7 @@ style: '' + <><![CDATA[
 #imi_base INPUT { margin-right: 5px; }
 #imi_base LABEL { margin-right: 10px; cursor: pointer; }
 #imi_base_conditions { margin-bottom: 10px; }
+#imi_base_conditions SELECT { position: relative; top: -1px; margin: -2px; }
 
 /* 座標情報 */
 .imc_fort TD { width: 50px; }
@@ -7898,7 +7911,7 @@ layouter: function() {
 
 //. layouterMapInfo
 layouterMapInfo: function() {
-	var settings = MetaStorage('SETTINGS').get('mapinfo') || { type: '|城||砦|村||出城|', discriminant: '', alliance: '' },
+	var settings = MetaStorage('SETTINGS').get('mapinfo') || { type: '|城||砦|村||出城|', discriminant: '', alliance: '', rank: 0 },
 		type = settings.type,
 		html;
 
@@ -7922,6 +7935,17 @@ layouterMapInfo: function() {
 				'<label><input type="checkbox" name="ixa_meta_type" value="|領地|" ' + settings.territory + ' />領地</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|陥落|" ' + settings.fall + ' />陥落</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|空き地|" ' + settings.field + ' />空き地</label>' +
+				'<select name="ixa_meta_rank">' +
+					'<option value="0">全て</option>' +
+					'<option value="1">★１以下</option>' +
+					'<option value="2">★２以下</option>' +
+					'<option value="3">★３以下</option>' +
+					'<option value="4">★４以下</option>' +
+					'<option value="5">★５以下</option>' +
+					'<option value="6">★６以上</option>' +
+					'<option value="7">★７以上</option>' +
+					'<option value="8">★８以上</option>' +
+				'</select>' +
 			'</td>' +
 		'</tr>' +
 		'<tr>' +
@@ -7944,7 +7968,8 @@ layouterMapInfo: function() {
 
 	$( html ).appendTo('#imi_base')
 	.change( Map.analyzeReport )
-	.find('input[value="' + settings.discriminant + '"]').attr('checked', true);
+	.find('SELECT[name="ixa_meta_rank"]').val( settings.rank ).end()
+	.find('INPUT[value="' + settings.discriminant + '"]').attr('checked', true).end();
 
 	//拠点情報一覧
 	html = '<table class="imc_table">' +
