@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.11
+// @version        1.0.2.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -671,9 +671,9 @@ getNext20Exp: function( rank, exp ) {
 
 //. getSkillCandidate
 getSkillCandidate: function( skill_list ) {
-	var list = [],
+	var list = [], list_s1 = [],
 		[ skill1, skill2, skill3 ] = skill_list,
-		skill, s1, s2;
+		skill, s1, s2, s2_s1;
 
 	skill = Data.skillTable[ skill1.name ];
 	if ( skill ) {
@@ -706,8 +706,28 @@ getSkillCandidate: function( skill_list ) {
 
 	list = list.slice( -3 );
 	list.push( s1 );
+	list = list.unique();
 
-	return { table: list.unique(), s2: s2 };
+	//候補のs1を取得
+	list.forEach(function( value ) {
+		var skill = Data.skillTable[ value ];
+		if ( skill ) {
+			list_s1.push( skill[ 3 ] || '不明Ｓ１' );
+		}
+		else {
+			list_s1.push( '不明Ｓ１' );
+		}
+	});
+
+	skill = Data.skillTable[ s2 ];
+	if ( skill ) {
+		s2_s1 = skill[ 3 ] || '不明Ｓ１';
+	}
+	else {
+		s2_s1 = '不明Ｓ１';
+	}
+
+	return { table: list, table_s1: list_s1, s2: s2, s2_s1: s2_s1 };
 },
 
 //. searchTradeCardNo
@@ -855,7 +875,7 @@ tb_show: function( j, b, h ) {
 	if ( $tb.find('.imc_table').length > 0 ) { return; }
 
 	var card = new LargeCard( $tb ),
-		list = [], type, html, $table;
+		list = [], type, html, html2, $table;
 
 	//仮想の兵数セット
 	card.solNum = card.maxSolNum;
@@ -904,7 +924,8 @@ tb_show: function( j, b, h ) {
 
 	html += '</table>';
 
-	var { table, s2 } = Util.getSkillCandidate( card.skillList );
+	//スキル候補
+	var { table, table_s1, s2, s2_s1 } = Util.getSkillCandidate( card.skillList );
 	html += '<table class="imc_table" style="width: 483px; margin: 0px;">' +
 		'<tr>' +
 			'<th width="20%">候補Ａ</th>' +
@@ -914,17 +935,21 @@ tb_show: function( j, b, h ) {
 			'<th width="20%">Ｓ２</th>' +
 		'</tr>' +
 		'<tr>';
+	html2 = '';
 
 	for ( var i = 0, len = table.length; i < len; i++ ) {
-		html += '<td>' + table[ i ] + '</td>';
+		html  += '<td>' + table[ i ] + '</td>';
+		html2 += '<td>' + table_s1[ i ] + '</td>';
 	}
 	for ( var i = table.length; i < 4; i++ ) {
-		html += '<td>-</td>';
+		html  += '<td>-</td>';
+		html2 += '<td>-</td>';
 	}
 
-	html += '<td>' + ( ( s2 ) ? s2 : '-' ) + '</td>';
+	html  += '<td>' + ( ( s2 ) ? s2 : '-' ) + '</td>';
+	html2 += '<td>' + ( ( s2_s1 ) ? s2_s1 : '-' ) + '</td>';
 
-	html += '</tr>';
+	html += '</tr><tr>' + html2 + '</tr>';
 	html += '</table>';
 
 	$table = $( html ).appendTo( $tb );
