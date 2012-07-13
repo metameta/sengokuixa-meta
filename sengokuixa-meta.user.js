@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.10
+// @version        1.0.2.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6288,6 +6288,13 @@ style: '' + <><![CDATA[
 ]]></>,
 
 main: function() {
+	$('.common_table1').find('TR').slice( 1 )
+	.css({ cursor: 'pointer' })
+	.hover( Util.enter, Util.leave )
+	.click(function() {
+		$(this).find('INPUT:radio:enabled').attr('checked', true);
+	});
+
 	$('<span class="imc_button">通常攻撃</span>').appendTo('#ig_deckboxInner > .center.mb10')
 	.one('click', function() {
 		var $form = $('#search_form');
