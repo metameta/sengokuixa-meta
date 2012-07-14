@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.12
+// @version        1.0.2.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1954,14 +1954,18 @@ function analyzeArea( $area_list, img_list ) {
 		if ( img_data.type == '空き地' ) {
 			//ソートさせる為、同盟に価値、ユーザーに資源をセット
 			data.alliance  = array[5];
-			data.user      = Array.slice( array, 7, 12 ).join('/');
-			data.materials = Array.slice( array, 7, 12 ).join('');
-			//NPC扱いとする（★の数をセット）
-			data.npc = array[5].length;
+			data.user      = array.slice( 7, 12 ).join('/');
+			data.materials = array.slice( 7, 12 ).join('');
+			//NPC扱いとする
+			data.npc  = 1;
+			//価値をセットしフィルタ条件で使用する
+			data.rank = array[5].length;
 		}
 		else if ( img_data.type == '領地' ) {
 			//資源情報をセットし必要攻撃力を表示させる
-			data.materials = Array.slice( array, 7, 12 ).join('');
+			data.materials = array.slice( 7, 12 ).join('');
+			//価値をセットしフィルタ条件で使用する
+			data.rank = array[5].length;
 		}
 
 		data.id      = 'imi_area_' + search[1] + '_' + search[2];
@@ -2026,11 +2030,11 @@ function analyzeReport() {
 		else if ( type.indexOf('|' + value.type + '|') == -1 ) {
 			return false;
 		}
-		else if ( value.type == '空き地' ) {
-			//空き地の場合、価値によるフィルタを行う
+		else if ( value.type == '領地' || value.type == '空き地' ) {
+			//領地・空き地の場合、価値によるフィルタを行う
 			if ( rank == 0 ) { return true; }
-			if ( rank <= 5 && value.npc > rank ) { return false; }
-			if ( rank >= 6 && value.npc < rank ) { return false; }
+			if ( rank <= 5 && value.rank > rank ) { return false; }
+			if ( rank >= 6 && value.rank < rank ) { return false; }
 		}
 
 		return true;
@@ -8143,8 +8147,8 @@ layouterMapInfo: function() {
 	settings.fort_village = ( type.indexOf('|砦|村|')  != -1 ) ? 'checked' : '';
 	settings.stronghold   = ( type.indexOf('|出城|')   != -1 ) ? 'checked' : '';
 	settings.camp         = ( type.indexOf('|陣|')     != -1 ) ? 'checked' : '';
-	settings.territory    = ( type.indexOf('|領地|')   != -1 ) ? 'checked' : '';
 	settings.fall         = ( type.indexOf('|陥落|')   != -1 ) ? 'checked' : '';
+	settings.territory    = ( type.indexOf('|領地|')   != -1 ) ? 'checked' : '';
 	settings.field        = ( type.indexOf('|空き地|') != -1 ) ? 'checked' : '';
 
 	html = '<table id="imi_base_conditions" class="imc_table">' +
@@ -8155,8 +8159,8 @@ layouterMapInfo: function() {
 				'<label><input type="checkbox" name="ixa_meta_type" value="|砦|村|" ' + settings.fort_village + ' />所領</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|出城|" ' + settings.stronghold + ' />出城</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|陣|" ' + settings.camp + ' />陣</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|領地|" ' + settings.territory + ' />領地</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|陥落|" ' + settings.fall + ' />陥落</label>' +
+				'<label><input type="checkbox" name="ixa_meta_type" value="|領地|" ' + settings.territory + ' />領地</label>' +
 				'<label><input type="checkbox" name="ixa_meta_type" value="|空き地|" ' + settings.field + ' />空き地</label>' +
 				'<select name="ixa_meta_rank">' +
 					'<option value="0">全て</option>' +
