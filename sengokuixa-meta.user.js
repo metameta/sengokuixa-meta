@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.14
+// @version        1.0.2.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3756,7 +3756,7 @@ $.extend( Card.prototype, {
 //.. status
 name: '', rarity: '',
 cost: 0, rank: 0, lv: 0, hp: 100, maxHp: 100, solNum: 0, maxSolNum: 0,
-solName: '', atk: 0, def: 0, commands: {}, skillList: [], skillCount: 0,
+solName: '', atk: 0, def: 0, int: 0, commands: {}, skillList: [], skillCount: 0,
 command: '', totalAtk: 0, totalDef: 0, totalDes: 0,
 
 //.. power
@@ -3952,6 +3952,7 @@ analyze: function( $elem ) {
 	//攻撃力・防御力
 	this.atk = $param.find('.ig_card_status_att').text().toInt();
 	this.def = $param.find('.ig_card_status_def').text().toInt();
+	this.int = $param.find('.ig_card_status_int').text().toFloat();
 
 	//統率
 	this.commands = {};
@@ -3966,15 +3967,23 @@ analyze: function( $elem ) {
 	//スキル
 	this.skillList = $elem.find('.skill1, .skill2, .skill3').map(function() {
 		var text = $(this).find('.ig_skill_name, .grayig_skill_name').text(),
-			array = text.match(/(.+)LV(\d+)$/);
+			array = text.match(/(.+)LV(\d+)$/),
+			deck, type;
 
 		if ( !array ) {
+			//レベルのないもの（感謝の饗宴、東西無双など）
 			return { name: text, lv: 0 };
 		}
 
 		array[ 1 ] = array[ 1 ].trim().replace(/ +/g, ' ');
 
-		return { name: array[ 1 ], lv: array[ 2 ].toInt() };
+		deck = $(this).find('.ig_skill_desc').text();
+		if ( deck.indexOf('速：') != -1 ) { type = '速'; }
+		else if ( deck.indexOf('攻：') != -1 ) { type = '攻'; }
+		else if ( deck.indexOf('防：') != -1 ) { type = '防'; }
+		else { type = '特'; }
+
+		return { name: array[ 1 ], lv: array[ 2 ].toInt(), type: type };
 	}).get();
 	this.skillCount = this.skillList.length;
 	this.speedModify = (function() {
@@ -4092,73 +4101,92 @@ analyze: function() {
 
 //.. layouter
 layouter: function() {
-	var $elem  = this.element,
-		$div   = $elem.children('div'),
-		$div1  = $div.eq( 1 ),
-		$div2  = $div.eq( 2 ),
-		$table = $elem.find('TABLE.ig_deck_smallcarddata'),
-		html, lvClass, next20, coverRate, endtime, $A;
+	var $elem = this.element,
+		$div  = $elem.children('div'),
+		$div1 = $div.eq( 1 ),
+		$div2 = $div.eq( 2 ),
+		$tables = $elem.find('.ig_deck_smallcarddata'),
+		$table, html, cssClass, lvClass, next20, coverRate, endtime, $a;
+
+	//いらないものを削除してしまう
+	$elem.find('.smallcard_bg, .smallcard_waku, .battlegage2, .ig_deck_smallcarddelete').remove();
+
+	//スキル表示位置変更
+	$table = $tables.eq( 2 );
+	$table.addClass('imc_card_skill').prependTo( $elem.find('.ig_deck_smallcardbox') );
+	//スキル背景色変更
+	this.skillList.forEach(function( value, idx ) {
+		var color = { '攻': '#058', '防': '#363', '速': '#535', '特': '#850' }[ value.type ] || 'transparent';
+//		var color = { '攻': '#036', '防': '#250', '速': '#504', '特': '#850' }[ value.type ] || 'transparent';
+
+		$table.find('TR').eq( idx ).css('background-color', color);
+	});
 
 	lvClass = ( this.lv == 20 ) ? 'imc_lv imc_lv_20' : 'imc_lv';
 	next20 = Util.getNext20Exp( this.rank, this.exp );
 
-	//ヘッダ部にコスト・ランク・レベルを表示
+	//コスト・ランク・レベルを表示
 	html = '<span class="imc_cardname">' + this.name + '</span>' +
 	'<span class="imc_card_header">' +
 		'<span>Cost　' + this.cost + '｜</span>' +
 		'<span style="color: red; font-weight: bold;">' + '★'.repeat( this.rank ) + '</span>' +
 		'<span title="Lv20まで：' + next20 + '" >' + '☆'.repeat( 5 - this.rank ) + '｜Lv　</span><span class="' + lvClass + '">' + this.lv + '</span>' +
 	'</span>';
-	$elem.find('.ig_deck_smallcardtitle').empty().append( html );
+	$elem.find('.ig_deck_smallcardtitle').html( html );
 
-	//実指揮数・総攻撃力・総防御力を表示
-	html= '<tr style="background-color: #246">' +
-		'<th>総攻撃力</th>' +
-		'<td style="text-align: right; padding-right: 5px;">' + Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) + '</td>' +
-	'</tr>' +
-	'<tr style="background-color: #246">' +
-		'<th>総防御力</th>' +
-		'<td style="text-align: right; padding-right: 5px;">' + Math.floor( this.totalDef ).toFormatNumber( '', '-' ) + '</td>' +
-	'</tr>';
-
-	//微調整
-	$table.eq( 0 ).find('TH').width( 45 );
-
-	//コスト・レベル・HP行削除
-	$table.eq( 0 ).find('TR').slice( 0, 3 ).remove();
-	$table.eq( 0 ).find('TBODY').append( html );
-
-	//兵士満載の場合
+	//ステータス表示部
 	if ( this.solNum == this.maxSolNum ) {
-		$table.eq( 0 ).find('TR').slice( 0, 2 ).removeClass('emphasis').css({ backgroundColor: '#642' });
+		//兵士満載の場合
+		cssClass = 'class="imc_solmax"';
+	}
+	else if ( this.solNum > 0 ) {
+		cssClass = 'class="emphasis"';
 	}
 
-	//スキル表示位置変更
-	$table.eq( 2 ).prependTo( $elem.find('DIV.ig_deck_smallcardbox') ).wrap('<div class="imc_card_skill"></div>');
+	//指揮兵・兵種・総攻撃力・総防御力を表示
+	html= '' +
+	'<tr ' + cssClass + '>' +
+		'<th>指揮兵</th>' +
+		'<td>' + this.solNum + '/' + this.maxSolNum + '</td>' +
+	'</tr>' +
+	'<tr ' + cssClass + '>' +
+		'<th>兵種</th>' +
+		'<td>' + ( this.solName || '' ) + '</td>' +
+	'</tr>' +
+	'<tr class="imc_power">' +
+		'<th>総攻撃力</th>' +
+		'<td>' + Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) + '</td>' +
+	'</tr>' +
+	'<tr class="imc_power">' +
+		'<th>総防御力</th>' +
+		'<td>' + Math.floor( this.totalDef ).toFormatNumber( '', '-' ) + '</td>' +
+	'</tr>';
 
-	//HP・討伐ゲージバーを表示
-	html = '<div class="ig_deck_smallcarddataarea">' +
-		'<div class="imc_bar_title">討伐ゲージ： ' + this.battleGage + '</div>' +
-		'<div class="imc_bar_battle_gage"><span class="imc_bar_inner" /></div>' +
-		'<div class="imc_bar_title">HP： ' + this.hp + ' / ' + this.maxHp + '</div>' +
-		'<div class="imc_bar_hp"><span class="imc_bar_inner" /></div>' +
-	'</div>';
+	$tables.eq( 0 ).addClass('imc_card_status').html( html );
 
-	$( html ).appendTo( $div1 );
+	if ( this.int >= 800 ) {
+		$tables.eq( 1 ).find('TD').eq( 1 ).css('background-color', '#850');
+	}
 
-	//HPバー
-	coverRate = ( 100 - Math.floor( this.hp / this.maxHp * 100 )) + '%';
-	$div1.find('.imc_bar_hp .imc_bar_inner').width( coverRate );
-
-	//討伐ゲージ
+	html = '<div class="ig_deck_smallcarddataarea">';
+	//討伐ゲージ表示
 	coverRate = ( 100 - Math.floor( this.battleGage / 300 * 100 )) + '%';
-	$div1.find('.imc_bar_battle_gage .imc_bar_inner').width( coverRate );
+	html += '<div class="imc_bar_title">討伐ゲージ： ' + this.battleGage + '</div>' +
+			'<div class="imc_bar_battle_gage"><span class="imc_bar_inner" style="width: ' + coverRate + '" /></div>';
+	//HPバー表示
+	coverRate = ( 100 - Math.floor( this.hp / this.maxHp * 100 )) + '%';
+	html += '<div class="imc_bar_title">HP： ' + this.hp + ' / ' + this.maxHp + '</div>' +
+			'<div class="imc_bar_hp"><span class="imc_bar_inner" style="width: ' + coverRate + '" /></div>' +
+		'</div>';
 
+	$div1.append( html );
+
+	//フッタ部
 	//配置ボタンと編成ボタンを入れ替える
 	//ボタンがない場合は出品中とみなす
-	$A = $div2.find('a');
-	if ( $A.length > 0 ) {
-		$div2.empty().append( $A.get().reverse() );
+	$a = $div2.find('A');
+	if ( $a.length > 0 ) {
+		$div2.empty().append( $a.get().reverse() );
 	}
 
 	//HP回復時間を表示
@@ -4174,27 +4202,25 @@ layouter: function() {
 	//微調整
 	$div1.css({ marginBottom: '2px' });
 	$div2.css({ height: '29px', lineHeight: '29px', marginBottom: '2px' });
-
-	$elem.find('.smallcard_bg').remove();
-	$elem.find('.smallcard_waku').remove();
-	$elem.find('.battlegage2').remove();
-	$elem.find('.ig_deck_smallcarddelete').remove();
 },
 
 //.. update
 update: function() {
 	var $elem = this.element,
-		$table = $elem.find('TABLE.ig_deck_smallcarddata').eq( 1 ),
-		$tr = $table.find('TR');
+		$tr = $elem.find('.imc_card_status TR');
 
 	if ( this.solNum == this.maxSolNum ) {
-		$tr.slice( 0, 2 ).removeClass('emphasis').css({ backgroundColor: '#642' });
+		$tr.slice( 0, 2 ).removeClass('emphasis').addClass('imc_solmax');
+	}
+	else if ( this.solNum > 0 ) {
+		$tr.slice( 0, 2 ).addClass('emphasis').removeClass('imc_solmax');
 	}
 	else {
-		$tr.slice( 0, 2 ).addClass('emphasis').removeAttr('style');
+		$tr.slice( 0, 2 ).removeAttr('class');
 	}
 
 	$tr.eq( 0 ).find('TD').text( this.solNum + '/' + this.maxSolNum );
+	$tr.eq( 1 ).find('TD').text( this.solName || '' );
 	$tr.eq( 2 ).find('TD').text( Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) );
 	$tr.eq( 3 ).find('TD').text( Math.floor( this.totalDef ).toFormatNumber( '', '-' ) );
 }
@@ -6921,6 +6947,10 @@ SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
 .imc_card_skill { position: relative; top: 116px; background-color: #333; z-index: 4; }
 .imc_card_skill TABLE { margin-bottom: 0px; }
 .imc_card_skill TH { width: 20px; }
+.imc_card_status TH { width: 45px; }
+.imc_card_status .imc_solmax { background-color: #642; }
+.imc_card_status .imc_power { background-color: #246; }
+.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }
 /* HP・討伐ゲージ用バー */
 .imc_bar_title { color: white; font-size: 10px; }
 .imc_bar_battle_gage { width: 100px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }
