@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.13
+// @version        1.0.2.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7455,7 +7455,7 @@ cardOrderSelecter: function() {
 				'<span class="imc_command">' +
 					'<span class="imc_delete">×</span>' +
 					'｜<span class="imc_name_change">名称変更</span>' +
-					'｜<span class="imc_order_select">選択</span>' +
+					'｜<span class="imc_order_select">決定</span>' +
 				'</span>' +
 			'</li>';
 
@@ -7517,6 +7517,8 @@ cardOrderSelecter: function() {
 		$('#sort_order_type_1').val( array[ 3 ] );
 		$('#sort_order_2').val( array[ 4 ] );
 		$('#sort_order_type_2').val( array[ 5 ] );
+
+		$('.sortSubmit').click();
 	})
 	.on('click', '.imc_name_change', function() {
 		var $li = $(this).closest('LI'),
