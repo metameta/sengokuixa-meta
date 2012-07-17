@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.2.16
+// @version        1.0.2.17
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -728,6 +728,22 @@ getSkillCandidate: function( skill_list ) {
 	}
 
 	return { table: list, table_s1: list_s1, s2: s2, s2_s1: s2_s1 };
+},
+
+//. getConsumption
+getConsumption: function( materials, number ) {
+	var modRate = 1, idx;
+
+	if ( number >= 5 ) {
+		idx = Math.floor( number / 10 );
+		if ( idx > 10 ) { idx = 10; }
+
+		modRate = [ 0.98, 0.96, 0.94, 0.94, 0.94, 0.92, 0.92, 0.92, 0.92, 0.92, 0.90 ][ idx ];
+	}
+
+	return materials.map(function( value ) {
+		return ( value * modRate ).toRound( 0 ) * number;
+	});
 },
 
 //. searchTradeCardNo
@@ -1753,27 +1769,27 @@ var Soldier = (function() {
 
 var data = {
 	//槍
-	'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', materials: [ 9, 14,   5,  5], training: 150, dou:   0, require: ['槍', '槍']},
-	'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', materials: [14, 20,   7,  8], training: 165, dou:  10, require: ['槍', '槍']},
-	'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', materials: [18, 27,   9, 11], training: 180, dou: 200, require: ['槍', '弓']},
-	'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', materials: [ 0,  0,   0,  0], training:   0, dou:   0, require: ['槍', '槍']},
+	'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
+	'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
+	'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
+	'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
 	//弓
-	'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', materials: [14,  9,   5,  5], training: 155, dou:   0, require: ['弓', '弓']},
-	'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', materials: [20, 14,   8,  7], training: 170, dou:  10, require: ['弓', '弓']},
-	'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', materials: [27, 18,  11,  9], training: 185, dou: 200, require: ['弓', '馬']},
-	'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', materials: [ 0,  0,   0,  0], training:   0, dou:   0, require: ['弓', '弓']},
+	'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
+	'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
+	'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
+	'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
 	//馬
-	'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', materials: [ 5,  5,   9, 14], training: 160, dou:   0, require: ['馬', '馬']},
-	'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', materials: [ 7,  8,  14, 20], training: 175, dou:  10, require: ['馬', '馬']},
-	'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', materials: [ 9, 11,  18, 27], training: 190, dou: 200, require: ['馬', '槍']},
-	'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', materials: [ 0,  0,   0,  0], training:   0, dou:   0, require: ['馬', '馬']},
+	'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
+	'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
+	'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
+	'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
 	//器
-	'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', materials: [14,  7,  11,  9], training: 255, dou:  10, require: ['器', '器']},
-	'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', materials: [22, 16,  11, 14], training: 255, dou:  10, require: ['器', '器']},
-	'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', materials: [68, 81, 108, 45], training: 330, dou: 300, require: ['弓', '器']},
-	'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', materials: [72, 67,  90, 75], training: 240, dou:  10, require: ['槍', '器']},
-	'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', materials: [67, 90,  72, 75], training: 310, dou: 300, require: ['馬', '器']},
-	'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', materials: [ 0,  0,   0,  0], training:   0, dou:   0, require: ['槍', '器']}
+	'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+	'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+	'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
+	'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
+	'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
+	'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']}
 };
 
 var rankRate = {
@@ -5754,10 +5770,20 @@ training: function( name ) {
 			$close.addClass('is_open');
 		}
 
-		//各拠点の施設表示
-		var $table = $this.find('TABLE').eq( 1 );
-		var $tr = $table.find('TR.noborder');
+		var $table = $this.find('TABLE').eq( 1 ),
+			$tr, materials;
 
+		//必要資源取得（金山効果は込）
+		$tr = $table.find('TR').eq( 0 );
+		materials = [
+			$tr.find('.icon_wood').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_cotton').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_iron').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_food').text().match(/(\d+)/)[ 1 ].toInt()
+		];
+
+		//各拠点の施設表示
+		$tr = $table.find('TR.noborder');
 		$tr.removeClass('noborder');
 		$tr.find('TH').first().remove();
 		$tr.find('TD').first().remove();
@@ -5776,7 +5802,7 @@ training: function( name ) {
 		)
 		.append('<tbody id="imi_training_' + data.type + '"></tbody>');
 
-		self.trainingPulldown.call( self, $input, data );
+		self.trainingPulldown.call( self, $input, data, materials );
 	});
 
 	$('INPUT:submit').click(function() {
@@ -5805,21 +5831,23 @@ training: function( name ) {
 },
 
 //. trainingPulldown
-trainingPulldown: function( $input, data ) {
-	var [ mwood, mstone, miron, mrice ] = data.materials,
-		wood  = $('#wood').text().toInt(),
-		stone = $('#stone').text().toInt(),
-		iron  = $('#iron').text().toInt(),
-		rice  = $('#rice').text().toInt(),
-		unit_value = MetaStorage('SETTINGS').get('unit_value') || 100,
-		maxsol = Number.MAX_VALUE, val = 0, step = 100, options = [],
+trainingPulldown: function( $input, data, materials ) {
+	var unit_value = MetaStorage('SETTINGS').get('unit_value') || 100,
+		resource, maxsol = Number.MAX_VALUE, val = 0, step = 100, options = [],
 		$select, $span;
 
-	//資源量から最大訓練数算出、ただし陣屋は考慮されない
-	if ( ( wood / mwood  ) < maxsol ) { maxsol = Math.floor( wood / mwood ); }
-	if ( (stone / mstone ) < maxsol ) { maxsol = Math.floor(stone / mstone ); }
-	if ( ( iron / miron  ) < maxsol ) { maxsol = Math.floor( iron / miron ); }
-	if ( ( rice / mrice  ) < maxsol ) { maxsol = Math.floor( rice / mrice ); }
+	resource = [
+		$('#wood').text().toInt(),
+		$('#stone').text().toInt(),
+		$('#iron').text().toInt(),
+		$('#rice').text().toInt()
+	];
+
+	//最大訓練数を算出する、ただし陣屋は考慮されない
+	Util.getConsumption( materials, 100 ).forEach(function( value, idx ) {
+		var sol = Math.floor( resource[ idx ] / ( value  / 100 ) );
+		if ( sol < maxsol ) { maxsol = sol; }
+	});
 
 	if ( maxsol < 100 ) {
 		//最適資源値で訓練できない場合、初期最大値の値を使用
@@ -5844,14 +5872,14 @@ trainingPulldown: function( $input, data ) {
 	$input.parent().next().remove();
 	$input.replaceWith( $select );
 
-	$select.data({ type: data.type, training: data.training })
+	$select.data({ type: data.type, training: data.training, materials: materials })
 	.change( this.trainingDivide ).trigger('change');
 },
 
 //. trainingDivide
 trainingDivide: function( e, list ) {
 	var $this = $(this),
-		{ type, training } = $this.data(),
+		{ type, training, materials } = $this.data(),
 		unit_value = $this.val(),
 		facility = [], rate = [],
 		total1 = 0, total2 = 0, total3 = 0,
@@ -5902,9 +5930,17 @@ trainingDivide: function( e, list ) {
 	}
 
 	//表示
-	var html = '';
+	var html = '',
+		total_wood = total_stone = total_iron = total_rice = 0;
+
 	$.each( facility, function() {
-		var time;
+		var [ wood, stone, iron, rice ] = Util.getConsumption( materials, this.unit_value ),
+			time;
+
+		total_wood  += wood;
+		total_stone += stone;
+		total_iron  += iron;
+		total_rice  += rice;
 
 		time = this.unit_value * training;
 		time = Math.ceil( time * Math.pow( 0.8, this.lv - 1 ) );
@@ -5916,7 +5952,15 @@ trainingDivide: function( e, list ) {
 		html += '<td>' + time.toFormatTime(); + '</td>';
 		html += '</tr>';
 	});
-	$('#imi_training_' + type).html( html );
+
+	//消費資源表示
+	var $tr = $this.closest('TBODY').find('TR').eq( 0 ).clone();
+	$tr.find('.icon_wood').text( '木 ' + total_wood.toFormatNumber() );
+	$tr.find('.icon_cotton').text( '綿 ' + total_stone.toFormatNumber() );
+	$tr.find('.icon_iron').text( '鉄 ' + total_iron.toFormatNumber() );
+	$tr.find('.icon_food').text( '糧 ' + total_rice.toFormatNumber() );
+
+	$('#imi_training_' + type).html( html ).append( $tr );
 
 	$this.data( 'facility', facility );
 },
