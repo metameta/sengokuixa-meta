@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.0
+// @version        1.0.3.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -161,7 +161,7 @@ var Env = (function() {
 	var storage = MetaStorage('ENVIRONMENT'),
 		$server = $('#server_time'),
 		$war = $('.situationWorldTable'),
-		world = ( location.hostname.match(/(w\d{3})/) || [] )[1],
+		world = ( location.hostname.match(/(.\d{3})/) || [] )[1],
 		start = ( document.cookie.match( new RegExp( world + '_st=(\\d+)' ) ) || [] )[1],
 		season, newseason, chapter, war, server_time, local_time, timeDiff, endtime;
 
@@ -5077,9 +5077,9 @@ main: function() {
 
 serverSelected: function() {
 	var $this = $(this),
-		world = ( $this.attr('href').match(/wd=(w\d{3})/) || [,''] )[1],
-		season = ( $this.find('IMG:last').attr('src').match(/flag_.(\w{2})/) || [,''] )[1],
-		chapter = ( $this.children('DIV').attr('class').match(/(?:main|sub)server_.(\w)/) || [,''] )[1],
+		world = ( $this.attr('href').match(/wd=(.\d{3})/) || [,''] )[1],
+		season = ( $this.find('IMG:last').attr('src').match(/flag_.(\d{2})/) || [,''] )[1],
+		chapter = ( $this.children('DIV').attr('class').match(/(?:main|sub)server_.(\d)/) || [,''] )[1],
 		time = Util.getLocalTime();
 
 	if ( world ) {
