@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.1
+// @version        1.0.3.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -624,7 +624,7 @@ getDistance: function( point1, point2 ) {
 },
 
 //. getSpeed
-getSpeed: function( cards ) {
+getSpeed: function( cards, unitskill ) {
 	var speed_list = {}, speed_mod = {}, min_speed = Number.MAX_VALUE;
 
 	for ( var i = 0, len = cards.length; i < len; i++ ) {
@@ -657,6 +657,10 @@ getSpeed: function( cards ) {
 
 	if ( min_speed === Number.MAX_VALUE ) {
 		min_speed = 0;
+	}
+
+	if ( unitskill ) {
+		min_speed = min_speed * ( 100 + unitskill ) / 100;
 	}
 
 	return min_speed;
@@ -6220,8 +6224,12 @@ style: '' + <><![CDATA[
 TH.imc_speed { font-size: 12px; }
 .imc_move_type { padding-top: 10px; padding-bototm: 10px; text-align: center }
 .imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }
+.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }
 
-.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer;
+#imi_speed { margin: 0px; }
+.imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }
+#imi_unit_skill { width: 40px; text-align: right; ime-mode: disabled; }
+.imc_unit_skill BUTTON { margin-left: 5px; }
 ]]></>,
 
 //. main
@@ -6235,6 +6243,7 @@ main: function() {
 			break;
 		case '出陣確認':
 			this.layouter2();
+			this.unitSpeed();
 			this.confluence();
 			break;
 	}
@@ -6268,7 +6277,7 @@ layouter2: function() {
 	//スキル表示変更
 	$('#btn_gofight_skill_navi').remove();
 	$('#data_gofight_skill_deck').removeAttr('id')
-	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">部隊スキル</th></tr>');
+	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header" style="color: #cff;">部隊スキル</th></tr>');
 	$('#data_gofight_skill_unit').removeAttr('id').css({ marginTop: '10px' })
 	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">武将スキル</th></tr>');
 },
@@ -6285,7 +6294,7 @@ showSpeed: function() {
 		var $this = $(this),
 			cards = [], speed, time, html;
 
-		$this.find('A.thickbox').each(function( idx ) {
+		$this.find('A.thickbox').each(function() {
 			var href = $(this).attr('href') || '',
 				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
 				$card = $( '#' + id );
@@ -6374,6 +6383,69 @@ confluence: function() {
 			x: '',
 			y: ''
 		});
+	});
+},
+
+//. unitSpeed
+unitSpeed: function() {
+	var name = $('.basename .on SPAN').text(),
+		village = Util.getVillageByName( name ),
+		x = $('INPUT[name="village_x_value"]').val(),
+		y = $('INPUT[name="village_y_value"]').val(),
+		cards = [], dist, html;
+
+	//距離取得
+	dist = Util.getDistance( village, { x: x, y: y } );
+
+	//カード情報取得
+	$('.ig_gofightconfirm_data').find('A.thickbox').each(function() {
+		var href = $(this).attr('href') || '',
+			id = ( href.match(/cardWindow_\d+/) )[ 0 ],
+			$card = $( '#' + id );
+
+		cards.push( new LargeCard( $card ) );
+	});
+
+	$('#ig_gofightconfirmboxtitle TR:last TD:first SPAN').attr('id', 'imi_arrival');
+	$('.gofight_detail > DIV:last SPAN:last').contents().filter(function() { return this.nodeType == 3 && this.nodeValue.trim() != ''; }).wrap('<span id="imi_speed"/>');
+
+	html = '' +
+	'<p class="imc_unit_skill">' +
+		'部隊スキル（速度）　+ <input id="imi_unit_skill" value="0" /> %　' +
+		'<button id="imi_unitskill_calc">再計算</button>' +
+		'<button id="imi_unitskill_clear">クリア</button>' +
+	'</p>';
+	$('.gofight_detail').append( html );
+
+	$('#imi_unitskill_calc').click(function() {
+		var text = $('#imi_unit_skill').val() || '0',
+			match = text.match(/^\d{0,2}\.?\d{0,2}$/),
+			modify, speed, time;
+
+		if ( match ) {
+			modify = match[ 0 ].toFloat();
+		}
+		else {
+			$('#imi_unit_skill').val('0');
+			modify = 0;
+		}
+
+		speed = Util.getSpeed( cards, modify );
+		time = Math.floor( 3600 * dist / speed );
+
+		$('#imi_speed').text( speed.toRound( 1 ) + '　(+' + modify + '%)' );
+		$('#imi_arrival').text( '到着まで　' + time.toFormatTime() );
+
+		unsafeWindow.time_incr[ 0 ] = time;
+
+		return false;
+	});
+
+	$('#imi_unitskill_clear').click(function() {
+		$('#imi_unit_skill').val('0');
+		$('#imi_unitskill_calc').click();
+
+		return false;
 	});
 }
 
