@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.2
+// @version        1.0.3.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8497,7 +8497,7 @@ layouterUnitStatus: function() {
 			if ( data.mode == '待機' || data.mode == '加待' ) {
 				//待機中、カウントダウンしない
 			}
-			else if ( data.arrival < date ) {
+			else if ( data.arrival <= date ) {
 				//着弾時間が過去の場合、「--:--:--」の表示、10秒後に再取得
 				$tr.addClass('imc_countdown');
 				$tr.data({ endtime: date + 10, finishevent: 'actionrefresh' });
@@ -8506,7 +8506,7 @@ layouterUnitStatus: function() {
 			else {
 				//行動中
 				$tr.addClass('imc_countdown');
-				$tr.data({ endtime: data.arrival, alert: 60, finishevent: 'actionfinish', message: '・[' + data.name + ']部隊' });
+				$tr.data({ endtime: data.arrival + 1, alert: 60, finishevent: 'actionfinish', message: '・[' + data.name + ']部隊' });
 
 				//ミニマップに移動線を表示するデータ
 				if ( movecolors[ data.mode ] ) {
