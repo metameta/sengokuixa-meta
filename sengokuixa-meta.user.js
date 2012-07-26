@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.3
+// @version        1.0.3.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1267,10 +1267,11 @@ style: '' + <><![CDATA[
 SPAN.imc_coord:hover { background-color: #f9dea1 !important; }
 
 /* ステータスバー用 */
-#status { padding-bottom: 5px; }
-#status_left { width: 900px; }
+#status { padding: 6px 5px 5px 5px; }
+#status_left { width: 930px; }
 #status_left .money_b,
 #status_left .money_c { display: inline; margin-left: 2px; background-position: 0px 3px; }
+#status_left > IMG { padding-left: 5px; }
 .imc_outer_bar { background: -moz-linear-gradient(left, #000, #444); border: solid 1px #666; width: auto; display: inline-block; border-radius: 2px; }
 .imc_outer_bar.imc_alert { background: none; background-color: #c99; border: solid 1px #c99; }
 .imc_outer_bar.imc_overflow { background: none; background-color: #f99; border: solid 1px #f99; color: #f99; }
@@ -4726,7 +4727,6 @@ changeTitle: function() {
 changeStatusBar: function() {
 	//テキストノードを置き換えて、selecterで引っかかるようにする
 	$('#status_left').contents().filter(function() { return this.nodeType == 3 && this.nodeValue.trim() != ''; }).wrap('<span/>');
-	$('#status_left').find('.sep').text('|');
 
 	//蔵容量のバー表示
 	'wood stone iron rice'.split(' ').forEach(function( value ) {
@@ -4753,20 +4753,27 @@ changeStatusBar: function() {
 		.wrapAll( html_outer ).wrapAll( html_inner ).wrapAll('<span class="imc_bar_contents" />');
 	});
 
+	//幅確保の為、セパレータをいくつか削除
+	$('#status_left').find('.sep').text('|').slice( 0, 4 ).remove();
+
 	var $clone, html;
 
 	//銅と金を資源数のクローン作製
 	$clone = $('#sideboxTop > DIV.sideBox:eq(0)').find('.substatus SPAN').clone();
 
-	html = '<span class="sep">&nbsp;|&nbsp;</span>' +
+	html = '<span class="sep">|&nbsp;</span>' +
 	'<span class="normal"><a href="/facility/unit_status.php?dmo=all">全部隊</a></span>' +
-	'<span class="sep">&nbsp;|&nbsp;</span>' +
+	'<span class="sep">&nbsp;</span>' +
 	'<span class="normal"><a href="/facility/set_unit_list.php?show_num=100">全編成</a></span>' +
 	'<span class="sep">&nbsp;|&nbsp;</span>';
 
 	//メニュー追加
 	$('#status_left').append( $clone ).append( html )
 	$('#status').prependTo('#header');
+
+	//IXA占い
+	var $img = $('#status > P').remove().find('IMG').filter(':odd');
+	$img.appendTo('#status_left').wrapAll('<a href="/user/uranai/uranai.php"/>');
 },
 
 //.. changeSideBar
@@ -4799,8 +4806,10 @@ changeSideBar: function() {
 	$card_div.find('A[href="/card/card_album.php"]').attr('href', '/card/card_album.php?rarity_type=3');
 
 	//合戦ボタン削除
-	$('TABLE.situationWorldTable').has('A[href="/war/war_situation.php"]').remove();
-	$('TABLE.situationWorldTable').has('A[href="/country/all.php"]').remove();
+	$('.situationWorldTable').has('A[href="/war/war_situation.php"]').remove();
+	$('.situationWorldTable').has('A[href="/country/all.php"]').remove();
+	//占いボタン削除
+	$('.situationBtnTable').has('A[href="/user/uranai/uranai.php"]').remove();
 },
 
 //.. changeChatLink
