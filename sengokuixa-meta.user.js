@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.5
+// @version        1.0.3.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6650,7 +6650,7 @@ Page.registerAction( 'facility', 'set_unit_list', {
 
 //. style
 style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
+TD INPUT { ime-mode: disabled; }
 
 .imc_rarity { float: left; margin-right: 5px; }
 #imi_bottom_container .ig_solder_commentarea { position: relative; float: left; height: 34px; padding: 2px; margin: 7px 15px; }
@@ -6690,6 +6690,20 @@ TABLE.common_table1 TR.imc_selected TD { padding: 3px 8px 4px 8px; background-co
 TABLE.common_table1 TR.imc_selected TD.left { padding: 3px 8px 4px 7px; }
 TABLE.common_table1 TR.imc_selected.imc_added TD { background-color: rgba( 0, 153, 204, 0.6 ); }
 TABLE.common_table1 TR.imc_selected + TR TD { padding: 3px 8px 4px 8px; }
+
+/* ソート条件選択用 */
+.ig_decksection_innermid > DIV:first-child { width: 705px; padding: 3px 0px; border: solid 1px #cc9; border-radius: 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); }
+.ig_decksection_innermid > DIV:first-child SELECT { margin-right: 10px; }
+#imi_order_open { margin-left: 50px; padding: 3px 2px 2px 3px; color: #000; border: solid 1px #666; border-radius: 3px; cursor: pointer; }
+#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }
+#imi_order_open.imc_is_open:after { content: '▲' }
+#imi_order_open.imc_is_close:after { content: '▼' }
+#imi_cardorder_list { position: absolute; clear: both; padding: 10px; margin-left: -1px; width: 685px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }
+#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; text-align: left; }
+#imi_cardorder_list INPUT { width: 400px; }
+#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 520px; cursor: default; white-space: nowrap; overflow: hidden; }
+#imi_cardorder_list .imc_command SPAN { padding: 2px 4px; border-radius: 5px; cursor: pointer; }
+#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }
 ]]></>,
 
 //. main
@@ -6717,6 +6731,7 @@ main: function() {
 	.pipe(function() {
 		self.layouter();
 		self.analyze();
+		self.cardOrderSelecter();
 	});
 },
 
@@ -6906,6 +6921,180 @@ layouter: function() {
 
 			submenu.hide();
 		});
+	}
+},
+
+//. cardOrderSelecter
+cardOrderSelecter: function() {
+	var $span = $('<span id="imi_order_open" class="imc_is_close" />'),
+		$div = $('<div id="imi_cardorder_list" />').hide();
+
+	$('#selectarea, #deck_file').append( $span );
+	$('#ig_deck_cardlistmenu, .ig_decksection_innermid > DIV:first-child').append( $div );
+
+	$span.toggle(
+		function() {
+			$('#imi_cardorder_list').trigger('update').show();
+			$(this).removeClass('imc_is_close').addClass('imc_is_open');
+		},
+		function() {
+			$('#imi_cardorder_list').hide();
+			$(this).removeClass('imc_is_open').addClass('imc_is_close');
+		}
+	);
+
+	$('#selectarea, #deck_file').on('change', 'SELECT', function() {
+		//ソート項目が重複したとき、後ろの項目を「未設定」にする
+		var keylist = {};
+		$('#selectarea .sortGenre').each(function() {
+			var $this = $(this),
+				key = $this.val();
+
+			if ( key == '0' ) { return; }
+
+			if ( keylist[ key ] ) {
+				$this.val('0');
+				Display.alert('ソート項目が重複しています。');
+			}
+			keylist[ key ] = true;
+		});
+
+		$('#imi_cardorder_list').trigger('update');
+	});
+
+	$div
+	.on('mouseenter', 'LI', Util.enter)
+	.on('mouseleave', 'LI', Util.leave)
+	.on('keypress', 'INPUT', function( e ) { return !( e.keyCode == 13 ); })
+	.on('update', function() {
+		var orderlist = MetaStorage('SETTINGS').get('cardsort') || {},
+			$div = $(this),
+			$ul = $('<ul/>'),
+			$li, order, title, html;
+
+		$div.empty();
+
+		$.each( orderlist, function( order ) {
+			var title, html, $li;
+
+			title = this.title || generateTitle( order );
+
+			html = '<li>' +
+				'<span class="imc_order_title">' + title + '</span>' +
+				'<span class="imc_command">' +
+					'<span class="imc_delete">×</span>' +
+					'｜<span class="imc_name_change">名称変更</span>' +
+					'｜<span class="imc_order_select">決定</span>' +
+				'</span>' +
+			'</li>';
+
+			$li = $( html ).data('order', order);
+			$ul.append( $li );
+		});
+
+		order = [
+			$('#sort_order_0').val(),
+			$('#sort_order_type_0').val(),
+			$('#sort_order_1').val(),
+			$('#sort_order_type_1').val(),
+			$('#sort_order_2').val(),
+			$('#sort_order_type_2').val(),
+		].join('/');
+
+		if ( !orderlist[ order ] ) {
+			//登録されていないソート順の場合、新規登録できるようにする
+			title = generateTitle( order );
+
+			html = '<li>' +
+				'<span class="imc_order_title">' + title + '</span>' +
+				'<span class="imc_command">' +
+					'<span class="imc_register">新規登録</span>' +
+				'</span>' +
+			'</li>';
+
+			$li = $( html ).data('order', order);
+			$ul.append( $li );
+		}
+
+		$div.append( $ul );
+	})
+	.on('click', '.imc_register', function() {
+		var order = $(this).closest('LI').data('order'),
+			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
+
+		orderlist[ order ] = {};
+		MetaStorage('SETTINGS').set('cardsort', orderlist);
+
+		$('#imi_cardorder_list').trigger('update');
+	})
+	.on('click', '.imc_delete', function() {
+		var order = $(this).closest('LI').data('order'),
+			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
+
+		delete orderlist[ order ];
+		MetaStorage('SETTINGS').set('cardsort', orderlist);
+
+		$('#imi_cardorder_list').trigger('update');
+	})
+	.on('click', '.imc_order_select', function() {
+		var order = $(this).closest('LI').data('order'),
+			array = order.split('/');
+
+		$('#sort_order_0').val( array[ 0 ] );
+		$('#sort_order_type_0').val( array[ 1 ] );
+		$('#sort_order_1').val( array[ 2 ] );
+		$('#sort_order_type_1').val( array[ 3 ] );
+		$('#sort_order_2').val( array[ 4 ] );
+		$('#sort_order_type_2').val( array[ 5 ] );
+
+		$('.sortSubmit').click();
+	})
+	.on('click', '.imc_name_change', function() {
+		var $li = $(this).closest('LI'),
+			$title = $li.find('.imc_order_title'),
+			$command = $li.find('.imc_command'),
+			title = $title.text();
+
+		$title.empty().append('<input type="text" value="' + title + '" />');
+		$command.empty().append('<span class="imc_name_change_ok">決定</span>｜<span class="imc_name_change_cancel">キャンセル</span>');
+	})
+	.on('click', '.imc_name_change_ok', function() {
+		var $li = $(this).closest('LI'),
+			order = $li.data('order'),
+			title = $li.find('INPUT').val(),
+			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
+
+		if ( orderlist[ order ] ) {
+			if ( title == '' ) {
+				delete orderlist[ order ].title;
+			}
+			else {
+				orderlist[ order ].title = title;
+			}
+			MetaStorage('SETTINGS').set('cardsort', orderlist);
+		}
+
+		$('#imi_cardorder_list').trigger('update');
+	})
+	.on('click', '.imc_name_change_cancel', function() {
+		$('#imi_cardorder_list').trigger('update');
+	});
+
+	function generateTitle( order ) {
+		var array = order.split('/'),
+			title = '';
+
+		for ( var i = 0, len = array.length; i < len; i += 2 ) {
+			let idx = Math.floor( i / 2 );
+
+			title += ( title == '' ) ? '' : ' ／ ';
+			title += $( '#sort_order_' + idx ).find('OPTION[value=' + array[ i ] + ']').text();
+			title += ' 【';
+			title += $( '#sort_order_type_' + idx ).find('OPTION[value=' + array[ i + 1 ] + ']').text();
+			title += '】';
+		}
+
+		return title;
 	}
 },
 
@@ -7552,178 +7741,7 @@ villageSelecter: function() {
 },
 
 //. cardOrderSelecter
-cardOrderSelecter: function() {
-	var $span = $('<span id="imi_order_open" class="imc_is_close" />'),
-		$div = $('<div id="imi_cardorder_list" />').hide();
-
-	$('#selectarea').append( $span );
-	$('#ig_deck_cardlistmenu').append( $div );
-
-	$span.toggle(
-		function() {
-			$('#imi_cardorder_list').trigger('update').show();
-			$(this).removeClass('imc_is_close').addClass('imc_is_open');
-		},
-		function() {
-			$('#imi_cardorder_list').hide();
-			$(this).removeClass('imc_is_open').addClass('imc_is_close');
-		}
-	);
-
-	$('#selectarea').on('change', 'SELECT', function() {
-		//ソート項目が重複したとき、後ろの項目を「未設定」にする
-		var keylist = {};
-		$('#selectarea .sortGenre').each(function() {
-			var $this = $(this),
-				key = $this.val();
-
-			if ( key == '0' ) { return; }
-
-			if ( keylist[ key ] ) {
-				$this.val('0');
-				Display.alert('ソート項目が重複しています。');
-			}
-			keylist[ key ] = true;
-		});
-
-		$('#imi_cardorder_list').trigger('update');
-	});
-
-	$div
-	.on('mouseenter', 'LI', Util.enter)
-	.on('mouseleave', 'LI', Util.leave)
-	.on('keypress', 'INPUT', function( e ) { return !( e.keyCode == 13 ); })
-	.on('update', function() {
-		var orderlist = MetaStorage('SETTINGS').get('cardsort') || {},
-			$div = $(this),
-			$ul = $('<ul/>'),
-			$li, order, title, html;
-
-		$div.empty();
-
-		$.each( orderlist, function( order ) {
-			var title, html, $li;
-
-			title = this.title || generateTitle( order );
-
-			html = '<li>' +
-				'<span class="imc_order_title">' + title + '</span>' +
-				'<span class="imc_command">' +
-					'<span class="imc_delete">×</span>' +
-					'｜<span class="imc_name_change">名称変更</span>' +
-					'｜<span class="imc_order_select">決定</span>' +
-				'</span>' +
-			'</li>';
-
-			$li = $( html ).data('order', order);
-			$ul.append( $li );
-		});
-
-		order = [
-			$('#sort_order_0').val(),
-			$('#sort_order_type_0').val(),
-			$('#sort_order_1').val(),
-			$('#sort_order_type_1').val(),
-			$('#sort_order_2').val(),
-			$('#sort_order_type_2').val(),
-		].join('/');
-
-		if ( !orderlist[ order ] ) {
-			//登録されていないソート順の場合、新規登録できるようにする
-			title = generateTitle( order );
-
-			html = '<li>' +
-				'<span class="imc_order_title">' + title + '</span>' +
-				'<span class="imc_command">' +
-					'<span class="imc_register">新規登録</span>' +
-				'</span>' +
-			'</li>';
-
-			$li = $( html ).data('order', order);
-			$ul.append( $li );
-		}
-
-		$div.append( $ul );
-	})
-	.on('click', '.imc_register', function() {
-		var order = $(this).closest('LI').data('order'),
-			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
-
-		orderlist[ order ] = {};
-		MetaStorage('SETTINGS').set('cardsort', orderlist);
-
-		$('#imi_cardorder_list').trigger('update');
-	})
-	.on('click', '.imc_delete', function() {
-		var order = $(this).closest('LI').data('order'),
-			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
-
-		delete orderlist[ order ];
-		MetaStorage('SETTINGS').set('cardsort', orderlist);
-
-		$('#imi_cardorder_list').trigger('update');
-	})
-	.on('click', '.imc_order_select', function() {
-		var order = $(this).closest('LI').data('order'),
-			array = order.split('/');
-
-		$('#sort_order_0').val( array[ 0 ] );
-		$('#sort_order_type_0').val( array[ 1 ] );
-		$('#sort_order_1').val( array[ 2 ] );
-		$('#sort_order_type_1').val( array[ 3 ] );
-		$('#sort_order_2').val( array[ 4 ] );
-		$('#sort_order_type_2').val( array[ 5 ] );
-
-		$('.sortSubmit').click();
-	})
-	.on('click', '.imc_name_change', function() {
-		var $li = $(this).closest('LI'),
-			$title = $li.find('.imc_order_title'),
-			$command = $li.find('.imc_command'),
-			title = $title.text();
-
-		$title.empty().append('<input type="text" value="' + title + '" />');
-		$command.empty().append('<span class="imc_name_change_ok">決定</span>｜<span class="imc_name_change_cancel">キャンセル</span>');
-	})
-	.on('click', '.imc_name_change_ok', function() {
-		var $li = $(this).closest('LI'),
-			order = $li.data('order'),
-			title = $li.find('INPUT').val(),
-			orderlist = MetaStorage('SETTINGS').get('cardsort') || {};
-
-		if ( orderlist[ order ] ) {
-			if ( title == '' ) {
-				delete orderlist[ order ].title;
-			}
-			else {
-				orderlist[ order ].title = title;
-			}
-			MetaStorage('SETTINGS').set('cardsort', orderlist);
-		}
-
-		$('#imi_cardorder_list').trigger('update');
-	})
-	.on('click', '.imc_name_change_cancel', function() {
-		$('#imi_cardorder_list').trigger('update');
-	});
-
-	function generateTitle( order ) {
-		var array = order.split('/'),
-			title = '';
-
-		for ( var i = 0, len = array.length; i < len; i += 2 ) {
-			let idx = Math.floor( i / 2 );
-
-			title += ( title == '' ) ? '' : ' ／ ';
-			title += $( '#sort_order_' + idx ).find('OPTION[value=' + array[ i ] + ']').text();
-			title += ' 【';
-			title += $( '#sort_order_type_' + idx ).find('OPTION[value=' + array[ i + 1 ] + ']').text();
-			title += '】';
-		}
-
-		return title;
-	}
-},
+cardOrderSelecter: Page.getAction( 'facility', 'set_unit_list', 'cardOrderSelecter' ),
 
 //. changeMode
 changeMode: function( release ) {
