@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.6
+// @version        1.0.3.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4758,7 +4758,7 @@ changeStatusBar: function() {
 
 	var $clone, html;
 
-	//銅と金を資源数のクローン作製
+	//銅と金のクローン作製
 	$clone = $('#sideboxTop > DIV.sideBox:eq(0)').find('.substatus SPAN').clone();
 
 	html = '<span class="sep">|&nbsp;</span>' +
@@ -4768,7 +4768,7 @@ changeStatusBar: function() {
 	'<span class="sep">&nbsp;|&nbsp;</span>';
 
 	//メニュー追加
-	$('#status_left').append( $clone ).append( html )
+	$('#status_left').append( $clone ).append( html );
 	$('#status').prependTo('#header');
 
 	//IXA占い
@@ -9132,7 +9132,7 @@ layouter: function() {
 	var $table, $menu;
 
 	//プロフィール等リンク・全件表示ボタン・未読のみ表示ボタン削除
-	$('#ig_deckmenu').find('TABLE').remove().end().find('UL > UL').unwrap();
+	$('#ig_deckmenu UL').not('.secondmenu').remove();
 	$('.common_box3bottom > P').remove();
 	$('#ig_deckmenu').removeAttr('class').prependTo('FORM');
 
