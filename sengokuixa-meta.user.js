@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.7
+// @version        1.0.3.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4981,12 +4981,6 @@ createPulldownMenu: function() {
 		{ title: 'デッキ５', action: '/card/deck.php?ano=4' }
 	]);
 
-	//秘境用メニュー
-	createMenu($('#gnavi .gnavi04'), [
-		{ title: '深淵の秘境', action: '/facility/dungeon.php' },
-		{ title: '永劫の秘境', action: '/facility/dungeon02.php' }
-	]);
-
 	//合戦用メニュー
 	createMenu($('#gnavi .gnavi05'), [
 		{ title: '全国地図', action: '/country/all.php' },
@@ -6092,11 +6086,66 @@ style: '' + <><![CDATA[
 
 //. main
 main: function() {
-	this.layouter( 'dungeon' );
+	if ( $('.dungeon_list_header').length == 1 ) {
+		this.layouter();
+		this.showSoldier();
+	}
+	else {
+		this.layouter2( 'dungeon' );
+	}
 },
 
-//. layouter
-layouter: function( key ) {
+//. layouter - 新方式
+layouter: function() {
+	var dungeon = MetaStorage('SETTINGS').get('dungeon');
+
+	$('.dungeon_list_header')
+	.click(function() {
+		var dungeon = $(this).find('INPUT:checked').val();
+		MetaStorage('SETTINGS').set( 'dungeon', dungeon );
+	})
+	.find('INPUT[value="' + dungeon + '"]').attr('checked', true);
+
+	//全部隊選択
+	$('.table_waigintunit').find('INPUT:checkbox').attr('checked', true);
+
+	//テーブルクリック
+	$('.table_waigintunit')
+	.css({ cursor: 'pointer' })
+	.hover( Util.enter, Util.leave )
+	.click(function() {
+		var $input = $(this).find('INPUT:checkbox');
+		$input.attr('checked', !$input.attr('checked'));
+	});
+},
+
+//. showSoldier
+showSoldier: function() {
+	$('.table_waigintunit').each(function() {
+		var $this = $(this),
+			$tr = $this.find('TR'),
+			$tr2 = $tr.eq( 2 ),
+			$tr3 = $tr.eq( 3 );
+
+		$tr2.find('TH').css({ fontSize: '14px' }).text('HP／討伐');
+		$tr3.find('TH').css({ fontSize: '14px' }).text('指揮兵');
+
+		$this.find('A.thickbox').each(function( idx ) {
+			var href = $(this).attr('href') || '',
+				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
+				$card = $( '#' + id ),
+				card = new LargeCard( $card ),
+				hp = $tr2.find('TD').eq( idx ).text().trim(),
+				gage = $tr3.find('TD').eq( idx ).text().trim();
+
+			$tr2.find('TD').eq( idx ).text( hp + ' / ' + gage );
+			$tr3.find('TD').eq( idx ).text( card.solName + ' (' + card.solNum + ')' );
+		});
+	});
+},
+
+//. layouter2 - 旧方式そのうち削除
+layouter2: function( key ) {
 	var dungeon = MetaStorage('SETTINGS').get( key );
 
 	$('#dungeon_list_body')
@@ -6189,35 +6238,13 @@ main: function() {
 },
 
 //. layouter
-layouter: Page.getAction( 'facility', 'dungeon', 'layouter' ),
+layouter: Page.getAction( 'facility', 'dungeon', 'layouter2' ),
 
 //. sendAll
 sendAll: Page.getAction( 'facility', 'dungeon', 'sendAll' ),
 
 //. showSoldier
-showSoldier: function() {
-	$('.table_waigintunit').each(function() {
-		var $this = $(this),
-			$tr = $this.find('TR'),
-			$tr2 = $tr.eq( 2 ),
-			$tr3 = $tr.eq( 3 );
-
-		$tr2.find('TH').css({ fontSize: '14px' }).text('HP／討伐');
-		$tr3.find('TH').css({ fontSize: '14px' }).text('指揮兵');
-
-		$this.find('A.thickbox').each(function( idx ) {
-			var href = $(this).attr('href') || '',
-				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
-				$card = $( '#' + id ),//.find('.ig_card_cardStatusFront'),
-				card = new LargeCard( $card ),
-				hp = $tr2.find('TD').eq( idx ).text().trim(),
-				gage = $tr3.find('TD').eq( idx ).text().trim();
-
-			$tr2.find('TD').eq( idx ).text( hp + ' / ' + gage );
-			$tr3.find('TD').eq( idx ).text( card.solName + ' (' + card.solNum + ')' );
-		});
-	});
-}
+showSoldier: Page.getAction( 'facility', 'dungeon', 'showSoldier' )
 
 });
 
