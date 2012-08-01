@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.8
+// @version        1.0.3.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -39,6 +39,17 @@ repeat: function( num ) {
 	var str = this, result = '';
 	for ( ; num > 0; num >>>= 1, str += str ) { if ( num & 1 ) { result += str; } }
 	return result;
+},
+
+//.. getTime - yyyy-mm-dd hh:mi:ss
+getTime: function() {
+	if ( !/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test( this ) ) {
+		throw new Error('Invalid string');
+	}
+
+	var date = this.replace(/-/g, '/');
+
+	return ~~( new Date( date ).getTime() / 1000 );
 }
 
 });
@@ -77,6 +88,13 @@ toFormatNumber: function( prefix, replaceNaN ) {
 	while ( num != ( num = num.replace(/^(-?\d+)(\d{3})/, "$1,$2") ) );
 
 	return prefix + num;
+},
+
+//.. toFormatDate - 0000/00/00 00:00:00
+toFormatDate: function() {
+	var date = new Date( this * 1000 );
+
+	return date.toFormatDate();
 },
 
 //.. toFormatTime - 00:00:00
@@ -152,6 +170,7 @@ var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener
 
 MetaStorage.change( 'UNIT_STATUS', function( event, storageEvent ) {
 	$('#imi_unitstatus').trigger('update');
+	$('#imi_raid_list').trigger('update');
 });
 
 //■■■■■■■■■■■■■■■■■■■
@@ -416,10 +435,9 @@ getTrainingStatus: function( $table ) {
 			$tr.slice( 1 ).each(function() {
 				var $this = $(this),
 					name = $this.find('IMG').attr('alt'),
-					time = $this.find('TD').last().text().split(' ')[1],
-					clock = $this.find('.count_down').text();
+					date = $this.find('TD').last().text();
 
-				list.push( [ Util.getTargetDate( time, clock ), name ] );
+				list.push( [ date.getTime(), name ] );
 			});
 
 			data[ id ] = list;
@@ -516,7 +534,7 @@ getUnitStatus: function( $table ) {
 				mode = '加待';
 			}
 
-			list.push({ name: name, mode: mode, target: target, arrival: arrival, sx: startx, sy: starty, ex: endx, ey: endy, c: country });
+			list.push({ name: name, mode: mode, target: target, arrival: arrival, sx: startx, sy: starty, ex: endx, ey: endy, ec: country });
 		});
 
 		MetaStorage('UNIT_STATUS').set('部隊', list);
@@ -1119,6 +1137,21 @@ $(EventListener)
 
 	Display.info( html );
 })
+.on('raidlistupdate', function() {
+	setTimeout( function() { $('#imi_raid_list').trigger('update'); }, 1000 );
+})
+.on('raidlistupdate2', function() {
+	setTimeout( function() {
+		$('#imi_raid_list').trigger('update');
+
+		if ( Data.sounds.enemy_raid ) {
+			//アラーム
+			var audio = new Audio( Data.sounds.enemy_raid );
+			audio.volume = 0.6;
+			audio.play();
+		}
+	}, 1000 );
+})
 .on('sessionalert', function() {
 	Display.alert('まもなくセッションタイムアウトします。');
 })
@@ -1373,7 +1406,9 @@ images: {
 	panel_icon_return: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABhElEQVRoQ%2B2YUYrDMAxEc4rd3xxgD5scMudwK1iBMI7t0AmMmikYb3Eq9DSSYu1SSlmetB4Fa8IK%2BNvTWwpL4S%2Fr4kpppbRSOvfNTDWsGlYNn9fw8v%2FZ972gltu0HZF9ECPuiDlloMdxwJbZc2g6YDSsB86hHwW8ruub9%2FNXIjSla4Wt7Ewl2%2BNy5fy89Uw8M7vUwBG0B%2Bxnvd3O0gHHJhaVi0rXWeDf0wH3QHqBSJ3SMWXr9D2r81TAs6naCkRMZYemr%2BFRE6q78%2Bj5bdu4u%2FSo%2B7aAz15VqZrWTHc%2Bewen6tLIuzS1wncND3bLorxpzY6HvQyox0qHpR0PHdodbe0t4N7ztONhHNZ7f9fAP3%2B%2Fxdbo93TT0shhP4%2FAs7D0KT2j8BXY9MBXYVMDm%2FMzNVtnCV0NIxy62wb0Xzx3O4uwL2BEFJltSGFmdRC%2BSWFEFJltSGFmdRC%2BSWFEFJltSGFmdRC%2BSWFEFJltSGFmdRC%2BSWFEFJltSGFmdRC%2BSWFEFJltvADqXTvBIRzHOwAAAABJRU5ErkJggg%3D%3D",
 	panel_icon_wait: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwAAADsABataJCQAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABkklEQVRoQ%2B1YbQ7CMAjdUXYyf3oNb%2BAN9Kq1JGIIgQUzksH2TJp9tEUe74HUZYyxXGlcCiwRC8BnlzcYBsMnq%2BKQNCQNSffuzJDDyGHkMHK4VR1o5WxGfQHgjChWtgGGK7OT4RsYzohiZRtgeA87y%2Fdze9%2BHO15zjgetk%2FfGPrZJ1z2%2B8d4UIz9j0ykC%2BhjPtEH2GHQ5wNlgOXAM%2BlKA13WdePcfXFIlrRmmtJPy1s80J9%2FRPT%2FL92S3PGALCAPScxK4Bbo8YIslzSY%2Fa4DtGZasnpphK1%2B9nPWCwjbqSno2EVykpDQtQFLSViBksWsFWDchXuX2cpn2UzfWrkpr5i0leO%2FqMizaSu8312LY%2B5mqn8PJfbRsLUtKmpr87H6a5VwWMIPePCJuHR%2FVHAGlQXbL9dJ8jKMrO5pxZbulAUvw8j7qtLU%2FundrXYpM5B8AHtB%2FWQLg6jkMSX8jEM3DFpKOgjlyXWrROhJI9LsBOBqpruvAcFfmon6D4Wikuq4Dw12Zi%2FoNhqOR6roODHdlLur3BxHsB%2B21nhAAAAAAAElFTkSuQmCC",
 	panel_icon_backup_wait: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwAAADsABataJCQAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABYUlEQVRoQ%2B2YYQrCMAyFexP3ywPofbyKR68LGAmhjkLf4LV7gzKdMeTLS7O2pdZarjQuBWvCCnj18pbCUnixLq6SVkmrpOdemWkOaw5rDmsOT9UHpgoW0V8EjMgisw8pzKwOIjYpjMgisw8pPKJO%2BV6P162ihvu0%2B0hs%2Fl%2BIk5%2BzPSgDvb8LbJg%2Fh6YDRsN64hz6UsDbtu284xsXaElHhS263tLOtvm7%2BZ0O2CDi5cmIcNnGf6MHbsFlMAP2Z0sp3IL6Bz%2Btwi31jiBbcz3a05d0L3C2W17hCJxVjgo%2FXxt3lz5qUBmyZZtt6Es6Nqr82cu29VqKz6abw72Ljh47WoVtkY9eTzss5UrrjO2hgdqg3R46tAeKuNNuD%2BNmHRFk9ke3WxLw4LGMFGY7ALhcSSOaytk%2BoEc8ZweL8C9gRBaZfUhhZnUQsUlhRBaZfUhhZnUQsUlhRBaZfUhhZnUQsX0AjRDndd8mT5YAAAAASUVORK5CYII%3D",
-	panel_icon_move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABiUlEQVRoQ%2B2Y0W3DMAxEPUXzWQ%2FQSZIB%2BpdVMrpaAiFACLIkt2fgaJ8BwQriEHy8o2RlKaUsVxqXgjVhBXx2e0thKXyyVVyWlqVl6dxvZuph9bB6eLuHl%2Fd1%2F3wW1PCYdke4DxLEE7GkDPR7ecGGxXNoOmA0rBfOoS8FvK7rL%2B%2F%2Ft0SopV1hy2x0Rdvbs%2F45zqPC9MC9PnYoL0qEjYVKB9xS2SBairbg0wFv2bRWuC5AbWtrlRSW%2FqvCta3TANcKR2Xd2j0r%2B%2FNpgEcKR9ituRXmsSax9NZKPdqGUvbw7D7cW8DSrNLId2mLRdvDRx0ebEui3JZmj4c9B9THSoelPR46tCfaureAe8%2FTHg%2FjYb03r4E%2Fvm7Fxuj3dKelUcL%2BfQSehaW39IzCe2DTA%2B%2BFTQ1syc%2F0bO0Suh5GJHR0DOhfPEcni4gvYEQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWP8AGBseBevbWf5AAAAAElFTkSuQmCC"
+	panel_icon_move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABiUlEQVRoQ%2B2Y0W3DMAxEPUXzWQ%2FQSZIB%2BpdVMrpaAiFACLIkt2fgaJ8BwQriEHy8o2RlKaUsVxqXgjVhBXx2e0thKXyyVVyWlqVl6dxvZuph9bB6eLuHl%2Fd1%2F3wW1PCYdke4DxLEE7GkDPR7ecGGxXNoOmA0rBfOoS8FvK7rL%2B%2F%2Ft0SopV1hy2x0Rdvbs%2F45zqPC9MC9PnYoL0qEjYVKB9xS2SBairbg0wFv2bRWuC5AbWtrlRSW%2FqvCta3TANcKR2Xd2j0r%2B%2FNpgEcKR9ituRXmsSax9NZKPdqGUvbw7D7cW8DSrNLId2mLRdvDRx0ebEui3JZmj4c9B9THSoelPR46tCfaureAe8%2FTHg%2FjYb03r4E%2Fvm7Fxuj3dKelUcL%2BfQSehaW39IzCe2DTA%2B%2BFTQ1syc%2F0bO0Suh5GJHR0DOhfPEcni4gvYEQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWP8AGBseBevbWf5AAAAAElFTkSuQmCC",
+	panel_icon_enemy: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABvklEQVRoQ%2B2Y623DMAyEPUX7Mx6gw7bbdYHMoZpFDz0QihWbiSXGF0BQHqLFj0fqkamUMp2pnQrWhBXwq6e3FJbCL7aKK6WV0krp3Ccz1bBqWDWsGk61DqRy9hHri4AfEcWRnxFSePp7fV0u5dkNc1kfCWjMeJncQK%2BLD89uNg%2BguwEfBYtgAnoo4PL9rza%2F9xlw7zi2M%2BB5nhfe%2FWeBUEqzwgZQa1Zy7PStcfjejx0W2Bwzp3%2FXFOoZEM7XxrGdH8cpnUJhAAJqTWXOCNgNC1xTd005r7SNTQXslQOsKQSQrTXMARhu0fIK19QFPMBrNrxQDQ3sIbD1%2BC2Ix7HynAlYBNn2c9mShlq0UIOsmgdiEL8V1fZtruuhUtqr0%2FrMweG09fv20PvwEefprilth%2FmjztNI5%2B7AgL73eriWBWvPMFBr3a%2BHuLLBoVZfA27ZMOwwwABv9R747eO9WGvZ8e%2FdbktbnMRYBt4Dm1bhvbApgSOw6YDN4a0160unWw1HJu5lG%2FqLp5fTkXkFHIleBlspnEGliI9SOBK9DLZSOINKER%2BlcCR6GWylcAaVIj5K4Uj0MthK4QwqRXw8ncI%2FGQcpBWguhl4AAAAASUVORK5CYII%3D",
+	panel_icon_sortie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAAB0ElEQVRoQ%2B2YYW6DMAyFOcX2lwPsDr0ZXI2bZRj1VU9RQhjuiF1cKSJtMfHnZ5vAkFIa7jRuBSvCBvCnp3coHAp%2FWBePlI6UjpT2vTOLGo4ajhqOGnbVB1w5%2B47%2BEsDviKLla6gUHp6feZ7TkTFNU8KQ83nessdactQEVGe8Li6OLsvy70PWAXQ34KtgEVBAmwGWV2Rwrjav%2Fb%2B9XiP7UtYI8DiOK%2B%2F5vYAqpXOFxeH58dig9%2BaA46PYsQ2uweAugTkYAMwDwFmAAMpvJoFL6pWUw3msLM4rZYlJ4M2pNTUZAt8ZoqQo6pcVzQNlSuG84ezVY64qbPPGZQ5YNg61eisB5%2BqVlEZGvG5FzyZoIqXPANdqnH%2FnIHLmyHpmbktHQKAw1zU3qrzeuSeYUDi%2FD7PDtXlxQ0Fpu7dNNdW0rtpPd01p2cxftZ%2BGut2BAd16vMP%2FrZStXUdAZXR%2FPMQjGxxqHUvALRuGNQPMD%2Bh78xz46%2Bc7yThq7xr4DKxb4LOwLoE1sO6AxeG%2F1mxe393eeGgW7mWresXTy2nNugGsiZ4H21DYg0oaH0NhTfQ82IbCHlTS%2BBgKa6LnwTYU9qCSxsdQWBM9D7ahsAeVND7eTuFffOCKYCMXyakAAAAASUVORK5CYII%3D"
 },
 
 //. sounds
@@ -2031,12 +2066,12 @@ function analyzeArea( $area_list, img_list ) {
 function analyzeReport() {
 	var $tbody  = $('#imi_base_list'),
 		$table  = $('#imi_base_conditions'),
-		discriminant = $table.find('INPUT[name="ixa_meta_discriminant"]:checked').val(),
-		alliance = $table.find('INPUT[name="ixa_meta_alliance"]').val(),
-		rank = $table.find('SELECT[name="ixa_meta_rank"]').val().toInt(),
+		discriminant = $table.find('INPUT[name="imn_discriminant"]:checked').val(),
+		alliance = $table.find('INPUT[name="imn_alliance"]').val(),
+		rank = $table.find('SELECT[name="imn_rank"]').val().toInt(),
 		type = '';
 
-	$table.find('input[name="ixa_meta_type"]').filter(':checked').each(function() { type += $(this).val(); });
+	$table.find('input[name="imn_type"]').filter(':checked').each(function() { type += $(this).val(); });
 
 	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance, rank: rank });
 
@@ -2190,10 +2225,9 @@ fightHistory: function() {
 		var $html = $(html);
 
 		$html
-		.find('TABLE.ig_battle_table')
-		.addClass('imc_table')
-		.appendTo( $('#imi_situation').empty() )
-		.find('TR').slice( 1 ).each(function() {
+		.find('.ig_battle_table').find('TR').slice( 1 )
+		.appendTo( $('#imi_situation_list').empty() )
+		.each(function() {
 			var $this = $(this),
 				text  = $this.find('A:eq(2)').text(),
 				point = text.match(/\((-?\d+),(-?\d+)\)/),
@@ -2282,9 +2316,8 @@ warList: function( user, x, y ) {
 		var $html = $(html);
 
 		$html
-		.find('TABLE.ig_battle_table')
-		.addClass('imc_table')
-		.appendTo( $('#imi_warlist').empty() )
+		.find('.ig_battle_table TR').slice( 1 )
+		.appendTo( $('#imi_warreport_list').empty() )
 		.find('A').each(function() {
 			var $this = $(this),
 				newhref = $this.attr('href').replace(/detail\.php/, '/war/detail.php');
@@ -2534,57 +2567,6 @@ function showCountryMap( country ) {
 
 	//登録座標表示
 	showCoord( country );
-
-	//旗があるか判断
-	var enemyFlag = $('#sideboxMain TABLE.stateTable TD:eq(2) A').length;
-
-	if ( enemyFlag > 0 ) {
-		Page.get( '/facility/unit_status.php?dmo=enemy' )
-		.pipe( move_analyze );
-	}
-
-	function move_analyze( html ) {
-		var $html = $(html),
-			movelist = [];
-
-		$html.find('TABLE.table_fightlist').each(function() {
-			var $this = $(this),
-				startpoint = $this.find('TR:eq(2) TD:eq(0) SPAN').text().match(/\((-?\d+),(-?\d+)\)/),
-				targetpoint = $this.find('TR:eq(2) TD:eq(1) SPAN').text().match(/\((-?\d+),(-?\d+)\)/),
-				startx, starty, endx, endy, type;
-
-			if ( startpoint != null && targetpoint != null ) {
-				startx = parseInt( startpoint[1], 10 );
-				starty = parseInt( startpoint[2], 10 );
-				endx = parseInt( targetpoint[1], 10 );
-				endy = parseInt( targetpoint[2], 10 );
-				type = $this.find('TR:eq(1) TD IMG').attr('src');
-
-				if ( type.indexOf('mode_attack.png') != -1 ) {
-					//攻撃
-					movelist.push({ startx: startx, starty: starty, endx: endx, endy: endy, color: '#39f' });
-				}
-				else if ( type.indexOf('mode_develop.png') != -1 ) {
-					//開拓
-					movelist.push({ startx: startx, starty: starty, endx: endx, endy: endy, color: '#063' });
-				}
-				else if ( type.indexOf('mode_meeting.png') != -1 ) {
-					//合流
-					movelist.push({ startx: startx, starty: starty, endx: endx, endy: endy, color: '#0ff' });
-				}
-				else if ( type.indexOf('mode_return.png') != -1 ) {
-					//帰還
-					movelist.push({ startx: endx, starty: endy, endx: startx, endy: starty, color: '#3f9' });
-				}
-				else if ( type.indexOf('mode_enemy.png') != -1 ) {
-					//敵襲
-					movelist.push({ startx: endx, starty: endy, endx: startx, endy: starty, color: '#f66' });
-				}
-			}
-		});
-
-		CounteryMap.showRoute( 'enemy', movelist );
-	}
 }
 
 //. showCoord
@@ -2604,17 +2586,48 @@ function showCoord( country ) {
 //. showMark
 function showMark() {
 	var list = MetaStorage('UNIT_STATUS').get('部隊') || [],
-		$map = $('#ig_mapsAll');
+		enemy = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+		$map = $('#ig_mapsAll'),
+		movecolors = {
+			'攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f',
+			'帰還': '#3f9', '開拓': '#063', '敵襲': '#f66'
+		},
+		movelist = [];
 
 	$map.find('.imc_mark').remove();
 
 	for ( var i = 0, len = list.length; i < len; i++ ) {
-		var { ex: x, ey: y, mode: mode, c: c } = list[ i ],
-			id = 'imi_area_' + x + '_' + y,
+		var { sx, sy, ex, ey, ec, mode } = list[ i ];
+
+		if ( ec != Map.info.country ) { continue; }
+
+		mark( ex, ey, mode );
+
+		//ミニマップに移動線を表示するデータ
+		if ( movecolors[ mode ] ) {
+			movelist.push({ sx: sx, sy: sy, ex: ex, ey: ey, color: movecolors[ mode ] });
+		}
+	}
+
+	for ( var i = 0, len = enemy.length; i < len; i++ ) {
+		var { sx, sy, ex, ey, ec } = enemy[ i ];
+
+		if ( ec != Map.info.country ) { return; }
+
+		mark( sx, sy, '敵襲' );
+		mark( ex, ey, '出撃' );
+
+		//ミニマップに移動線を表示するデータ
+		movelist.push({ sx: sx, sy: sy, ex: ex, ey: ey, color: movecolors[ '敵襲' ] });
+	};
+
+	CounteryMap.showRoute( movelist );
+
+	function mark( x, y, mode ) {
+		var id = 'imi_area_' + x + '_' + y,
 			$area = $('#' + id);
 
-		if ( c != Map.info.country ) { continue; }
-		if ( $area.length == 0 ) { continue; }
+		if ( $area.length == 0 ) { return; }
 
 		var idx = $area.attr('idx'),
 			data = analyzedData[ idx ];
@@ -2648,6 +2661,12 @@ function showMark() {
 		else if ( mode == '国移' ) {
 			$img.attr('src', Data.images.panel_icon_move);
 		}
+		else if ( mode == '出撃' ) {
+			$img.attr('src', Data.images.panel_icon_enemy);
+		}
+		else if ( mode == '敵襲' ) {
+			$img.attr('src', Data.images.panel_icon_sortie);
+		}
 
 		$map.append( $img );
 	}
@@ -2655,24 +2674,29 @@ function showMark() {
 
 //. move
 function move( x, y, country ) {
-	if ( x == undefined || y == undefined ) {
+	if ( x === undefined || y === undefined ) {
 		throw new Error( 'x: ' + x + ' y: ' + y + ' 座標情報が不正です。' );
 	}
+	country = country || '';
 
 	if ( Env.ajax ) { return; }
 
-	var search, url;
+	var url = '/map.php?x=' + x + '&y=' + y;
 
-	search = 'x=' + x + '&y=' + y;
-	country = country || Map.info.country || '';
+	if ( Map.info.country && ( country == Map.info.country || country == '' ) ) {
+		//地図画面＆同国内移動
+		url += '&c=' + Map.info.country;
 
-	if ( country ) { search += '&c=' + country; }
+		moveUrl( url ).done(function() {
+			history.pushState( null, null, url );
+		});
+	}
+	else {
+		//地図画面以外、または他国移動
+		if ( country ) { url += '&c=' + country; }
 
-	url = '/map.php?' + search;
-
-	moveUrl( url ).done(function() {
-		history.pushState( null, null, url );
-	});
+		location.href = url;
+	}
 }
 
 //. moveUrl
@@ -2879,7 +2903,8 @@ return {
 	showCountryMap: showCountryMap,
 	showCoord: showCoord,
 	showMark: showMark,
-	move: move
+	move: move,
+	warList: contextmenu.warList
 };
 
 })();
@@ -3039,20 +3064,21 @@ function showBasePoint( name, list, pointsize ) {
 }
 
 //. showRoute
-function showRoute( name, list ) {
-	var $canvas = newLayer( 'rute' + name, options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d'),
-		startx, starty, endx, endy;
+function showRoute( list ) {
+	var $canvas = newLayer( 'rute', options.mapsize, options.mapsize ),
+		context = $canvas.get(0).getContext('2d');
 
 	clear( context );
 
 	for ( var i = 0, len = list.length; i < len; i++ ) {
-		startx = getCanvasX( list[ i ].startx );
-		starty = getCanvasY( list[ i ].starty );
-		endx = getCanvasX( list[ i ].endx );
-		endy = getCanvasY( list[ i ].endy );
+		var { sx, sy, ex, ey, color } = list[ i ];
 
-		drowLine( context, startx, starty, endx, endy, list[ i ].color );
+		sx = getCanvasX( sx );
+		sy = getCanvasY( sy );
+		ex = getCanvasX( ex );
+		ey = getCanvasY( ey );
+
+		drowLine( context, sx, sy, ex, ey, color );
 	}
 
 	$map.append( $canvas );
@@ -3161,13 +3187,7 @@ function mapClick( e ) {
 		x = x - 180;
 		y = 180 - y;
 
-		if ( location.pathname == '/map.php' ) {
-			Map.move( x, y, country );
-		}
-		else {
-			country = ( country ) ? '&c=' + country : '';
-			location.href = '/map.php?x=' + x + '&y=' + y + country;
-		}
+		Map.move( x, y, country );
 	}
 }
 
@@ -4842,21 +4862,9 @@ createCoordLink: function() {
 		var $this = $(this),
 			x = $this.attr('x'),
 			y = $this.attr('y'),
-			c = $this.attr('c');
+			c = $this.attr('c') || '';
 
-		if ( location.pathname == '/map.php' ) {
-			if ( !c || c == Map.info.country ) {
-				Map.move( x, y );
-			}
-			else {
-				c = ( c ) ? '&c=' + c : '';
-				location.href = '/map.php?x=' + x + '&y=' + y + c;
-			}
-		}
-		else {
-			c = ( c ) ? '&c=' + c : '';
-			location.href = '/map.php?x=' + x + '&y=' + y + c;
-		}
+			Map.move( x, y, c );
 	})
 	.live('mouseenter', function() {
 		var $this = $(this),
@@ -6495,6 +6503,7 @@ style: '' + <><![CDATA[
 .imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer;
 ]]></>,
 
+//. main
 main: function() {
 	$('.common_table1').find('TR').slice( 1 )
 	.css({ cursor: 'pointer' })
@@ -6524,6 +6533,7 @@ main: function() {
 //■ /facility/confluence_confirm
 Page.registerAction( 'facility', 'confluence_confirm', {
 
+//. main
 main: Page.getAction( 'facility', 'send_troop', 'layouter2' )
 
 });
@@ -6542,8 +6552,6 @@ LI.imc_enemy * { color: #f33 !important; }
 main: function() {
 	var dmo = (location.search.match(/dmo=(.+)/) || [,''])[1];
 
-	this.layouter();
-
 	if ( dmo == 'all' ) {
 		this.showModeCamp();
 		Util.getUnitStatus( $('.ig_fight_statusarea') );
@@ -6554,6 +6562,8 @@ main: function() {
 	else if ( dmo == 'enemy' ) {
 		this.analyzeRaid();
 	}
+
+	this.layouter();
 },
 
 //. layouter
@@ -6594,51 +6604,71 @@ showModeCamp: function() {
 //. analyzeRaid
 analyzeRaid: function() {
 	var storage = MetaStorage('UNIT_STATUS'),
-		list = storage.get('敵襲'),
-		newlist = {}, baselist = {}, alermFlg = false;
+		list = storage.get('敵襲') || [],
+		keylist = {},
+		newlist = [], baselist = {}, alermFlg = false;
 
-	$('TABLE.table_fightlist').each(function() {
+	//保存形式変更の為
+	if ( !$.isArray( list ) ) { list = []; }
+
+	list.forEach(function( value ) {
+		var { sx, sy, ex, sy, arrival } = value,
+			key = [ sx, sy, ex, sy, arrival ].join('/'),
+			idx;
+
+		if ( !keylist[ key ] ) { keylist[ key ] = { new: 0, old: 0, data: [] }; }
+		idx = keylist[ key ].old++;
+		keylist[ key ].data[ idx ] = value;
+	});
+
+	$('.ig_fight_statusarea').each(function() {
 		var $this = $(this),
-			count = 0,
-			arrival, point1, point2, key, base_name, display;
+			$panel = $this.find('.paneltable'),
+			user, type, arrival, $a, sbase, ebase, key, idx, data;
+
+		//城主名
+		user = $this.find('H3 A').text();
+
+		//拠点種別
+		type = $panel.find('TR:eq(0) TD:eq(0) SPAN').text().trim();
 
 		//着弾時間
-		arrival = $this.find('TR:eq(0) TD:eq(1)').text();
-		arrival = arrival.replace(/^[ \t\n]+/, '').match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)[0];
+		arrival = $panel.find('TR:eq(0) TD:eq(1)').text();
+		arrival = arrival.replace(/^[ \t\n]+/, '').match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/)[ 0 ];
+		arrival = arrival.getTime();
 
-		point1 = $this.find('TR:eq(2) TD:eq(0) SPAN').text().match(/\((-?\d+),(-?\d+)\)/);
-		point2 = $this.find('TR:eq(2) TD:eq(1) SPAN').text().match(/\((-?\d+),(-?\d+)\)/);
+		//発射地点情報
+		$a = $panel.find('A').eq( 0 );
+		sbase = $a.text();
+		var [ dummy, sx, sy, sc ] = $a.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
 
-		//着弾時間＋発射地点＋着弾地点でキーにする
-		key = arrival + '/' + point1[ 1 ] + ',' + point1[ 2 ] + '/' + point2[ 1 ] + ',' + point2[ 2 ];
+		//着弾地点情報
+		$a = $panel.find('A').eq( 1 );
+		ebase = $a.text();
+		var [ dummy, ex, ey, ec ] = $a.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
 
-		base_name = $this.find('A').eq( 2 ).text().trim();
-		baselist[ base_name ] = true;
+		key = [ sx, sy, ex, sy, arrival ].join('/');
+		if ( !keylist[ key ] ) { keylist[ key ] = { new: 0, old: 0 }; }
+		idx = keylist[ key ].new++;
 
-		//同時着を考慮
-		while ( newlist[ key + '/' + count ] ) { count++; }
-		key = key + '/' + count;
-
-		if ( !list[ key ] ) {
-			//新しい敵襲は枠を赤くする
-			$this.addClass('imc_new_enemy');
+		if ( keylist[ key ].new > keylist[ key ].old ) {
+			$panel.addClass('imc_new_enemy');
 			alermFlg = true;
+			newlist.push({
+				user: user,
+				sbase: sbase, sx: sx.toInt(), sy: sy.toInt(), sc: sc.toInt(),
+				ebase: ebase, ex: ex.toInt(), ey: ey.toInt(), ec: ec.toInt(),
+				type: type, arrival: arrival, newenemy: true
+			});
 		}
-
-		newlist[ key ] = true;
+		else {
+			data = keylist[ key ].data[ idx ];
+			delete data.newenemy;
+			newlist.push( data );
+		}
 	});
 
 	storage.set('敵襲', newlist);
-
-	//敵襲が来ている拠点の色を変更する
-	$('#sideboxBottom DIV.basename LI *:first-child').each(function() {
-		var $this = $(this),
-			name = $this.text().trim();
-
-		if ( baselist[ name ] ) {
-			$this.parent().addClass('imc_enemy');
-		}
-	});
 
 	if ( alermFlg && Data.sounds.enemy_raid ) {
 		//アラーム
@@ -6646,15 +6676,6 @@ analyzeRaid: function() {
 		audio.volume = 0.6;
 		audio.loop = true;
 		audio.play();
-
-/*
-		$('<audio />')
-		.attr('src', Data.sounds.enemy_raid)
-		.attr('type', 'audio/ogg; codecs=vorbis')
-		.on('ended', function() { this.play(); })
-		.appendTo( document.body )
-		.get(0).play();
-*/
 	}
 
 	var timer = setTimeout(function() { clearTimeout(timer); location.reload(); }, 20 * 1000);
@@ -8153,7 +8174,7 @@ style: '' + <><![CDATA[
 
 #ig_map_movepanel { left: 7px; top: 327px; width: 200px; height: 53px; border: solid 2px #888; background-position: -10px -14px; }
 #ig_map_movepanel FORM { top: 0px; }
-#ig_map_movepanel UL { top: 45px; left: 460px; width: 158px; height: 26px; background-color: #f1f0dc; border: solid 2px #888; }
+#ig_map_movepanel UL { top: 25px; left: 460px; width: 158px; height: 26px; background-color: #f1f0dc; border: solid 2px #888; }
 #ig_map_movepanel UL LI { background-color: transparent; }
 .ig_map_movepanel_inputarea { top: 27px; left: 11px; }
 .ig_map_movepanel_btnarea { top: 20px; }
@@ -8193,16 +8214,23 @@ style: '' + <><![CDATA[
 #imi_container { font-size: 11px; }
 #imi_container > DIV { position: absolute; top: 410px; left: 5px; width: 770px; height: 425px; border: solid 2px #888; background-color: #f1f0dc; padding: 3px; overflow: auto; z-index: 1000; }
 #imi_container A { color: #060; }
+#imi_container INPUT { margin-right: 5px; }
+#imi_container LABEL { margin-right: 10px; cursor: pointer; }
 
 /* 拠点情報 */
-#imi_base INPUT { margin-right: 5px; }
-#imi_base LABEL { margin-right: 10px; cursor: pointer; }
 #imi_base_conditions { margin-bottom: 10px; }
 #imi_base_conditions SELECT { position: relative; top: -1px; margin: -2px; }
 
 /* 座標情報 */
 .imc_fort TD { width: 50px; }
 .imc_fort2 TD { width: 42px; }
+
+/* 敵襲情報 */
+#imi_tab_container LI.imc_enemy { color: #f30; }
+#imi_raid_list TR { cursor: pointer; }
+.imc_new_enemy { background-color: #fdc; }
+#imi_raid_list .imc_countdown_alert TD:last-child { background-color: #c03; }
+#imi_raid_list .imc_countdown_alert .imc_countdown_display { color: #fff; }
 
 /* 新合戦耐久度 */
 .imc_gage { border-width: 2px; margin: 0px auto; }
@@ -8211,8 +8239,8 @@ style: '' + <><![CDATA[
 
 /* 合戦報告書・周辺の敵襲 */
 TABLE.ig_battle_table { width: 650px; }
-TABLE.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }
-TABLE.ig_battle_table TD A { line-height: 18px; }
+.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }
+.ig_battle_table A { line-height: 18px; }
 .ig_battle_report_icon1,
 .ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }
 .ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }
@@ -8236,6 +8264,8 @@ main: function() {
 	this.layouter();
 	this.layouterMapInfo();
 	this.layouterCoord();
+	this.layouterSituation();
+	this.layouterWarReport();
 	this.layouterRanking();
 	this.layouterScore();
 	this.layouterUnitStatus();
@@ -8346,78 +8376,76 @@ layouterMapInfo: function() {
 		html;
 
 	//拠点情報
-	settings.capital      = ( type.indexOf('|城|')     != -1 ) ? 'checked' : '';
-	settings.fort_village = ( type.indexOf('|砦|村|')  != -1 ) ? 'checked' : '';
-	settings.stronghold   = ( type.indexOf('|出城|')   != -1 ) ? 'checked' : '';
-	settings.camp         = ( type.indexOf('|陣|')     != -1 ) ? 'checked' : '';
-	settings.fall         = ( type.indexOf('|陥落|')   != -1 ) ? 'checked' : '';
-	settings.territory    = ( type.indexOf('|領地|')   != -1 ) ? 'checked' : '';
-	settings.field        = ( type.indexOf('|空き地|') != -1 ) ? 'checked' : '';
-
-	html = '<table id="imi_base_conditions" class="imc_table">' +
-		'<tr/>' +
-			'<th>種別</th>' +
-			'<td style="text-align: left">' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|城|" ' + settings.capital + ' />本領</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|砦|村|" ' + settings.fort_village + ' />所領</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|出城|" ' + settings.stronghold + ' />出城</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|陣|" ' + settings.camp + ' />陣</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|陥落|" ' + settings.fall + ' />陥落</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|領地|" ' + settings.territory + ' />領地</label>' +
-				'<label><input type="checkbox" name="ixa_meta_type" value="|空き地|" ' + settings.field + ' />空き地</label>' +
-				'<select name="ixa_meta_rank">' +
-					'<option value="0">全て</option>' +
-					'<option value="1">★１以下</option>' +
-					'<option value="2">★２以下</option>' +
-					'<option value="3">★３以下</option>' +
-					'<option value="4">★４以下</option>' +
-					'<option value="5">★５以下</option>' +
-					'<option value="6">★６以上</option>' +
-					'<option value="7">★７以上</option>' +
-					'<option value="8">★８以上</option>' +
-				'</select>' +
-			'</td>' +
-		'</tr>' +
-		'<tr>' +
-			'<th>識別</th>' +
-			'<td style="text-align: left">' +
-				'<label><input type="radio" name="ixa_meta_discriminant" value="" />全て</label>' +
-				'<label><input type="radio" name="ixa_meta_discriminant" value="|自分|" />自分</label>' +
-				'<label><input type="radio" name="ixa_meta_discriminant" value="|自分|同盟|" />同盟</label>' +
-				'<label><input type="radio" name="ixa_meta_discriminant" value="|味方|" />味方</label>' +
-				'<label><input type="radio" name="ixa_meta_discriminant" value="|敵|" />敵</label>' +
-			'</td>' +
-		'</tr>' +
-		'<tr/>' +
-			'<th>同盟名</th>' +
-			'<td style="text-align: left">' +
-				'<input type="text" name="ixa_meta_alliance" value="' + settings.alliance + '" />' +
-			'</td>' +
-		'</tr>' +
-	'</table>';
+	html = '' + <><![CDATA[
+	<table id="imi_base_conditions" class="imc_table">
+	<tr/>
+		<th>種別</th>
+		<td style="text-align: left">
+			<label><input type="checkbox" name="imn_type" value="|城|" />本領</label>
+			<label><input type="checkbox" name="imn_type" value="|砦|村|" />所領</label>
+			<label><input type="checkbox" name="imn_type" value="|出城|" />出城</label>
+			<label><input type="checkbox" name="imn_type" value="|陣|" />陣</label>
+			<label><input type="checkbox" name="imn_type" value="|陥落|" />陥落</label>
+			<label><input type="checkbox" name="imn_type" value="|領地|" />領地</label>
+			<label><input type="checkbox" name="imn_type" value="|空き地|" />空き地</label>
+			<select name="imn_rank">
+				<option value="0">全て</option>
+				<option value="1">★１以下</option>
+				<option value="2">★２以下</option>
+				<option value="3">★３以下</option>
+				<option value="4">★４以下</option>
+				<option value="5">★５以下</option>
+				<option value="6">★６以上</option>
+				<option value="7">★７以上</option>
+				<option value="8">★８以上</option>
+			</select>
+		</td>
+	</tr>
+	<tr>
+		<th>識別</th>
+		<td style="text-align: left">
+			<label><input type="radio" name="imn_discriminant" value="" />全て</label>
+			<label><input type="radio" name="imn_discriminant" value="|自分|" />自分</label>
+			<label><input type="radio" name="imn_discriminant" value="|自分|同盟|" />同盟</label>
+			<label><input type="radio" name="imn_discriminant" value="|味方|" />味方</label>
+			<label><input type="radio" name="imn_discriminant" value="|敵|" />敵</label>
+		</td>
+	</tr>
+	<tr/>
+		<th>同盟名</th>
+		<td style="text-align: left">
+			<input type="text" name="imn_alliance" value="" />
+		</td>
+	</tr>
+	</table>
+	<table class="imc_table">
+	<thead><tr>
+		<th style="width: 120px">同盟名</th>
+		<th style="width: 120px">城主名</th>
+		<th style="width: 130px">城名</th>
+		<th style="width: 35px">種別</th>
+		<th style="width: 25px">規模</th>
+		<th style="width: 30px">識別</th>
+		<th style="width: 30px">人口</th>
+		<th style="width: 56px">座標</th>
+		<th style="width: 30px">距離</th>
+	</tr></thead>
+	<tbody id="imi_base_list"></tbody>
+	</table>
+	]]></>;
 
 	$( html ).appendTo('#imi_base')
 	.change( Map.analyzeReport )
-	.find('SELECT[name="ixa_meta_rank"]').val( settings.rank ).end()
-	.find('INPUT[value="' + settings.discriminant + '"]').attr('checked', true).end();
+	.find('INPUT[name="imn_type"]').each(function() {
+		var $this = $(this);
 
-	//拠点情報一覧
-	html = '<table class="imc_table">' +
-		'<thead><tr>' +
-			'<th style="width: 120px">同盟名</th>' +
-			'<th style="width: 120px">城主名</th>' +
-			'<th style="width: 130px">城名</th>' +
-			'<th style="width: 35px">種別</th>' +
-			'<th style="width: 25px">規模</th>' +
-			'<th style="width: 30px">識別</th>' +
-			'<th style="width: 30px">人口</th>' +
-			'<th style="width: 56px">座標</th>' +
-			'<th style="width: 30px">距離</th>' +
-		'</tr></thead>' +
-		'<tbody id="imi_base_list"></tbody>' +
-	'</table>';
-
-	$( html ).appendTo('#imi_base');
+		if ( type.indexOf( $this.val() ) != -1 ) {
+			$this.attr('checked', true);
+		}
+	}).end()
+	.find('SELECT[name="imn_rank"]').val( settings.rank ).end()
+	.find('INPUT[value="' + settings.discriminant + '"]').attr('checked', true).end()
+	.find('INPUT[name="imn_alliance"]').val( settings.alliance ).end();
 },
 
 //. layouterCoord
@@ -8427,13 +8455,13 @@ layouterCoord: function() {
 	//登録座標リスト
 	html = '<div style="float: left; margin-right: 20px;">' +
 	'<table class="imc_table" style="">' +
-		'<thead><tr>' +
-			'<th width="120">城主名</th>' +
-			'<th width="130">城名</th>' +
-			'<th width="56">座標</th>' +
-			'<th width="35">種別</th>' +
-		'</tr></thead>' +
-		'<tbody id="imi_coord_list"></tbody>' +
+	'<thead><tr>' +
+		'<th width="120">城主名</th>' +
+		'<th width="130">城名</th>' +
+		'<th width="56">座標</th>' +
+		'<th width="35">種別</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_coord_list"></tbody>' +
 	'</table>' +
 	'<button style="margin-top: 10px;">全削除</button>' +
 	'</div>';
@@ -8463,25 +8491,223 @@ layouterCoord: function() {
 	}
 },
 
+//. layouterSituation
+layouterSituation: function() {
+	var settings = MetaStorage('SETTINGS').get('situation') || {},
+		arrival = settings.arrival || 0,
+		html;
+
+	html = '' + <><![CDATA[
+	<table id="imi_raid_conditions" class="imc_table">
+	<tr>
+		<th>着弾まで</th>
+		<td>
+			<label><input type="radio" name="imn_arrival" value="10" />１０分以内</label>
+			<label><input type="radio" name="imn_arrival" value="20" />２０分以内</label>
+			<label><input type="radio" name="imn_arrival" value="30" />３０分以内</label>
+			<label><input type="radio" name="imn_arrival" value="0" />全て</label>
+		</td>
+	</tr>
+	</table>
+	<br/>
+	<table class="imc_table">
+	<thead><tr>
+		<th width="130">部隊</th>
+		<th width="140">発射地点</th>
+		<th>距離</th>
+		<th width="30">種別</th>
+		<th width="140">着弾地点</th>
+		<th width="80">着弾時間</th>
+		<th width="50">着弾まで</th>
+	</tr></thead>
+	<tbody id="imi_raid_list"></tbody>
+	</table>
+	<hr style="display: block; margin: 10px 0px; border-color: #ccc"/>
+	<table class="ig_battle_table imc_table">
+	<thead><tr>
+		<th width="30">拠点</th>
+		<th>城主名</th>
+		<th>同盟</th>
+		<th>地名</th>
+		<th width="50">部隊数</th>
+		<th width="50">敵襲</th>
+	</tr></thead>
+	<tbody id="imi_situation_list"></tbody>
+	</table>
+	]]></>;
+
+	$( html ).appendTo('#imi_situation');
+
+	$('#imi_raid_conditions').on('change', function() {
+		var $this = $(this),
+			arrival = $this.find('INPUT[name="imn_arrival"]:checked').val().toInt(),
+			type = '';
+
+		$this.find('input[name="imn_base_type"]').filter(':checked').each(function() { type += $(this).val(); });
+
+		MetaStorage('SETTINGS').set('situation', { arrival: arrival, type: type });
+
+		$('#imi_raid_list').trigger('update');
+	})
+	.find('INPUT[value="' + settings.arrival + '"]').attr('checked', true).end();
+
+	$('#imi_raid_list').on('update', function() {
+		var $this = $(this),
+			$li = $('#imi_tab_container LI[target=imi_situation]'),
+			settings = MetaStorage('SETTINGS').get('situation') || {},
+			remain = settings.arrival || 0,
+			enemy = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+			now, time, list, list2;
+
+		//保存形式変更の為
+		if ( !$.isArray( enemy ) ) { enemy = []; }
+
+		now  = Util.getServerTime();
+		if ( remain == 0 ) { remain = ( 2 * 24 * 60 ); }
+		remain *= 60;
+		time = now + remain;
+
+		//着弾時間が過去のものを除く
+		enemy = enemy.filter(function( value ) {
+			return !( value.arrival < now );
+		});
+
+		MetaStorage('UNIT_STATUS').set('敵襲', enemy);
+
+		list = enemy.filter(function( value ) {
+			if ( value.arrival > time ) { return false; }
+			return true;
+		}).sort(function( a, b ) {
+			return ( a.arrival > b.arrival );
+		});
+
+		$this.empty();
+		$li.toggleClass('imc_enemy', ( list.length > 0 ) );
+		$li.text('敵襲状況(' + list.length + ')' )
+
+		for ( var i = 0, len = list.length; i < len; i++ ) {
+			let { user, sbase, sx, sy, sc, ebase, ex, ey, ec, type, arrival, newenemy } = list[ i ],
+				html, dist, $tr;
+
+			dist = Util.getDistance({ x: sx, y: sy }, { x: ex, y: ey });
+			newenemy = newenemy ? 'imc_new_enemy': '';
+
+			html = '<tr class="imc_countdown ' + newenemy + '">' +
+				'<td>「' + user + '」部隊</td>' +
+				'<td>' + sbase + '</td>' +
+				'<td>⇒<br/>' + dist.toRound( 2 ) + '</td>' +
+				'<td>' + type + '</td>' +
+				'<td>' + ebase + '</td>' +
+				'<td>' + arrival.toFormatDate() + '</td>' +
+				'<td><span class="imc_countdown_display" /></td>' +
+			'</tr>';
+
+			$tr = $( html );
+			$tr.data({
+				endtime: arrival, alert: 120, finishevent: 'raidlistupdate',
+				user: user, sx: sx, sy: sy, sc: sc, ebase: ebase, ex: ex, ey: ey, ec: ec
+			});
+
+			$this.append( $tr );
+		}
+
+		list = enemy.filter(function( value ) {
+			return ( value.arrival > time );
+		});
+
+		for ( var i = 0, len = list.length; i < len; i++ ) {
+			let { user, sbase, sx, sy, ebase, ex, ey, arrival, newenemy } = list[ i ],
+				html, dist, $tr;
+
+			dist = Util.getDistance({ x: sx, y: sy }, { x: ex, y: ey });
+			newenemy = newenemy ? 'imc_new_enemy': '';
+
+			html = '<tr class="imc_countdown" style="display: none"/>';
+
+			$tr = $( html );
+			$tr.data({ endtime: arrival, alert: remain, alertevent: 'raidlistupdate2' });
+
+			$this.append( $tr );
+		}
+
+		Util.countDown();
+		Map.showMark();
+	})
+	.on('mouseenter', 'TR', Util.enter)
+	.on('mouseleave', 'TR', Util.leave)
+	.trigger('update');
+
+	$('#imi_raid_list TR').contextMenu(function() {
+		var menu = {};
+
+		menu['部隊名'] = $('<div class="imc_contextmenu_title">' + $(this).find('TD').eq( 0 ).text() + '</div>');
+		menu['発射地点を中心に表示'] = function() {
+			var { sx, sy, sc } = $(this).data();
+			Map.move( sx, sy, sc );
+		};
+		menu['着弾地点を中心に表示'] = function() {
+			var { ex, ey, ec } = $(this).data();
+			Map.move( ex, ey, ec );
+		};
+		menu['合戦報告書'] = function() {
+			var { user } = $(this).data();
+			Map.warList( user );
+		};
+
+		menu['セパレーター1'] = $.contextMenu.separator;
+		menu['この拠点を選択'] = function() {
+			var { ebase } = $(this).data();
+				village = Util.getVillageByName( ebase );
+
+			if ( village.id ) {
+				location.href = '/village_change.php?village_id=' + village.id + '&from=menu&page=/map.php';
+			}
+			else{
+				Display.alert( '拠点は見つかりませんでした。' );
+			}
+		};
+
+		return menu;
+	}, true);
+},
+
+//. layouterWarReport
+layouterWarReport: function() {
+	var html;
+
+	html = '' + <><![CDATA[
+		<table class="ig_battle_table imc_table">
+		<thead><tr>
+			<th width="30">攻守</th>
+			<th>ログ</th>
+			<th width="80">時間</th>
+		</tr></thead>
+		<tbody id="imi_warreport_list"></tbody>
+		</table>
+	]]></>;
+
+	$( html ).appendTo('#imi_warlist');
+},
+
 //. layouterRanking
 layouterRanking: function() {
 	var html;
 
 	html = '' + <><![CDATA[
-		<table class="imc_table">
-		<thead><tr>
-			<th width="65">国</th>
-			<th width="30">順位</th>
-			<th width="130">城主名</th>
-			<th width="130">同盟</th>
-			<th width="45">戦功</th>
-			<th width="45">攻撃</th>
-			<th width="45">防御</th>
-			<th width="40">人口</th>
-			<th width="45">総合</th>
-		</tr></thead>
-		<tbody id="imi_ranking_list"></tbody>
-		</table>
+	<table class="imc_table">
+	<thead><tr>
+		<th width="65">国</th>
+		<th width="30">順位</th>
+		<th width="130">城主名</th>
+		<th width="130">同盟</th>
+		<th width="45">戦功</th>
+		<th width="45">攻撃</th>
+		<th width="45">防御</th>
+		<th width="40">人口</th>
+		<th width="45">総合</th>
+	</tr></thead>
+	<tbody id="imi_ranking_list"></tbody>
+	</table>
 	]]></>;
 
 	$( html ).appendTo('#imi_ranking');
@@ -8492,17 +8718,17 @@ layouterScore: function() {
 	var html;
 
 	html = '' + <><![CDATA[
-		<table class="imc_table">
-		<thead><tr>
-			<th width="65">国</th>
-			<th width="30">順位</th>
-			<th width="130">城主名</th>
-			<th width="130">同盟</th>
-			<th width="100">一戦撃破</th>
-			<th width="100">一戦防衛</th>
-		</tr></thead>
-		<tbody id="imi_score_list"></tbody>
-		</table>
+	<table class="imc_table">
+	<thead><tr>
+		<th width="65">国</th>
+		<th width="30">順位</th>
+		<th width="130">城主名</th>
+		<th width="130">同盟</th>
+		<th width="100">一戦撃破</th>
+		<th width="100">一戦防衛</th>
+	</tr></thead>
+	<tbody id="imi_score_list"></tbody>
+	</table>
 	]]></>;
 
 	$( html ).appendTo('#imi_score');
@@ -8519,39 +8745,37 @@ layouterUnitStatus: function() {
 			$table = $('<table class="imc_table"/>'),
 			date = Util.getServerTime(),
 			list = MetaStorage('UNIT_STATUS').get('部隊') || [],
-			movelist = [],
-			movecolors = { '攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f', '帰還': '#3f9', '開拓': '#063' },
 			classlist = {
 				'攻撃': 'imc_attack', '陣張': 'imc_camp', '合流': 'imc_meeting',
 				'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon',
 				'開拓': 'imc_develop', '国移': 'imc_move', '待機': 'imc_wait', '加待': 'imc_backup_wait'
 			},
-			data, $tr, classname, html;
+			$tr, classname, html;
 
 		for ( var i = 0, len = list.length; i < len; i++ ) {
-			data = list[ i ];
-			classname = classlist[ data.mode ] || '';
+			let { name, mode, target, ex, ey, ec, arrival } = list[ i ];
+			classname = classlist[ mode ] || '';
 
-			if ( data.mode == '探索' ) {
-				html = data.target;
+			if ( mode == '探索' ) {
+				html = target;
 			}
 			else {
-				html = '<span class="imc_coord" x="' + data.ex + '" y="' + data.ey + '" c="' + data.c + '">' +
-					data.target + ' (' + data.ex + ',' + data.ey + ')</span>';
+				html = '<span class="imc_coord" x="' + ex + '" y="' + ey + '" c="' + ec + '">' +
+					target + ' (' + ex + ',' + ey + ')</span>';
 			}
 
 			html = '' +
-				'<td><div style="width: 67px;"><a href="/card/deck.php?ano=' + i + '">' + data.name + '</a></div></td>' +
+				'<td><div style="width: 67px;"><a href="/card/deck.php?ano=' + i + '">' + name + '</a></div></td>' +
 				'<td><div style="width: 86px;">' + html + '</div></td>' +
-				'<td style="width: 33px;" class="' + classname + '">' + data.mode + '</td>' +
+				'<td style="width: 33px;" class="' + classname + '">' + mode + '</td>' +
 				'<td style="width: 55px;"><span class="imc_countdown_display" /></td>';
 
 			$tr = $('<tr/>').append( html );
 
-			if ( data.mode == '待機' || data.mode == '加待' ) {
+			if ( mode == '待機' || mode == '加待' ) {
 				//待機中、カウントダウンしない
 			}
-			else if ( data.arrival <= date ) {
+			else if ( arrival <= date ) {
 				//着弾時間が過去の場合、「--:--:--」の表示、10秒後に再取得
 				$tr.addClass('imc_countdown');
 				$tr.data({ endtime: date + 10, finishevent: 'actionrefresh' });
@@ -8560,12 +8784,7 @@ layouterUnitStatus: function() {
 			else {
 				//行動中
 				$tr.addClass('imc_countdown');
-				$tr.data({ endtime: data.arrival + 1, alert: 60, finishevent: 'actionfinish', message: '・[' + data.name + ']部隊' });
-
-				//ミニマップに移動線を表示するデータ
-				if ( movecolors[ data.mode ] ) {
-					movelist.push({ startx: data.sx, starty: data.sy, endx: data.ex, endy: data.ey, color: movecolors[ data.mode ] });
-				}
+				$tr.data({ endtime: arrival + 1, alert: 60, finishevent: 'actionfinish', message: '・[' + name + ']部隊' });
 			}
 
 			$table.append( $tr );
@@ -8585,7 +8804,6 @@ layouterUnitStatus: function() {
 		$this.empty().append( $table );
 		Util.countDown();
 		Map.showMark();
-		CounteryMap.showRoute( 'unit', movelist );
 	});
 
 	Util.getUnitStatus();
