@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.10
+// @version        1.0.3.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8550,7 +8550,7 @@ layouterSituation: function() {
 
 		$('#imi_raid_list').trigger('update');
 	})
-	.find('INPUT[value="' + settings.arrival + '"]').attr('checked', true).end();
+	.find('INPUT[value="' + arrival + '"]').attr('checked', true).end();
 
 	$('#imi_raid_list').on('update', function() {
 		var $this = $(this),
