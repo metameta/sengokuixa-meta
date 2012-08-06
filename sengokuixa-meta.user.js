@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.9
+// @version        1.0.3.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8409,6 +8409,7 @@ layouterMapInfo: function() {
 			<label><input type="radio" name="imn_discriminant" value="|自分|同盟|" />同盟</label>
 			<label><input type="radio" name="imn_discriminant" value="|味方|" />味方</label>
 			<label><input type="radio" name="imn_discriminant" value="|敵|" />敵</label>
+			<label><input type="radio" name="imn_discriminant" value="|-|" />無し</label>
 		</td>
 	</tr>
 	<tr/>
@@ -8418,7 +8419,7 @@ layouterMapInfo: function() {
 		</td>
 	</tr>
 	</table>
-	<table class="imc_table">
+	<table class="imc_table" style="margin-bottom: 20px;">
 	<thead><tr>
 		<th style="width: 120px">同盟名</th>
 		<th style="width: 120px">城主名</th>
