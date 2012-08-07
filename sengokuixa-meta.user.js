@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.11
+// @version        1.0.3.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1408,7 +1408,8 @@ images: {
 	panel_icon_backup_wait: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwAAADsABataJCQAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABYUlEQVRoQ%2B2YYQrCMAyFexP3ywPofbyKR68LGAmhjkLf4LV7gzKdMeTLS7O2pdZarjQuBWvCCnj18pbCUnixLq6SVkmrpOdemWkOaw5rDmsOT9UHpgoW0V8EjMgisw8pzKwOIjYpjMgisw8pPKJO%2BV6P162ihvu0%2B0hs%2Fl%2BIk5%2BzPSgDvb8LbJg%2Fh6YDRsN64hz6UsDbtu284xsXaElHhS263tLOtvm7%2BZ0O2CDi5cmIcNnGf6MHbsFlMAP2Z0sp3IL6Bz%2Btwi31jiBbcz3a05d0L3C2W17hCJxVjgo%2FXxt3lz5qUBmyZZtt6Es6Nqr82cu29VqKz6abw72Ljh47WoVtkY9eTzss5UrrjO2hgdqg3R46tAeKuNNuD%2BNmHRFk9ke3WxLw4LGMFGY7ALhcSSOaytk%2BoEc8ZweL8C9gRBaZfUhhZnUQsUlhRBaZfUhhZnUQsUlhRBaZfUhhZnUQsX0AjRDndd8mT5YAAAAASUVORK5CYII%3D",
 	panel_icon_move: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABiUlEQVRoQ%2B2Y0W3DMAxEPUXzWQ%2FQSZIB%2BpdVMrpaAiFACLIkt2fgaJ8BwQriEHy8o2RlKaUsVxqXgjVhBXx2e0thKXyyVVyWlqVl6dxvZuph9bB6eLuHl%2Fd1%2F3wW1PCYdke4DxLEE7GkDPR7ecGGxXNoOmA0rBfOoS8FvK7rL%2B%2F%2Ft0SopV1hy2x0Rdvbs%2F45zqPC9MC9PnYoL0qEjYVKB9xS2SBairbg0wFv2bRWuC5AbWtrlRSW%2FqvCta3TANcKR2Xd2j0r%2B%2FNpgEcKR9ituRXmsSax9NZKPdqGUvbw7D7cW8DSrNLId2mLRdvDRx0ebEui3JZmj4c9B9THSoelPR46tCfaureAe8%2FTHg%2FjYb03r4E%2Fvm7Fxuj3dKelUcL%2BfQSehaW39IzCe2DTA%2B%2BFTQ1syc%2F0bO0Suh5GJHR0DOhfPEcni4gvYEQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWNIYWZ1ELlJYUQVmWP8AGBseBevbWf5AAAAAElFTkSuQmCC",
 	panel_icon_enemy: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAABvklEQVRoQ%2B2Y623DMAyEPUX7Mx6gw7bbdYHMoZpFDz0QihWbiSXGF0BQHqLFj0fqkamUMp2pnQrWhBXwq6e3FJbCL7aKK6WV0krp3Ccz1bBqWDWsGk61DqRy9hHri4AfEcWRnxFSePp7fV0u5dkNc1kfCWjMeJncQK%2BLD89uNg%2BguwEfBYtgAnoo4PL9rza%2F9xlw7zi2M%2BB5nhfe%2FWeBUEqzwgZQa1Zy7PStcfjejx0W2Bwzp3%2FXFOoZEM7XxrGdH8cpnUJhAAJqTWXOCNgNC1xTd005r7SNTQXslQOsKQSQrTXMARhu0fIK19QFPMBrNrxQDQ3sIbD1%2BC2Ix7HynAlYBNn2c9mShlq0UIOsmgdiEL8V1fZtruuhUtqr0%2FrMweG09fv20PvwEefprilth%2FmjztNI5%2B7AgL73eriWBWvPMFBr3a%2BHuLLBoVZfA27ZMOwwwABv9R747eO9WGvZ8e%2FdbktbnMRYBt4Dm1bhvbApgSOw6YDN4a0160unWw1HJu5lG%2FqLp5fTkXkFHIleBlspnEGliI9SOBK9DLZSOINKER%2BlcCR6GWylcAaVIj5K4Uj0MthK4QwqRXw8ncI%2FGQcpBWguhl4AAAAASUVORK5CYII%3D",
-	panel_icon_sortie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAAB0ElEQVRoQ%2B2YYW6DMAyFOcX2lwPsDr0ZXI2bZRj1VU9RQhjuiF1cKSJtMfHnZ5vAkFIa7jRuBSvCBvCnp3coHAp%2FWBePlI6UjpT2vTOLGo4ajhqOGnbVB1w5%2B47%2BEsDviKLla6gUHp6feZ7TkTFNU8KQ83nessdactQEVGe8Li6OLsvy70PWAXQ34KtgEVBAmwGWV2Rwrjav%2Fb%2B9XiP7UtYI8DiOK%2B%2F5vYAqpXOFxeH58dig9%2BaA46PYsQ2uweAugTkYAMwDwFmAAMpvJoFL6pWUw3msLM4rZYlJ4M2pNTUZAt8ZoqQo6pcVzQNlSuG84ezVY64qbPPGZQ5YNg61eisB5%2BqVlEZGvG5FzyZoIqXPANdqnH%2FnIHLmyHpmbktHQKAw1zU3qrzeuSeYUDi%2FD7PDtXlxQ0Fpu7dNNdW0rtpPd01p2cxftZ%2BGut2BAd16vMP%2FrZStXUdAZXR%2FPMQjGxxqHUvALRuGNQPMD%2Bh78xz46%2Bc7yThq7xr4DKxb4LOwLoE1sO6AxeG%2F1mxe393eeGgW7mWresXTy2nNugGsiZ4H21DYg0oaH0NhTfQ82IbCHlTS%2BBgKa6LnwTYU9qCSxsdQWBM9D7ahsAeVND7eTuFffOCKYCMXyakAAAAASUVORK5CYII%3D"
+	panel_icon_sortie: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGPC%2FxhBQAAAAlwSFlzAAAOwQAADsEBuJFr7QAAABp0RVh0U29mdHdhcmUAUGFpbnQuTkVUIHYzLjUuMTAw9HKhAAAB0ElEQVRoQ%2B2YYW6DMAyFOcX2lwPsDr0ZXI2bZRj1VU9RQhjuiF1cKSJtMfHnZ5vAkFIa7jRuBSvCBvCnp3coHAp%2FWBePlI6UjpT2vTOLGo4ajhqOGnbVB1w5%2B47%2BEsDviKLla6gUHp6feZ7TkTFNU8KQ83nessdactQEVGe8Li6OLsvy70PWAXQ34KtgEVBAmwGWV2Rwrjav%2Fb%2B9XiP7UtYI8DiOK%2B%2F5vYAqpXOFxeH58dig9%2BaA46PYsQ2uweAugTkYAMwDwFmAAMpvJoFL6pWUw3msLM4rZYlJ4M2pNTUZAt8ZoqQo6pcVzQNlSuG84ezVY64qbPPGZQ5YNg61eisB5%2BqVlEZGvG5FzyZoIqXPANdqnH%2FnIHLmyHpmbktHQKAw1zU3qrzeuSeYUDi%2FD7PDtXlxQ0Fpu7dNNdW0rtpPd01p2cxftZ%2BGut2BAd16vMP%2FrZStXUdAZXR%2FPMQjGxxqHUvALRuGNQPMD%2Bh78xz46%2Bc7yThq7xr4DKxb4LOwLoE1sO6AxeG%2F1mxe393eeGgW7mWresXTy2nNugGsiZ4H21DYg0oaH0NhTfQ82IbCHlTS%2BBgKa6LnwTYU9qCSxsdQWBM9D7ahsAeVND7eTuFffOCKYCMXyakAAAAASUVORK5CYII%3D",
+	panel_icon_bmcoord: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADwAAAA8CAYAAAA6%2FNlyAAAABGdBTUEAALGOfPtRkwAAACBjSFJNAAB6JQAAgIMAAPn%2FAACA6QAAdTAAAOpgAAA6mAAAF2%2BSX8VGAAAACXBIWXMAAAsSAAALEgHS3X78AAAAGnRFWHRTb2Z0d2FyZQBQYWludC5ORVQgdjMuNS4xMDD0cqEAAAKPSURBVGhD7ZhNTxNRFIZfweDGlWs3snXhzsRfoIl%2FipV%2FQaExfoAhVqWICC0YhlYliBqxpihiQ7BYUWxgpNSWfhzf27mDlRDapdecJm9uZzpN7vOcmTN3BtCPGlADakANqAE1oAbUgBpQA2pADagBNaAG1IAaUANqQA2oATWgBtSAGlAD7hpIRXBhth8VZjkTRY%2B7JB3OnKBLjCwOQr6NoZyLobfDv7p3mHcV5wxskilNQ2QW4k9iWzwcb6WRPnS5R3fIjAm7YICXhgNYSQVjbgQ73J9jiky9KWUAwyI45iw4AXoNiEkxQdAk4zPzAXQ2Clm%2BC1l7ANkYg2xNQjYfIecsMEE9A%2Fvujq1uhqMwO38q3ax6S3YTKDkJTNCbYXX9uIUyoAbYxFR6lckzBeZlcEw%2Bhj6ngJMRnCXo1xA2e9%2FCpltgQ%2Bhw3LTNLI7vTsF6%2FbgSNqD567wmJyzsM3saHwQ123XmBaTB6q6P4KIzwGE3NpX9wI5c8yzsW47lI6q7Fhz3YxyvnIE1EyXoXmqAXXa85fazfgRoWO2nkOoM6l9Gcdop4OQ1XOJKqrHfcbc6gDXQrG5xCr5TsOFk5yI4n39ooc29ttQBNK%2Fv0hR%2BOQlsJs3FxhkuJIJKP2eKbaDnIJUnqDoLbK%2Fn3ew9ey2%2FbwPMDl2bQcN14MrCjUOAN7jvjc0iR9PB2bSaZ4PLa2h27NrrWxbkI8cG88luH1hKGtjtOFZdB26YZ99m5QywWWXxe3kae59juCxRdEsGPdx30k%2FgFGG7nT2lWd2uvx4YbEV%2FxlHIjf6nD%2F4EXtl%2F%2FiVw4THSKxM44WwV203cvL1ID%2BE2T%2BEqX%2BkMtTtef1cDakANqAE1oAbUgBr4Fwz8BnE4nhkujsJnAAAAAElFTkSuQmCC"
 },
 
 //. sounds
@@ -2544,6 +2545,7 @@ function coordList( country ) {
 
 	//登録座標表示
 	showCoord( country );
+	showMark();
 }
 
 //. showCountryMap
@@ -2585,9 +2587,12 @@ function showCoord( country ) {
 
 //. showMark
 function showMark() {
-	var list = MetaStorage('UNIT_STATUS').get('部隊') || [],
-		enemy = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+	var country = Map.info.country,
+		images = Data.images,
 		$map = $('#ig_mapsAll'),
+		list = MetaStorage('UNIT_STATUS').get('部隊') || [],
+		enemy = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+		coord = MetaStorage('COORD.' + country).data,
 		movecolors = {
 			'攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f',
 			'帰還': '#3f9', '開拓': '#063', '敵襲': '#f66'
@@ -2635,41 +2640,55 @@ function showMark() {
 		var $img = $('<IMG class="imc_mark"/>').addClass( data.class );
 
 		if ( mode == '攻撃' ) {
-			$img.attr('src', Data.images.panel_icon_attack);
+			$img.attr('src', images.panel_icon_attack);
 		}
 		else if ( mode == '陣張' ) {
-			$img.attr('src', Data.images.panel_icon_camp);
+			$img.attr('src', images.panel_icon_camp);
 		}
 		else if ( mode == '合流' ) {
-			$img.attr('src', Data.images.panel_icon_meeting);
+			$img.attr('src', images.panel_icon_meeting);
 		}
 		else if ( mode == '加勢' ) {
-			$img.attr('src', Data.images.panel_icon_backup);
+			$img.attr('src', images.panel_icon_backup);
 		}
 		else if ( mode == '開拓' ) {
-			$img.attr('src', Data.images.panel_icon_develop);
+			$img.attr('src', images.panel_icon_develop);
 		}
 		else if ( mode == '帰還' ) {
-			$img.attr('src', Data.images.panel_icon_return);
+			$img.attr('src', images.panel_icon_return);
 		}
 		else if ( mode == '待機' ) {
-			$img.attr('src', Data.images.panel_icon_wait);
+			$img.attr('src', images.panel_icon_wait);
 		}
 		else if ( mode == '加待' ) {
-			$img.attr('src', Data.images.panel_icon_backup_wait);
+			$img.attr('src', images.panel_icon_backup_wait);
 		}
 		else if ( mode == '国移' ) {
-			$img.attr('src', Data.images.panel_icon_move);
+			$img.attr('src', images.panel_icon_move);
 		}
 		else if ( mode == '出撃' ) {
-			$img.attr('src', Data.images.panel_icon_enemy);
+			$img.attr('src', images.panel_icon_enemy);
 		}
 		else if ( mode == '敵襲' ) {
-			$img.attr('src', Data.images.panel_icon_sortie);
+			$img.attr('src', images.panel_icon_sortie);
 		}
 
 		$map.append( $img );
 	}
+
+	$.each( coord, function( key ) {
+		var id = 'imi_area_' + key.replace(',', '_'),
+			$area = $('#' + id),
+			idx, data, $img
+
+		if ( $area.length == 0 ) { return; }
+
+		idx = $area.attr('idx');
+		data = analyzedData[ idx ];
+		$img = $('<IMG class="imc_mark"/>').attr('src', images.panel_icon_bmcoord).addClass( data.class );
+
+		$map.append( $img );
+	});
 }
 
 //. move
