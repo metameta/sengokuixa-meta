@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.13
+// @version        1.0.3.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6997,7 +6997,8 @@ cardOrderSelecter: function() {
 	var $span = $('<span id="imi_order_open" class="imc_is_close" />'),
 		$div = $('<div id="imi_cardorder_list" />').hide();
 
-	$('#selectarea, #deck_file').append( $span );
+	//デッキ画面では両方マッチしてしまうためlastを使用
+	$('#deck_file, #selectarea').last().append( $span );
 	$('#ig_deck_cardlistmenu, .ig_decksection_innermid > DIV:first-child').append( $div );
 
 	$span.toggle(
