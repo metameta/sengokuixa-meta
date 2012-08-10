@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.12
+// @version        1.0.3.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6768,8 +6768,9 @@ TABLE.common_table1 TR.imc_selected + TR TD { padding: 3px 8px 4px 8px; }
 #imi_cardorder_list { position: absolute; clear: both; padding: 10px; margin-left: -1px; width: 685px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }
 #imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; text-align: left; }
 #imi_cardorder_list INPUT { width: 400px; }
-#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 520px; cursor: default; white-space: nowrap; overflow: hidden; }
-#imi_cardorder_list .imc_command SPAN { padding: 2px 4px; border-radius: 5px; cursor: pointer; }
+#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 485px; cursor: default; white-space: nowrap; overflow: hidden; }
+#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }
+#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }
 #imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }
 ]]></>,
 
@@ -7037,7 +7038,7 @@ cardOrderSelecter: function() {
 		var orderlist = MetaStorage('SETTINGS').get('cardsort') || {},
 			$div = $(this),
 			$ul = $('<ul/>'),
-			$li, order, title, html;
+			$li, order, title, html, idx = 1;
 
 		$div.empty();
 
@@ -7049,14 +7050,17 @@ cardOrderSelecter: function() {
 			html = '<li>' +
 				'<span class="imc_order_title">' + title + '</span>' +
 				'<span class="imc_command">' +
+					( ( idx == 1 ) ? '' : '<span class="imc_up">↑</span>|' ) +
 					'<span class="imc_delete">×</span>' +
-					'｜<span class="imc_name_change">名称変更</span>' +
-					'｜<span class="imc_order_select">決定</span>' +
+					'|<span class="imc_name_change">名称変更</span>' +
+					'|<span class="imc_order_select">決定</span>' +
 				'</span>' +
 			'</li>';
 
-			$li = $( html ).data('order', order);
+			$li = $( html ).data({ idx: idx, order: order });
 			$ul.append( $li );
+
+			idx += 2;
 		});
 
 		order = [
@@ -7072,7 +7076,7 @@ cardOrderSelecter: function() {
 			//登録されていないソート順の場合、新規登録できるようにする
 			title = generateTitle( order );
 
-			html = '<li>' +
+			html = '<li class="imc_newdata">' +
 				'<span class="imc_order_title">' + title + '</span>' +
 				'<span class="imc_command">' +
 					'<span class="imc_register">新規登録</span>' +
@@ -7091,6 +7095,29 @@ cardOrderSelecter: function() {
 
 		orderlist[ order ] = {};
 		MetaStorage('SETTINGS').set('cardsort', orderlist);
+
+		$('#imi_cardorder_list').trigger('update');
+	})
+	.on('click', '.imc_up', function() {
+		var $this = $(this),
+			$li = $this.closest('LI'),
+			orderlist = MetaStorage('SETTINGS').get('cardsort') || {},
+			newlist = {};
+
+		$li.data( 'idx', $li.data('idx') - 3 );
+
+		$this.closest('UL').find('LI:not(".imc_newdata")').map(function() {
+			return $(this).data();
+		}).get()
+		.sort(function( a, b ) {
+			return ( a.idx > b.idx );
+		})
+		.forEach(function( value ) {
+			var order = value.order;
+			newlist[ order ] = orderlist[ order ];
+		});
+
+		MetaStorage('SETTINGS').set('cardsort', newlist);
 
 		$('#imi_cardorder_list').trigger('update');
 	})
@@ -7402,8 +7429,9 @@ SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
 #imi_cardorder_list { position: relative; clear: both; left: -9px; padding: 10px; width: 727px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }
 #imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; }
 #imi_cardorder_list INPUT { width: 400px; }
-#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 560px; cursor: default; white-space: nowrap; overflow: hidden; }
-#imi_cardorder_list .imc_command SPAN { padding: 2px 4px; border-radius: 5px; cursor: pointer; }
+#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 530px; cursor: default; white-space: nowrap; overflow: hidden; }
+#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }
+#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }
 #imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }
 ]]></>,
 
