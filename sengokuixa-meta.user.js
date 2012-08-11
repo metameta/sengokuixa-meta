@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.14
+// @version        1.0.3.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6280,15 +6280,30 @@ Page.registerAction( 'facility', 'send_troop', {
 
 //. style
 style: '' + <><![CDATA[
-.table_waigintunit TH ~ TD { min-width: 110px; }
+#ig_deckheadmenubox { height: 50px; }
+.btnarea { height: auto; margin-bottom: 0px; }
 .ig_decksection_mid { padding-bottom: 0px; }
 .ig_decksection_bottom { height: 15px; }
 
+/* 待機武将一覧 */
+.table_waigintunit { width: 620px; }
+.table_waigintunit TH ~ TD { min-width: 110px; }
+.table_waigintunit TD.imc_command { width: 50px; }
+.imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }
+.imc_command_button.imc_backup:hover  { background-color: #09c; color: #fff; }
+.imc_command_button.imc_attack:hover  { background-color: #f66; }
+.imc_command_button.imc_camp:hover    { background-color: #c33; color: #fff; }
+.imc_command_button.imc_develop:hover { background-color: #390; color: #fff; }
+.imc_command_button.imc_meeting:hover { background-color: #6cf; }
+
+/* 出陣確認画面 */
 TH.imc_speed { font-size: 12px; }
 .imc_move_type { padding-top: 10px; padding-bototm: 10px; text-align: center }
 .imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }
-.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }
+.imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }
+.imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }
 
+/* 部隊スキル */
 #imi_speed { margin: 0px; }
 .imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }
 #imi_unit_skill { width: 40px; text-align: right; ime-mode: disabled; }
@@ -6299,15 +6314,18 @@ TH.imc_speed { font-size: 12px; }
 main: function() {
 	var title = $('.ig_decksection_top').text();
 
+	$('#ig_deckmenu').remove();
+
 	switch ( title ) {
 		case '待機部隊一覧':
 			this.layouter();
 			this.showSpeed();
+			this.commandButton();
 			break;
 		case '出陣確認':
 			this.layouter2();
 			this.unitSpeed();
-			this.confluence();
+			if ( Env.war >= 0 ) { this.confluence(); }
 			break;
 	}
 },
@@ -6327,22 +6345,12 @@ layouter: function() {
 	.click( this.sendAll );
 
 	//テーブルクリック
-	$('TABLE.table_waigintunit')
+	$('.table_waigintunit')
 	.css({ cursor: 'pointer' })
 	.hover( Util.enter, Util.leave )
 	.click(function() {
 		$(this).find('INPUT:radio').attr('checked', true);
 	});
-},
-
-//. layouter2
-layouter2: function() {
-	//スキル表示変更
-	$('#btn_gofight_skill_navi').remove();
-	$('#data_gofight_skill_deck').removeAttr('id')
-	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header" style="color: #cff;">部隊スキル</th></tr>');
-	$('#data_gofight_skill_unit').removeAttr('id').css({ marginTop: '10px' })
-	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">武将スキル</th></tr>');
 },
 
 //. showSpeed
@@ -6353,7 +6361,7 @@ showSpeed: function() {
 		y = $('INPUT[name="village_y_value"]').val(),
 		dist = Util.getDistance( village, { x: x, y: y } );
 
-	$('TABLE.table_waigintunit').each(function() {
+	$('.table_waigintunit').each(function() {
 		var $this = $(this),
 			cards = [], speed, time, html;
 
@@ -6378,6 +6386,65 @@ showSpeed: function() {
 		$this.find('TH').first().attr('colspan', 4).after( html );
 	});
 },
+
+//. commandButton
+commandButton: function() {
+	//行動タイプ
+	var commands = $('.imc_move_type INPUT').map(function() {
+		var type = $(this).val();
+		
+		switch ( type ) {
+			case '301':
+				return '<div class="imc_command_button imc_backup" data-type="301">加勢</div>';
+			case '302':
+				return '<div class="imc_command_button imc_attack" data-type="302">攻撃</div>';
+			case '307':
+				return '<div class="imc_command_button imc_camp" data-type="307">陣張</div>';
+			case '308':
+				return '<div class="imc_command_button imc_develop" data-type="308">開拓</div>';
+			case '320':
+				return '<div class="imc_command_button imc_meeting" data-type="320">合流</div>';
+		}
+
+		return '';
+	}).get().join('');
+
+	$('.table_waigintunit').each(function() {
+		var $this = $(this),
+			$tr = $this.find('TR:first');
+
+		if ( $this.find('INPUT:radio').length == 0 ) {
+			$tr.prepend('<td rowspan="3" style="width: 50px;">行<br/>動<br/>中</td>')
+		}
+		else {
+			$tr.prepend('<td rowspan="3" class="imc_command">' + commands + '</td>');
+		}
+	});
+
+	$('.imc_command_button').click(function() {
+		var $this = $(this);
+			$table = $this.closest('TABLE'),
+			type = $this.data('type');
+
+		$table.find('INPUt:radio').attr('checked', true);
+		$('.imc_move_type').find('INPUT[value=' + type + ']').attr('checked', 'true');
+		$('.btnarea A:first').click();
+	});
+},
+
+//. layouter2
+layouter2: function() {
+	//ボタンエリアを上部に複製、非表示項目は削除する
+	$('.btnarea').clone().prependTo('#input_troop').find('INPUT:hidden').remove();
+
+	//スキル表示変更
+	$('#btn_gofight_skill_navi').remove();
+	$('#data_gofight_skill_deck').removeAttr('id')
+	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header" style="color: #cff;">部隊スキル</th></tr>');
+	$('#data_gofight_skill_unit').removeAttr('id').css({ marginTop: '10px' })
+	.find('TABLE').prepend('<tr><th colspan="4" class="imc_skill_header">武将スキル</th></tr>');
+},
+
 
 //. sendAll
 sendAll: function() {
@@ -6432,6 +6499,8 @@ sendAll: function() {
 
 //. confluence
 confluence: function() {
+	if ( $('#input_troop INPUT[name="radio_move_type"]').val() != '302' ) { return; }
+
 	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
 	.one('click', function() {
 		var $form = $('#input_troop');
