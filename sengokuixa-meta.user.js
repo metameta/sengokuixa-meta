@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.15
+// @version        1.0.3.16
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6113,16 +6113,11 @@ style: '' + <><![CDATA[
 
 //. main
 main: function() {
-	if ( $('.dungeon_list_header').length == 1 ) {
-		this.layouter();
-		this.showSoldier();
-	}
-	else {
-		this.layouter2( 'dungeon' );
-	}
+	this.layouter();
+	this.showSoldier();
 },
 
-//. layouter - 新方式
+//. layouter
 layouter: function() {
 	var dungeon = MetaStorage('SETTINGS').get('dungeon');
 
@@ -6132,6 +6127,9 @@ layouter: function() {
 		MetaStorage('SETTINGS').set( 'dungeon', dungeon );
 	})
 	.find('INPUT[value="' + dungeon + '"]').attr('checked', true);
+
+	//ボタンエリアを上部に複製
+	$('.dungeon_list_header').after( $('.btnarea').clone() );
 
 	//全部隊選択
 	$('.table_waigintunit').find('INPUT:checkbox').attr('checked', true);
@@ -6169,109 +6167,7 @@ showSoldier: function() {
 			$tr3.find('TD').eq( idx ).text( card.solName + ' (' + card.solNum + ')' );
 		});
 	});
-},
-
-//. layouter2 - 旧方式そのうち削除
-layouter2: function( key ) {
-	var dungeon = MetaStorage('SETTINGS').get( key );
-
-	$('#dungeon_list_body')
-	.click(function() {
-		var dungeon = $(this).find('INPUT:checked').val();
-		MetaStorage('SETTINGS').set( key, dungeon );
-	})
-	.find('INPUT[value="' + dungeon + '"]').attr('checked', true);
-
-	if ( $('DIV.btnarea').length == 0 ) { return; }
-
-	$('<div class="center" />').append(
-		$('<img title="全出発" style="cursor: pointer;"/>')
-		.attr( 'src', Data.images.all_departure )
-		.click( this.sendAll )
-	)
-	.insertAfter('#dungeon_list_body');
-
-	//１部隊目選択
-	$('TABLE.table_waigintunit').find('INPUT').eq( 0 ).attr('checked', true);
-
-	//テーブルクリック
-	$('TABLE.table_waigintunit')
-	.css({ cursor: 'pointer' })
-	.hover( Util.enter, Util.leave )
-	.click(function() {
-		$(this).find('INPUT:radio').attr('checked', true);
-	});
-},
-
-//. sendAll
-sendAll: function() {
-	var $list = $('#dungeon_input_form input:radio[name="unit_select"]'),
-		dungeon = $('#dungeon_list_body').find('INPUT:checked').val(),
-		href = $('#dungeon_input_form').attr('action'),
-		ol, tasks;
-
-	if ( $list.length == 0 || dungeon == undefined || href == undefined ) { return; }
-	if ( !confirm('秘境へ部隊を全て送ります。\nよろしいですか？') ) { return; }
-
-	//オーバーレイ表示
-	ol = Display.dialog();
-	ol.message('全出発処理開始...');
-
-	tasks = [];
-	$list.each(function() {
-		tasks.push( sendData.call( this, dungeon ) );
-	});
-
-	$.when.apply( $, tasks )
-	.done(function() {
-		ol.message('全出発処理終了').message('ページを更新します...');
-	})
-	.fail(function() {
-		ol.message('全出発処理失敗').message('処理を中断します。');
-	})
-	.always(function() {
-		var timer;
-
-		timer = setTimeout(function() { clearTimeout(timer); location.reload(); }, 1000);
-	});
-
-	function sendData( dungeon ) {
-		var $this = $(this).attr('checked', true),
-			post_data = $('#dungeon_input_form').serialize() + '&btn_send=true',
-			unit_name = $this.closest('tbody').find('.waitingunittitle').text();
-
-		Display.dialog().message( unit_name + '出発中...' );
-
-		return $.post( href, post_data );
-	}
 }
-
-});
-
-//■ /facility/dungeon02
-Page.registerAction( 'facility', 'dungeon02', {
-
-//. style
-style: '' + <><![CDATA[
-.table_waigintunit TH ~ TD { min-width: 110px; }
-]]></>,
-
-//. main
-main: function() {
-	this.layouter( 'dungeon02' );
-	this.showSoldier();
-
-	$('.dungeon_info').css({ padding: '10px 0px' }).appendTo('.ig_decksection_innermid');
-},
-
-//. layouter
-layouter: Page.getAction( 'facility', 'dungeon', 'layouter2' ),
-
-//. sendAll
-sendAll: Page.getAction( 'facility', 'dungeon', 'sendAll' ),
-
-//. showSoldier
-showSoldier: Page.getAction( 'facility', 'dungeon', 'showSoldier' )
 
 });
 
