@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.17
+// @version        1.0.3.18
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2190,6 +2190,8 @@ function contextmenu() {
 		menu['座標登録'] = contextmenu.coordRegister;
 	}
 
+	menu['座標情報のコピー'] = contextmenu.coordInfo;
+
 	return menu;
 }
 
@@ -2471,6 +2473,16 @@ coordUnregister: function() {
 		data   = analyzedData[ idx ];
 
 	coordUnregister( data.x, data.y, data.country );
+},
+
+//.. coordInfo
+coordInfo: function() {
+	var $this = $(this),
+		idx   = $this.attr('idx').toInt(),
+		data  = analyzedData[ idx ],
+		coord = ' (' + data.x + ',' + data.y + ')';
+
+	GM_setClipboard( ( data.castle || data.type ) + coord );
 }
 
 });
