@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.18
+// @version        1.0.3.19
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6232,7 +6232,8 @@ main: function() {
 		case '出陣確認':
 			this.layouter2();
 			this.unitSpeed();
-			if ( Env.war >= 0 ) { this.confluence(); }
+			this.arrivalCopy();
+			if ( Env.war > 0 ) { this.confluence(); }
 			break;
 	}
 },
@@ -6412,27 +6413,6 @@ sendAll: function() {
 	};
 },
 
-//. confluence
-confluence: function() {
-	if ( $('#input_troop INPUT[name="radio_move_type"]').val() != '302' ) { return; }
-
-	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
-	.one('click', function() {
-		var $form = $('#input_troop');
-
-		$(this).attr('disabled', true);
-
-		Page.form('/facility/confluence_list.php', {
-			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
-			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
-			unit_select: $form.find('INPUT[name="unit_select"]').val(),
-			radio_move_type: 320,
-			x: '',
-			y: ''
-		});
-	});
-},
-
 //. unitSpeed
 unitSpeed: function() {
 	var name = $('.basename .on SPAN').text(),
@@ -6493,6 +6473,46 @@ unitSpeed: function() {
 		$('#imi_unitskill_calc').click();
 
 		return false;
+	});
+},
+
+//. arrivalCopy
+arrivalCopy: function() {
+	var $button = $('<button>コピー</button>');
+
+	$('#imi_arrival').after( $button );
+
+	$button.click(function() {
+		var text = '';
+
+		text += $('#ig_gofightconfirmboxtitle TR:first TD:first SPAN').text().replace(/\t/g, '').trim();
+		text += '　';
+		text += $('#imi_arrival').text();
+
+		GM_setClipboard( text );
+
+		return false;
+	});
+},
+
+//. confluence
+confluence: function() {
+	if ( $('#input_troop INPUT[name="radio_move_type"]').val() != '302' ) { return; }
+
+	$('<span class="imc_button">合流検索</span>').appendTo('.btnarea')
+	.one('click', function() {
+		var $form = $('#input_troop');
+
+		$(this).attr('disabled', true);
+
+		Page.form('/facility/confluence_list.php', {
+			village_x_value: $form.find('INPUT[name="village_x_value"]').val(),
+			village_y_value: $form.find('INPUT[name="village_y_value"]').val(),
+			unit_select: $form.find('INPUT[name="unit_select"]').val(),
+			radio_move_type: 320,
+			x: '',
+			y: ''
+		});
 	});
 }
 
