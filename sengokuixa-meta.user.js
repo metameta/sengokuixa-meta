@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.3.16
+// @version        1.0.3.17
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6182,7 +6182,7 @@ style: '' + <><![CDATA[
 .ig_decksection_bottom { height: 15px; }
 
 /* 待機武将一覧 */
-.table_waigintunit { width: 620px; }
+.table_waigintunit { width: 620px; margin: 10px auto; }
 .table_waigintunit TH ~ TD { min-width: 110px; }
 .table_waigintunit TD.imc_command { width: 50px; }
 .imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }
@@ -6194,7 +6194,6 @@ style: '' + <><![CDATA[
 
 /* 出陣確認画面 */
 TH.imc_speed { font-size: 12px; }
-.imc_move_type { padding-top: 10px; padding-bototm: 10px; text-align: center }
 .imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }
 .imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }
 .imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }
@@ -6231,8 +6230,10 @@ layouter: function() {
 	//部隊がない場合、全出陣は表示しない
 	if ( $('#input_troop :radio[name="unit_select"]').length == 0 ) { return; }
 
-	$('#ig_gofightboxtitle P.mb10').addClass('imc_move_type').removeClass('mb10')
-	.appendTo('.ig_decksection_innermid');
+	$('#ig_gofightboxtitle P.mb10').addClass('imc_move_type');
+
+	//ボタンエリアを上部に複製、非表示項目は削除する
+	$('.btnarea').clone().prependTo('#input_troop').find('INPUT:hidden, SPAN, BR').remove();
 
 	//全出陣ボタン
 	$('<img title="全出陣" style="cursor: pointer;" />')
@@ -6246,7 +6247,8 @@ layouter: function() {
 	.hover( Util.enter, Util.leave )
 	.click(function() {
 		$(this).find('INPUT:radio').attr('checked', true);
-	});
+	})
+	.eq( 0 ).trigger('click');
 },
 
 //. showSpeed
@@ -6303,7 +6305,12 @@ commandButton: function() {
 		}
 
 		return '';
-	}).get().join('');
+	}).get();
+
+	while ( commands.length < 4 ) {
+		commands.push('<div class="imc_command_button imc_none">-</div>');
+	}
+	commands = commands.join('');
 
 	$('.table_waigintunit').each(function() {
 		var $this = $(this),
@@ -6317,7 +6324,7 @@ commandButton: function() {
 		}
 	});
 
-	$('.imc_command_button').click(function() {
+	$('.imc_command_button').not('.imc_none').click(function() {
 		var $this = $(this);
 			$table = $this.closest('TABLE'),
 			type = $this.data('type');
