@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.0
+// @version        1.0.4.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2710,7 +2710,7 @@ function showMark() {
 
 //. move
 function move( x, y, country ) {
-	if ( x === undefined || y === undefined ) {
+	if ( x === '' || x === undefined || y === '' || y === undefined ) {
 		throw new Error( 'x: ' + x + ' y: ' + y + ' 座標情報が不正です。' );
 	}
 	country = country || '';
@@ -2745,7 +2745,7 @@ function moveUrl( url ) {
 
 		//各種置き換え
 		$('#ig_mapbox_container').replaceWith( $html.find('#ig_mapbox_container') );
-		$('#ig_map_movepanel').replaceWith( $html.find('#ig_map_movepanel') );
+		$('#ig_map_movepanel UL').replaceWith( $html.find('#ig_map_movepanel UL') );
 
 		//移動したので情報更新
 		Map.info = mapInfo();
@@ -8374,6 +8374,21 @@ layouter: function() {
 		else {
 			$inputarea.find('INPUT').val('');
 		}
+	});
+
+	$('.ig_map_movepanel_btnarea INPUT').first()
+	.attr('onclick', 'return false;')
+	.click(function() {
+		var $inputarea = $('.ig_map_movepanel_inputarea'),
+			x = $inputarea.find('INPUT[name="x"]').val().trim(),
+			y = $inputarea.find('INPUT[name="y"]').val().trim();
+
+		if ( x == '' || y == '' ) { return; }
+
+		Map.move( x, y );
+
+		$('#imi_coord_move').val('');
+		$inputarea.find('INPUT').val('');
 	});
 
 	//情報表示エリア微調整
