@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.1
+// @version        1.0.4.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -151,7 +151,7 @@ unique: function() {
 
 //■ jQueryプラグイン
 //. contextMenu
-(function($){var contextMenuContainer,contextMenuItem,timer,defaults={class_menuitem:'imc_menuitem',class_separater:'imc_separater',class_nothing:'imc_nothing',class_hover:'imc_hover',timeout:500},options=$.extend({},defaults);$.contextMenu=function(_options){options=$.extend({},defaults,_options);return this};$.extend($.contextMenu,{separator:function(){return $('<div/>').addClass(options.class_separater)},nothing:function(key){key=key||'';return $('<div/>').addClass(options.class_nothing).text(key)}});$.fn.contextMenu=function(menu,live){if(live){this.live('contextmenu',collback)}else{this.on('contextmenu',collback)}return this;function collback(e){show.call(this,menu,e);return false}};function show(menu,e){var x=e.pageX,y=e.pageY,menucount=0,key;if(typeof(menu)=='function'){menu=menu.call(this)}if(menu==null||menu.length==0){return}contextMenuItem.empty();for(key in menu){var menuitem=createMenuItem.call(this,key,menu[key],{pageX:x,pageY:y});contextMenuItem.append(menuitem);menucount++}if(menucount==0){return}contextMenuContainer.css({left:x,top:y}).show();var containerBottom=contextMenuContainer.offset().top+contextMenuContainer.height()+10,documentBottm=$(document).scrollTop()+$(window).height();if(containerBottom>documentBottm){contextMenuContainer.css({top:y-(containerBottom-documentBottm)})}};function createMenuItem(key,menuitem,e){var self=this;if(menuitem===null||menuitem===undefined){return $.contextMenu.nothing(key)}if(menuitem===$.contextMenu.separator){return menuitem.call(self)}if(menuitem===$.contextMenu.nothing){return menuitem.call(self,key)}if(typeof(menuitem)=='string'){return $('<div/>').addClass(options.class_menuitem).text(menuitem)}if(typeof(menuitem)=='function'){return $('<div/>').addClass(options.class_menuitem).text(key).click(function(){hide();menuitem.call(self,e)}).hover(function(){$(this).addClass(options.class_hover)},function(){$(this).removeClass(options.class_hover)})}return $('<div/>').addClass(options.class_menuitem).append(menuitem)}function hide(){contextMenuContainer.hide();clearTimeout(timer);timer=null};if(!contextMenuContainer){contextMenuItem=$('<div/>');contextMenuContainer=$('<table/>').attr('id','imi_contextmenu').append($('<tr/>').append($('<td/>').append(contextMenuItem))).appendTo(document.body).hide().on('contextmenu',function(e){return false}).hover(function(){if(timer){clearTimeout(timer);timer=null}},function(){timer=setTimeout(hide,options.timeout)});$(document.body).click(hide).on('contextmenu',function(e){hide()})}})(jQuery);
+(function($){var timer,defaults={class_menuitem:'imc_menuitem',class_title:'imc_menutitle',class_separater:'imc_separater',class_nothing:'imc_nothing',class_hover:'imc_hover',timeout:500},options=$.extend({},defaults);$.contextMenu=function(_options){options=$.extend({},defaults,_options);return this};$.extend($.contextMenu,{title:function(key){key=key||'';return $('<li/>').addClass(options.class_title).text(key)},separator:function(){return $('<li/>').addClass(options.class_separater)},nothing:function(key){key=key||'';return $('<li/>').addClass(options.class_nothing).text(key)}});$.fn.contextMenu=function(menu,live){if(live){this.live('contextmenu',collback)}else{this.on('contextmenu',collback)}return this;function collback(e){show.call(this,menu,e);return false}};function show(menu,e){var x=e.pageX,y=e.pageY;if(typeof(menu)=='function'){menu=menu.call(this,e)}if(menu==null||menu.length==0){return}var menuContainer=createMenuList.call(this,menu,e);if(!menuContainer){return}menuContainer.attr('id','imi_contextmenu').css({left:x,top:y}).appendTo('BODY');var containerBottom=menuContainer.offset().top+menuContainer.height()+10,documentBottm=$(document).scrollTop()+$(window).height();if(containerBottom>documentBottm){menuContainer.css({top:y-(containerBottom-documentBottm)})}}function hide(){var $menu=$('#imi_contextmenu');if($menu.length==0){return}$menu.remove();clearTimeout(timer);timer=null};function createMenuList(menu,e,sub){var itemlist=[],$menu;for(key in menu){var menuitem=createMenuItem.call(this,key,menu[key],e);itemlist.push(menuitem.get(0))}if(itemlist.length==0){return null}$menu=$('<ul class="imc_menulist"/>').append(itemlist);if(sub){$menu.addClass('imc_submenu')}return $menu}function createMenuItem(key,menuitem,e){var self=this;if(menuitem===null||menuitem===undefined){return $.contextMenu.nothing(key)}else if(menuitem===$.contextMenu.title){return menuitem.call(self,key)}else if(menuitem===$.contextMenu.separator){return menuitem.call(self)}else if(menuitem===$.contextMenu.nothing){return menuitem.call(self,key)}else if(typeof(menuitem)=='string'){return $('<li/>').addClass(options.class_menuitem).text(menuitem)}else if(typeof(menuitem)=='function'){return $('<li/>').addClass(options.class_menuitem).text(key).click(function(){hide();menuitem.call(self,e)})}else if(menuitem.jquery){return $('<li/>').addClass(options.class_menuitem).append(menuitem)}else{var submenu=createMenuList.call(this,menuitem,e,true);return $('<li/>').addClass(options.class_menuitem).append(submenu).append(key+'<span class="imc_submenu_mark">‣</span>')}}$(document).on('click',hide).on('contextmenu',hide).on('contextmenu','#imi_contextmenu',function(){return false}).on('mouseenter','#imi_contextmenu',function(){if(timer){clearTimeout(timer);timer=null}}).on('mouseleave','#imi_contextmenu',function(){if(options.timeout>0){timer=setTimeout(hide,options.timeout)}})})(jQuery);
 //. autoPager
 (function($){var $window=$(window),$document=$(document),fetchPage={},nextPage,container,defaults={next:'',contants:'',container:'',load:function(page){return $.get(page)},loaded:function(html){},ended:function(){}},options=$.extend({},defaults);$.autoPager=function(_options){options=$.extend({},defaults,_options);nextPage=getNext(document);container=$(options.container);if(container.length!=0){$window.scroll(pageScroll)}return this};$.extend($.autoPager,{});function getNext(html){var nextPage;if($.isFunction(options.next)){nextPage=options.next(html)}else{nextPage=$(html).find(options.next).attr('href')}return nextPage}function pageScroll(){var containerBottom=container.offset().top+container.height(),documentBottm=$document.scrollTop()+$window.height();if(containerBottom<documentBottm){pageLoad()}};function pageLoad(){if(nextPage==undefined){return}if(fetchPage[nextPage]){return}fetchPage[nextPage]=true;var jqXhr=options.load(nextPage);jqXhr.pipe(function(html){nextPage=getNext(html);options.loaded(html);if(!nextPage){options.ended()}pageScroll()})}})(jQuery);
 //. keybind
@@ -1274,12 +1274,16 @@ style: '' + <><![CDATA[
 .imc_dialog_content.imc_alert { border: solid 2px #c00; background-color: #fee; }
 
 /* コンテキストメニュー用 z-index: 9999 */
-#imi_contextmenu { position: absolute; padding: 2px 2px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
-#imi_contextmenu .imc_menuitem { margin: 0px; padding: 3px 8px; cursor: pointer; border-radius: 2px; }
-#imi_contextmenu .imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }
-#imi_contextmenu .imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }
-#imi_contextmenu .imc_hover { color: #000; background: #ccc; }
-.imc_contextmenu_title { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -5px -10px 0px -10px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }
+.imc_menulist { position: absolute; padding: 2px; min-width: 120px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
+.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }
+.imc_menuitem { margin: 0px; padding: 3px 20px 3px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }
+.imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }
+.imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }
+.imc_menuitem:hover { color: #000; background: #ccc; }
+.imc_menuitem > .imc_submenu { display: none; }
+.imc_menuitem:hover > .imc_submenu { display: block; }
+.imc_submenu { position: absolute; left: 100%; margin: -6px 0px 0px -2px; }
+.imc_submenu_mark { position: absolute; left: 100%; margin-left: -10px; font-size: 14px; }
 
 /* 下部表示欄 z-index: 99 */
 #imi_bottom_container { position: fixed; bottom: 0px; left: 0px; width: 100%; height: auto; border-bottom: solid 2px #000; z-index: 99; }
@@ -2149,9 +2153,10 @@ function contextmenu() {
 		data  = analyzedData[ idx ],
 		coord = data.x + ',' + data.y,
 		load  = $('#lordName').text(),
+		title = ( data.castle || data.type + ' (' + coord + ')' ),
 		menu  = {};
 
-	menu['拠点名'] = $('<div class="imc_contextmenu_title">' + ( data.castle || data.type + ' (' + coord + ')' ) + '</div>');
+	menu[ title ] = $.contextMenu.title;
 
 	menu['ここを中心に表示'] = contextmenu.center;
 	menu['ここへ部隊出陣'] = contextmenu.send;
@@ -2257,7 +2262,7 @@ fightHistory: function() {
 				menu = {};
 
 			if ( user != '' ) {
-				menu['拠点名'] = $('<div class="imc_contextmenu_title">' + castle + '</div>');
+				menu[ castle ] = $.contextMenu.title;
 				menu['ここを中心に表示'] = function() { move( x, y, country ); };
 				menu['合戦報告書'] = function() { contextmenu.warList( user ); };
 			}
@@ -2540,9 +2545,10 @@ function coordList( country ) {
 		var $this = $(this),
 			{ user, castle, x, y } = $this.data(),
 			type = $(this).find('TD').eq( 3 ).text(),
+			title = ( castle || type + ' (' + x + ',' + y + ')' ),
 			menu = {};
 
-		menu['拠点名'] = $('<div class="imc_contextmenu_title">' + ( castle || type + ' (' + x + ',' + y + ')' ) + '</div>');
+		menu[ title ] = $.contextMenu.title;
 
 		menu['ここを中心に表示'] = function() { move( x, y ); };
 		menu['ここへ部隊出陣'] = function() { send( x, y ); };
@@ -3597,21 +3603,23 @@ contextmenu: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
 		card = SmallCard.analyzedData[ card_id ],
-		menu = {};
+		menu = {}, submenu;
 
 	//出品中
 	if ( card.isExhibited ) {
-		var name = $this.find('.imc_cardname').text();
-
-		menu['武将名'] = $('<div class="imc_contextmenu_title">' + name + '</div>');
+		menu[ card.name ] = $.contextMenu.title;
 		menu['出品中です'] = $.contextMenu.nothing;
 		menu['セパレーター1'] = $.contextMenu.separator;
 
-		menu[ '取引で「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+		submenu = {};
+		submenu[ '「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+		submenu['セパレーター1'] = $.contextMenu.separator;
 
 		card.skillList.forEach(function( skill ) {
-				menu[ '取引で「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
+			submenu[ '「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
 		});
+
+		menu['取引検索'] = submenu;
 
 		return menu;
 	}
@@ -3627,7 +3635,7 @@ contextmenu: function() {
 
 	if ( added_cid ) { added_card = SmallCard.analyzedData[ added_cid ]; }
 
-	menu['武将名'] = $('<div class="imc_contextmenu_title">' + card.name + '</div>');
+	menu[ card.name ] = $.contextMenu.title;
 
 	if ( $this.find('.levelup_btn').length ) {
 		menu['レベルアップ！'] = function () {
@@ -3699,12 +3707,15 @@ contextmenu: function() {
 		separator = false;
 	}
 
-
-	menu[ '取引で「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+	submenu = {};
+	submenu[ '「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+	submenu['セパレーター1'] = $.contextMenu.separator;
 
 	card.skillList.forEach(function( skill ) {
-			menu[ '取引で「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
+		submenu[ '「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
 	});
+
+	menu['取引検索'] = submenu;
 
 	/*
 	if ( card.canExhibit() ) {
@@ -7289,7 +7300,7 @@ contextmenu: function() {
 		}),
 		menu = {}, separator = false;
 
-	menu['武将名'] = $('<div class="imc_contextmenu_title">' + card.name + '</div>');
+	menu[ card.name ] = $.contextMenu.title;
 
 	//合成可能な場合のメニュー
 	if ( card.canUnion() && !selected ) {
@@ -8195,7 +8206,7 @@ contextmenu: function() {
 			card = new LargeCard( $('#cardWindow_' + card_no ) ),
 			menu = {};
 
-		menu['武将名'] = $('<div class="imc_contextmenu_title">' + card.name + '</div>');
+		menu[ card.name ] = $.contextMenu.title;
 		menu[ '取引で「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
 		card.skillList.forEach(function( skill ) {
 				menu[ '取引で「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
@@ -8711,9 +8722,10 @@ layouterSituation: function() {
 	.trigger('update');
 
 	$('#imi_raid_list TR').contextMenu(function() {
-		var menu = {};
+		var title = $(this).find('TD').eq( 0 ).text(),
+			menu = {};
 
-		menu['部隊名'] = $('<div class="imc_contextmenu_title">' + $(this).find('TD').eq( 0 ).text() + '</div>');
+		menu[ title ] = $.contextMenu.title;
 		menu['発射地点を中心に表示'] = function() {
 			var { sx, sy, sc } = $(this).data();
 			Map.move( sx, sy, sc );
