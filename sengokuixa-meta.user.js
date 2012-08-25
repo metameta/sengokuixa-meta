@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.3
+// @version        1.0.4.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2540,7 +2540,12 @@ function coordList( country ) {
 		)
 	});
 
-	$tbody.find('tr').contextMenu(function() {
+	$tbody.find('tr')
+	.click(function() {
+		var { x, y } = $(this).data();
+		Map.move( x, y );
+	})
+	.contextMenu(function() {
 		//user情報には資源情報が入っている場合があるためplayer判定には使えない
 		var $this = $(this),
 			{ user, castle, x, y } = $this.data(),
@@ -8956,7 +8961,7 @@ fortressLink: function() {
 				y = base_y * compass[ value ].y,
 				name = compass[ value ].name + idx;
 
-			return '<td x="' + x + '" y="' + y + '">' + name + '</td>';
+			return '<td data-x="' + x + '" data-y="' + y + '">' + name + '</td>';
 		}).join('');
 
 		return '<tr style="cursor: pointer">' + html + '</tr>';
@@ -8968,10 +8973,7 @@ fortressLink: function() {
 	.find('TR:gt(0) TD')
 	.hover( Util.enter, Util.leave )
 	.click(function() {
-		var $this = $(this),
-			x = $this.attr('x'),
-			y = $this.attr('y');
-
+		var { x, y } = $(this).data();
 		Map.move( x, y );
 	});
 },
