@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.5
+// @version        1.0.4.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3033,14 +3033,14 @@ function getCanvasY( y ) {
 function getCanvasPointX( x, size ) {
 	var modsize = ( size - options.pxsize ) / 2;
 
-	return Math.ceil( ( 180 + x ) * options.pxsize - modsize );
+	return Math.ceil( getCanvasX( x ) - modsize );
 }
 
 //. getCanvasPointY
 function getCanvasPointY( y, size ) {
 	var modsize = ( size - options.pxsize ) / 2;
 
-	return Math.ceil( ( 180 - y ) * options.pxsize - modsize );
+	return Math.ceil( getCanvasY( y ) - modsize );
 }
 
 //. showFortress
@@ -3068,8 +3068,6 @@ function showFortress() {
 			drowPoint( context, canvasx, canvasy, options.fortresssize, options.fortresssize, '#fff' );
 		}
 	}
-
-	$map.append( $canvas );
 }
 
 //. showViewArea
@@ -3085,8 +3083,6 @@ function showViewArea( mapinfo ) {
 
 	clear( context );
 	drowArea( context, canvasx, canvasy, width, height );
-
-	$map.append( $canvas );
 }
 
 //. showBasePoint
@@ -3106,8 +3102,6 @@ function showBasePoint( name, list, pointsize ) {
 
 		drowPoint( context, canvasx, canvasy, pointsize, pointsize, list[ i ].color );
 	}
-
-	$map.append( $canvas );
 }
 
 //. showRoute
@@ -3127,16 +3121,18 @@ function showRoute( list ) {
 
 		drowLine( context, sx, sy, ex, ey, color );
 	}
-
-	$map.append( $canvas );
 }
 
 //. showPointer
 function showPointer( x, y ) {
-	var $canvas = newLayer( 'pointer' + name, options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d');
+	var $canvas = newLayer( 'pointer', options.mapsize, options.mapsize ),
+		context = $canvas.get(0).getContext('2d'),
+		radius = options.pointsize + 1;
 
-	drowCircle( context, getCanvasX( x ), getCanvasY( y ), '#fff' );
+	clear( context );
+	if ( x === undefined || y === undefined ) { return; }
+
+	drowCircle( context, getCanvasX( x ), getCanvasY( y ), radius, '#fff' );
 }
 
 //. removeLayer
@@ -3154,6 +3150,8 @@ function newLayer( name, width, height ) {
 
 	$canvas = $('<canvas />').attr({ width: width, height: height });
 	layer[ name ] = $canvas;
+
+	$map.append( $canvas );
 
 	return $canvas;
 }
@@ -3196,13 +3194,14 @@ function drowLine( context, startx, starty, endx, endy, color ) {
 }
 
 //. drowCircle
-function drowCircle( context, x, y, color ) {
-	x = x + ( options.pointsize - options.pxsize ) / 2;
-	y = y + ( options.pointsize - options.pxsize ) / 2;
+function drowCircle( context, x, y, radius, color ) {
+	x += 0.5;
+	y += 0.5;
 
+	context.lineWidth = ( radius >= 4 ) ? 2 : 1;
 	context.strokeStyle = color;
 	context.beginPath();
-	context.arc( x, y, 3, 0, 360, false );
+	context.arc( x, y, radius, 0, 360, false );
 	context.stroke();
 }
 
@@ -3787,7 +3786,7 @@ getRarityByClassName: function( className ) {
 
 //.. unionLevelup
 unionLevelup: function( type, card_id, added_cid, material ) {
- 	var data = $.extend( {}, Card.unionData );
+	var data = $.extend( {}, Card.unionData );
 
 	data.union_type = type;
 
@@ -5241,6 +5240,21 @@ baseMap: function() {
 
 	$map.css({ margin: '0px auto 10px auto' })
 	.prependTo('DIV.common_box3bottom:eq(1)');
+
+	$('.common_table1').eq( 0 ).find('TR').slice( 1 )
+	.hover(
+		function() {
+			var { x, y } = $(this).data();
+
+			CounteryMap.showPointer( x, y );
+			Util.enter.call( this );
+		},
+		function() {
+			CounteryMap.showPointer();
+			Util.leave.call( this );
+		}
+	);
+
 },
 
 //. userBaseList
@@ -5249,16 +5263,7 @@ userBaseList: function() {
 		regex = /x=(-?\d+)&y=(-?\d+)/,
 		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff', '領地': '#ff0', '開拓地': '#9a0' };
 
-	//本領所領
-  	$('TABLE.common_table1:eq(0) TR.fs14').each( analyze );
-	//本領が所領より後に描画されるように
-	list.reverse();
-	//出城・陣・領地
-	$('TABLE.common_table1:eq(1) TR.fs14').each( analyze );
-
-	return list;
-
-	function analyze() {
+	$('TABLE.common_table1 TR.fs14').each(function() {
 		var $this = $(this),
 			type = $this.find('TD:eq(0)').text(),
 			$a = $this.find('A:eq(1)'),
@@ -5267,13 +5272,19 @@ userBaseList: function() {
 			x = mappoint[ 1 ].toInt(),
 			y = mappoint[ 2 ].toInt();
 
+		$this.data({ x: x, y: y });
 		//マップで表示するように変更
 		$a.attr( 'href', newhref );
 
 		if ( colors[ type ] ) {
 			list.push({ name: '', x: x, y: y, color: colors[ type ] });
 		}
-	}
+	});
+
+	//本領が所領より後に描画されるように
+	list.push( list.shift() );
+
+	return list;
 },
 
 //. checkFall
