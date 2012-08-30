@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.4
+// @version        1.0.4.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3031,14 +3031,14 @@ function getCanvasY( y ) {
 
 //. getCanvasPointX
 function getCanvasPointX( x, size ) {
-	var modsize = Math.floor( ( size - options.pxsize ) / 2 );
+	var modsize = ( size - options.pxsize ) / 2;
 
 	return Math.ceil( ( 180 + x ) * options.pxsize - modsize );
 }
 
 //. getCanvasPointY
 function getCanvasPointY( y, size ) {
-	var modsize = Math.floor( ( size - options.pxsize ) / 2 );
+	var modsize = ( size - options.pxsize ) / 2;
 
 	return Math.ceil( ( 180 - y ) * options.pxsize - modsize );
 }
@@ -3131,6 +3131,14 @@ function showRoute( list ) {
 	$map.append( $canvas );
 }
 
+//. showPointer
+function showPointer( x, y ) {
+	var $canvas = newLayer( 'pointer' + name, options.mapsize, options.mapsize ),
+		context = $canvas.get(0).getContext('2d');
+
+	drowCircle( context, getCanvasX( x ), getCanvasY( y ), '#fff' );
+}
+
 //. removeLayer
 function removeLayer( name ) {
 	if ( layer[ name ] ) { layer[ name ].remove(); }
@@ -3185,6 +3193,17 @@ function drowLine( context, startx, starty, endx, endy, color ) {
 	context.beginPath();
 	context.arc( endx, endy, 2, 0, 360, false );
 	context.fill();
+}
+
+//. drowCircle
+function drowCircle( context, x, y, color ) {
+	x = x + ( options.pointsize - options.pxsize ) / 2;
+	y = y + ( options.pointsize - options.pxsize ) / 2;
+
+	context.strokeStyle = color;
+	context.beginPath();
+	context.arc( x, y, 3, 0, 360, false );
+	context.stroke();
 }
 
 //. appendLabel
@@ -3243,7 +3262,8 @@ return {
 	create: create,
 	showViewArea: showViewArea,
 	showBasePoint: showBasePoint,
-	showRoute: showRoute
+	showRoute: showRoute,
+	showPointer: showPointer
 };
 
 })();
@@ -6324,7 +6344,7 @@ commandButton: function() {
 	//行動タイプ
 	var commands = $('.imc_move_type INPUT').map(function() {
 		var type = $(this).val();
-		
+
 		switch ( type ) {
 			case '301':
 				return '<div class="imc_command_button imc_backup" data-type="301">加勢</div>';
