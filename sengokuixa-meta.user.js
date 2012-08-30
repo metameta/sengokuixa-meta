@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.6
+// @version        1.0.4.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2474,6 +2474,7 @@ coordRegister: function() {
 		data   = analyzedData[ idx ];
 
 	coordRegister( data.x, data.y, data.country, { user: data.user, castle: data.castle, type: data.type } );
+	coordList( data.country );
 },
 
 //.. coordUnregister - 座標削除
@@ -2483,6 +2484,7 @@ coordUnregister: function() {
 		data   = analyzedData[ idx ];
 
 	coordUnregister( data.x, data.y, data.country );
+	coordList( data.country );
 },
 
 //.. coordInfo
@@ -2504,8 +2506,6 @@ function coordRegister( x, y, country, data ) {
 	country = country || Map.info.country || '';
 
 	MetaStorage('COORD.' + country).set( coord, data );
-
-	coordList( country );
 }
 
 //. coordUnregister
@@ -2515,8 +2515,6 @@ function coordUnregister( x, y, country ) {
 	country = country || Map.info.country || '';
 
 	MetaStorage('COORD.' + country).remove( coord )
-
-	coordList( country );
 }
 
 //. coordList
@@ -2549,7 +2547,7 @@ function coordList( country ) {
 		//user情報には資源情報が入っている場合があるためplayer判定には使えない
 		var $this = $(this),
 			{ user, castle, x, y } = $this.data(),
-			type = $(this).find('TD').eq( 3 ).text(),
+			type = $this.find('TD').eq( 3 ).text(),
 			title = ( castle || type + ' (' + x + ',' + y + ')' ),
 			menu = {};
 
@@ -2566,7 +2564,10 @@ function coordList( country ) {
 		}
 
 		menu['セパレーター2'] = $.contextMenu.separator;
-		menu['座標削除'] = function() { coordUnregister( x, y ); };
+		menu['座標削除'] = function() {
+			coordUnregister( x, y, country );
+			coordList( country );
+		};
 
 		return menu;
 	});
@@ -2947,6 +2948,8 @@ return {
 		});
 	},
 	analyzeReport: analyzeReport,
+	coordRegister: coordRegister,
+	coordUnregister: coordUnregister,
 	showCountryMap: showCountryMap,
 	showCoord: showCoord,
 	showMark: showMark,
@@ -5194,20 +5197,22 @@ main: function() {
 //. layouter
 layouter: function() {
 	var $tr = $('TABLE.profile').find('TR'),
-		$a, text, href;
+		$a, text, html, href;
 
 	//城主名
 	$a = $tr.eq( 0 ).find('A');
 	text = encodeURIComponent( $a.text() );
 
-	href = '/user/ranking.php?m=attack_score&find_rank=&find_name=' + text + '&c=0';
-	$a.after( '<a class="imc_link" href="' + href + '">[一戦撃破・防衛]</a>' );
+	href = '/war/list.php?m=&s=1&name=lord&word=' + text + '&coord=map&x=&y=';
+	html = '<a class="imc_link" href="' + href + '">[合戦報告書]</a>';
 
 	href = '/user/ranking.php?m=total&find_rank=&find_name=' + text + '&c=0';
-	$a.after( '<a class="imc_link" href="' + href + '">[格付]</a>' );
+	html += '<a class="imc_link" href="' + href + '">[格付]</a>';
 
-	href = '/war/list.php?m=&s=1&name=lord&word=' + text + '&coord=map&x=&y=';
-	$a.after( '<a class="imc_link" href="' + href + '">[合戦報告書]</a>' );
+	href = '/user/ranking.php?m=attack_score&find_rank=&find_name=' + text + '&c=0';
+	html += '<a class="imc_link" href="' + href + '">[一戦撃破・防衛]</a>';
+
+	$a.parent().after( html );
 
 	//同盟名
 	$a = $tr.eq( 1 ).find('A');
@@ -5253,31 +5258,50 @@ baseMap: function() {
 			CounteryMap.showPointer();
 			Util.leave.call( this );
 		}
-	);
+	)
+	.contextMenu(function() {
+		var { type, name, x, y, c } = $(this).data(),
+			user = $('.profile TD > .para strong').text().trim(),
+			coord = x + ',' + y,
+			menu = {};
+
+		menu[ name ] = $.contextMenu.title;
+
+		if ( MetaStorage( 'COORD.' + c ).get( coord ) ) {
+			menu['座標削除'] = function() { Map.coordUnregister( x, y, c ); }
+		}
+		else {
+			menu['座標登録'] = function() { Map.coordRegister( x, y, c, { user: user, castle: name, type: type } ); }
+		}
+
+		return menu;
+	});
 
 },
 
 //. userBaseList
 userBaseList: function() {
 	var list = [],
-		regex = /x=(-?\d+)&y=(-?\d+)/,
+		regex = /x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
 		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff', '領地': '#ff0', '開拓地': '#9a0' };
 
 	$('TABLE.common_table1 TR.fs14').each(function() {
 		var $this = $(this),
 			type = $this.find('TD:eq(0)').text(),
+			name = $this.find('A:eq(0)').text(),
 			$a = $this.find('A:eq(1)'),
 			newhref = $a.attr('href').replace('land.php', 'map.php'),
 			mappoint = newhref.match( regex ),
 			x = mappoint[ 1 ].toInt(),
 			y = mappoint[ 2 ].toInt();
+			c = mappoint[ 3 ].toInt();
 
-		$this.data({ x: x, y: y });
+		$this.data({ type: type, name: name, x: x, y: y, c: c });
 		//マップで表示するように変更
 		$a.attr( 'href', newhref );
 
 		if ( colors[ type ] ) {
-			list.push({ name: '', x: x, y: y, color: colors[ type ] });
+			list.push({ x: x, y: y, color: colors[ type ] });
 		}
 	});
 
