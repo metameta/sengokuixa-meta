@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.7
+// @version        1.0.4.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2422,20 +2422,15 @@ toCamp: function() {
 changeVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
-		data  = analyzedData[ idx ];
+		data  = analyzedData[ idx ],
+		village = Util.getVillageByName( data.castle );
 
-	$('div.basename li a').each(function() {
-		var $this = $(this),
-			name = $this.text();
-
-		if ( data.castle != name ) { return; }
-
-		var href = $this.attr('href');
-
-		location.href = href;
-
-		return false;
-	});
+	if ( village.id ) {
+		location.href = '/village_change.php?village_id=' + village.id + '&from=menu&page=/map.php';
+	}
+	else{
+		Display.alert( '拠点は見つかりませんでした。' );
+	}
 },
 
 //.. nearbyVillage - 最寄りの拠点を選択
