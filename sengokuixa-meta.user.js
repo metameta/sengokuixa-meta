@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.8
+// @version        1.0.4.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1173,41 +1173,65 @@ return function() {
 //■ Display
 var Display = (function() {
 
-var $sysmessage, dialog;
+var $sysmessage;
 
-function Dialog() {
-	var $dialog = $('<div id="imi_overlay"><div class="imc_overlay" /></div>'),
-		$message = $('<div id="imi_message" />');
+function Dialog( options ) {
+	var $overlay = $('<div id="imi_overlay"><div class="imc_overlay" /><div id="imi_dialog_container" /></div>'),
+		$container = $overlay.find('#imi_dialog_container'),
+		self = this,
+		$body, $footer;
 
-	$dialog.append( $message );
-	$dialog.appendTo('BODY');
+	options = $.extend( { width: 500, height: 200, top: '25%' }, options );
+
+	$overlay.appendTo('BODY');
+
+	if ( options.title ) {
+		$container.append('<div class="imc_dialog_header">' + options.title + '</div>');
+	}
+
+	$body = $('<div class="imc_dialog_body" />');
+	$container.append( $body );
+
+	if ( options.content ) {
+		$body.append( options.content );
+	}
+
+	if ( options.buttons ) {
+		$footer = $('<div class="imc_dialog_footer" />');
+		$.each( options.buttons, function( key, callback ) {
+			$footer.append(
+				$('<button/>').text( key ).click(function() {
+					if ( !$(this).attr('disabled') ) { callback.call( self ); }
+				})
+			);
+		});
+		$container.append( $footer );
+	}
+
+	$container.css('top', options.top);
+	$container.css('width', options.width);
+	$body.css('height', options.height);
+
+	this.append = function() {
+		$body.append( arguments[ 0 ] );
+	}
 
 	this.message = function( text ) {
-		var $div = $('<div>' + text + '</div>');
+		var $div = $('<div class="imc_message">' + text + '</div>');
 
-		$message.append( $div );
+		$body.append( $div );
 		$div.get( 0 ).scrollIntoView();
 
 		return this;
 	}
 
 	this.close = function() {
-		$dialog.remove();
-		delete $message;
-		delete $dialog;
-		dialog = null;
+		$overlay.remove();
 	}
-
-	this.click = $dialog.click;
 
 	return this;
 }
 
-function getDialog() {
-	if ( !dialog ) { dialog = new Dialog(); }
-
-	return dialog;
-}
 
 function show( msg, timeout, cssClass ) {
 	if ( !$sysmessage ) {
@@ -1224,13 +1248,6 @@ function show( msg, timeout, cssClass ) {
 		var audio = new Audio( Data.sounds.info );
 		audio.volume = 0.6;
 		audio.play();
-/*
-		$('<audio/>')
-		.attr('src', Data.sounds.info)
-		.attr('type', 'audio/ogg; codecs=vorbis')
-		.appendTo( $span )
-		.get(0).play();
-*/
 	}
 }
 
@@ -1251,8 +1268,10 @@ return {
 	alert: function( msg, timeout ) {
 		show( msg, timeout, 'imc_alert' );
 	},
-	dialog: getDialog
-};
+	dialog: function( options ) {
+		return new Dialog( options );;
+	}
+}
 
 })();
 
@@ -1264,7 +1283,7 @@ style: '' + <><![CDATA[
 /* ajax用 */
 .imc_ajax_load { position: fixed; top: 0px; left: 0px; padding: 2px; background-color: #fff; border-right: solid 3px #999; border-bottom: solid 3px #999; border-bottom-right-radius: 5px; z-index: 3001; }
 
-/* ダイアログ */
+/* お知らせダイアログ用 */
 .imc_dialog { position: fixed; top: 145px; left: 0px; width: 100%; height: 0px; z-index: 3000; }
 .imc_dialog_content { min-width: 300px; font-size: 1.2em; color: Black; font-weight: bold; text-align: center; padding: 10px 20px; margin: 3px auto; border-radius: 10px; }
 .imc_dialog_content { box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(255, 255, 255, 0.7), 3px 3px 4px rgba(0, 0, 0, 0.7); }
@@ -1272,6 +1291,21 @@ style: '' + <><![CDATA[
 .imc_dialog_content LI { text-align: left; }
 .imc_dialog_content.imc_infomation { border: solid 2px #06f; background-color: #eff; }
 .imc_dialog_content.imc_alert { border: solid 2px #c00; background-color: #fee; }
+
+/* overlay用 z-index: 2000 */
+#imi_overlay { position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 2000; }
+#imi_overlay .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }
+
+/* ダイアログメッセージ用 */
+#imi_dialog_container { position: relative; margin: auto; width: 500px; height: auto; background-color: #f1f0dc; border: solid 2px #666; overflow: hidden; }
+#imi_dialog_container .imc_dialog_header { background-color: #ccc; padding: 8px; font-weight: bold; }
+#imi_dialog_container .imc_dialog_body { margin: 10px 0px 10px 10px; padding-right: 10px; font-size: 12px; height: 200px; overflow: auto; }
+#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px; border-top: solid 1px black; text-align: right; }
+#imi_dialog_container .imc_message { margin: 4px; }
+#imi_dialog_container BUTTON { margin-right: 5px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }
+#imi_dialog_container BUTTON:hover { background: -moz-linear-gradient(bottom, #fff, #ccc); }
+#imi_dialog_container BUTTON:active { border-style: inset; }
+#imi_dialog_container BUTTON:disabled { color: #666; border-style: solid; background: none; background-color: #ccc; }
 
 /* コンテキストメニュー用 z-index: 9999 */
 .imc_menulist { position: absolute; padding: 2px; min-width: 120px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
@@ -1350,14 +1384,6 @@ SPAN.imc_coord:hover { background-color: #f9dea1 !important; }
 
 /* カーソル行用 */
 .imc_current { background-color: #f9dea1 !important; }
-
-/* overlay用 z-index: 2000 */
-#imi_overlay { position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 2000; }
-#imi_overlay .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }
-
-/* ダイアログメッセージ用 */
-#imi_message { position: relative; width: 500px; height: 200px; margin: 20% auto; background-color: #f1f0dc; border: solid 2px #666; padding: 10px; font-size: 12px; overflow: auto; }
-#imi_message DIV { margin: 4px; }
 
 /* テーブルスタイル */
 .imc_table { border-collapse: collapse; border: solid 1px #76601D; }
@@ -5934,14 +5960,16 @@ training: function( name ) {
 			unit_value = $select.val(),
 			facility = $select.data('facility'),
 			name = $('.basename .on SPAN').text(),
-			current = Util.getVillageByName( name );
+			current = Util.getVillageByName( name ),
+			ol;
 
 		if ( !confirm('訓練を開始してよろしいですか？') ) { return false; }
 
-		Display.dialog().message('訓練登録処理開始...');
+		ol = Display.dialog();
+		ol.message('訓練登録処理開始...');
 
 		storage.set('unit_value', unit_value);
-		self.trainingExecute( facility, current );
+		self.trainingExecute( facility, current, ol );
 
 		return false;
 	});
@@ -6083,7 +6111,7 @@ trainingDivide: function( e, list ) {
 },
 
 //. trainingExecute
-trainingExecute: function( facility, current ) {
+trainingExecute: function( facility, current, ol ) {
 	var data = facility.shift(),
 		self = arguments.callee;
 
@@ -6096,7 +6124,7 @@ trainingExecute: function( facility, current ) {
 		return $.get( href );
 	})
 	.pipe(function() {
-		Display.dialog().message('「' + data.name + '」にて登録中...');
+		ol.message('「' + data.name + '」にて登録中...');
 
 		var href = '/facility/facility.php?x=' + data.x + '&y=' + data.y;
 
@@ -6104,14 +6132,14 @@ trainingExecute: function( facility, current ) {
 	})
 	.pipe(function() {
 		if ( facility.length == 0 ) {
-			Display.dialog().message('訓練登録処理完了').message('ページを更新します...');
+			ol.message('訓練登録処理完了').message('ページを更新します...');
 
 			var href = '/village_change.php?village_id=' + current.id + '&from=menu&page=' + encodeURIComponent('/facility/unit_list.php');
 
 			Page.move( href );
 		}
 		else {
-			self.call( self, facility, current );
+			self.call( self, facility, current, ol );
 		}
 	});
 },
@@ -6467,7 +6495,7 @@ sendAll: function() {
 			unit_name = $this.closest('TBODY').find('.waitingunittitle').text().replace(/（部隊スキルあり）/, ''),
 			id = $this.val();
 
-		Display.dialog().message( unit_name + '出陣中...' );
+		ol.message( unit_name + '出陣中...' );
 
 		return $.post( '/facility/send_troop.php#ptop', post_data )
 		.pipe(function( html ) {
@@ -7804,7 +7832,7 @@ unregistAll: function() {
 	});
 
 	function sendData( idx ) {
-		Display.dialog().message('デッキ' + ( idx + 1 ) + 'の情報を取得中...');
+		ol.message('デッキ' + ( idx + 1 ) + 'の情報を取得中...');
 
 		return $.get( '/card/deck.php?ano=' + idx )
 		.pipe(function( html ) {
@@ -7826,7 +7854,7 @@ unregistAll: function() {
 			post_data = $html.find('#assign_form').serialize();
 			unit_name = $html.find('#ig_deck_unititle').text();
 
-			Display.dialog().message( unit_name + 'を解散中...' );
+			ol.message( unit_name + 'を解散中...' );
 
 			return $.post( '/card/deck.php', post_data );
 		});
