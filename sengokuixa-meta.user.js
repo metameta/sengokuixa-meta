@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.9
+// @version        1.0.4.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1916,7 +1916,7 @@ getNameByClass: function( className ) {
 },
 //. getType
 getType: function( name ) {
-	return Soldier.nameKeys[ name ];
+	return Soldier.nameKeys[ name ] || null;
 },
 //. modify
 modify: function( name, commands ) {
@@ -3712,17 +3712,13 @@ contextmenu: function() {
 
 	if ( card.solNum > 0 && card.solNum < card.maxSolNum ) {
 		menu['最大補充'] = function() { card.setUnitMax(); };
-		separator = true;
 	}
 	if ( card.solNum > 1 ) {
 		menu['兵数を１にする'] = function() { card.setUnit( 1 ); };
-		separator = true;
 	}
 
-	if ( separator ) {
-		menu['セパレーター2'] = $.contextMenu.separator;
-		separator = false;
-	}
+	menu['兵編成'] = function() { card.editUnit(); };
+	menu['セパレーター2'] = $.contextMenu.separator;
 
 	//合成可能な場合のメニュー
 	if ( card.canUnion() && !( union_mode && selected ) ) {
@@ -3893,7 +3889,7 @@ $.extend( Card.prototype, {
 //.. status
 name: '', rarity: '',
 cost: 0, rank: 0, lv: 0, hp: 100, maxHp: 100, solNum: 0, maxSolNum: 0,
-solName: '', atk: 0, def: 0, int: 0, commands: {}, skillList: [], skillCount: 0,
+solName: '', solType: null, atk: 0, def: 0, int: 0, commands: {}, skillList: [], skillCount: 0,
 command: '', totalAtk: 0, totalDef: 0, totalDes: 0,
 
 //.. power
@@ -3901,8 +3897,14 @@ power: function() {
 	var data = Soldier.getByName( this.solName ),
 		mod  = Soldier.modify( this.solName, this.commands );
 
-	if ( !data ) { return; }
+	if ( !data ) {
+		this.solType = null;
+		this.command = null;
+		this.totalAtk = this.totalDef = this.totalDes = 0;
+		return;
+	}
 
+	this.solType = data.type;
 	//兵科
 	this.command = data.command;
 	//総攻撃力
@@ -3913,13 +3915,143 @@ power: function() {
 	this.totalDes = ( data.destroy * this.solNum );
 },
 
+//.. editUnit
+editUnit: function() {
+	var card = this,
+		selected = card.element.hasClass('imc_selected'),
+		card_soltype = card.solType || '',
+		dfd = $.Deferred(),
+		list = {};
+
+	$.get( '/facility/set_unit.php?card_id=' + card.cardId + '&ano=0&p=1' )
+	.pipe(function( html ) {
+		var $html = $(html),
+			content = '';
+
+		$.each( Soldier.typeKeys, function( type ) {
+			var $span = $html.find('#pool_unit_now_' + type ),
+				num;
+
+			if ( $span.length == 0 ) { return; }
+
+			num = $span.text().toInt();
+			//兵種が同じ場合、自身の兵数も加算
+			if ( type == card_soltype ) { num += card.solNum; }
+			if ( num == 0 ) { return; }
+
+			list[ type ] = num;
+
+			content += '<tr data-type="' + type + '" data-num="' + num + '">' +
+				'<th>' + this + '</th><td>1</td>';
+
+			[ 10, 250, 500 ].forEach(function( value ) {
+				if ( num >= value ) {
+					content += '<td>' + value + '</td>';
+				}
+				else {
+					content += '<td class="imc_disabled">' + value + '</td>';
+				}
+			});
+
+			if ( num >= card.maxSolNum ) {
+				content += '<td>' + card.maxSolNum + '</td>';
+			}
+			else {
+				content += '<td>' + num + '</td>';
+			}
+
+			content += '</tr>';
+		});
+
+		if ( !selected && card.solNum != 0 ) {
+			content += '<tr data-type=""><th>解散</th><td colspan="5">0</td></tr>';
+		}
+
+		content = '' +
+		'<table id="imi_unitedit" class="imc_table">' +
+			'<tr><th>兵種</th><th colspan="5">兵数</th></tr>' + content +
+		'</table>' +
+		'<table class="imc_table" style="margin: 10px auto 0px auto;">' +
+			'<tr><th id="imi_unitedit_type" style="width: 60px;"></th><td><input id="imi_unitedit_value" style="width: 50px; ime-mode: disabled;" maxlength="5"> / ' + card.maxSolNum + '</td></tr>' +
+		'</table>';
+
+		var $table = $( content );
+		$table.find('#imi_unitedit_type').data({ type: card_soltype }).text( card.solName || '未編成' );
+		$table.find('#imi_unitedit_value').val( card.solNum );
+		$table.eq( 0 ).find('TD').not('.imc_disabled')
+		.hover( Util.enter, Util.leave )
+		.click(function() {
+			var $this = $(this),
+				name = $this.closest('TR').find('TH').text(),
+				type = $this.closest('TR').data('type'),
+				num  = $this.text().toInt();
+
+			$('#imi_unitedit_type').data({ type: type }).text( name );
+			$('#imi_unitedit_value').val( num );
+		});
+
+		Display.dialog({
+			title: '兵編成「' + card.name + '」',
+			content: $table,
+			width: 400, height: 'auto',
+			buttons: {
+				'決定': function() {
+					var self = this,
+						type = $('#imi_unitedit_type').data('type'),
+						val = $('#imi_unitedit_value').val(),
+						num;
+
+					if ( /\D/.test( val ) ) {
+						Display.alert('数値を入力してください。');
+						return;
+					}
+
+					num = val.toInt();
+
+					if ( type == '' ) {
+						//解除
+						num = 0;
+					}
+					else if ( num == 0 ) {
+						Display.alert('0以上を入力してください。');
+						return;
+					}
+
+					if ( num > card.maxSolNum ) { num = card.maxSolNum; }
+					if ( num > list[ type ] ) { num = list[ type ]; }
+
+					if ( num == card.solNum && type == card_soltype ) {
+						Display.alert('変更はありません。');
+						self.close();
+						return;
+					}
+
+					card.setUnit( num, type )
+					.always(function() {
+						dfd.resolve();
+						self.close();
+					});
+				},
+				'キャンセル': function() {
+					dfd.reject();
+					this.close();
+				}
+			}
+		});
+	});
+
+	return dfd;
+},
+
 //.. setUnit
-setUnit: function( value ) {
+setUnit: function( value, type ) {
 	var card = this,
 		card_id = card.cardId,
-		unit_type = Soldier.getType( card.solName );
+		unit_type = ( type !== undefined ) ? type : card.solType;
 
-	$.post( '/facility/set_unit_list_if.php', { card_id: card_id, unit_type: unit_type, unit_count: value } )
+	if ( unit_type === null ) { return $.Deferred().resolve(); }
+
+	return $.post( '/facility/set_unit_list_if.php', { card_id: card_id, unit_type: unit_type, unit_count: value } )
 	.pipe(function( html ) {
 		var data = $.parseJSON( html );
 		if ( data.result == "ok" ) {
@@ -3931,6 +4063,7 @@ setUnit: function( value ) {
 	})
 	.pipe(function() {
 		card.solNum = value;
+		card.solName = Soldier.getNameByType( unit_type );
 		card.power();
 		card.update();
 	})
@@ -4079,6 +4212,7 @@ analyze: function( $elem ) {
 	//スタイルシート名から兵種を求める
 	text = $param.find('SPAN[class^="commandsol_"]').attr('class');
 	this.solName = Soldier.getNameByClass( text );
+	this.solType = Soldier.getType( this.solName );
 
 	//指揮数 commandsol_no_overは大殿の饗宴用
 	text = $param.find('.commandsol_no, .commandsol_no_over').eq( 0 ).text();
@@ -7523,6 +7657,13 @@ SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
 #imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }
 #imi_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }
 #imi_command_selecter LI A:hover { color: #fff; background-color: #666; }
+
+/* 兵種変更 */
+#imi_unitedit { margin: auto; width: 350px; }
+#imi_unitedit TH:first-child { width: 60px; }
+#imi_unitedit TD { width: 40px; cursor: pointer; }
+#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }
+#imi_unitedit .imc_selected { background-color: #f9dea1; }
 
 /* ソート条件選択用 */
 #selectarea SELECT { margin-right: 8px; }
