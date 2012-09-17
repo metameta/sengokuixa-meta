@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.12
+// @version        1.0.4.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1324,10 +1324,11 @@ style: '' + <><![CDATA[
 #imi_bottom_container .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }
 
 /* コマンド群 */
-#imi_command_selecter { height: 20px; margin: 0px 0px 0px 16px; }
+#imi_command_selecter { height: 22px; margin: 0px 0px 2px 0px; }
 #imi_command_selecter LI { float: left; width: 65px; height: 20px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }
 #imi_command_selecter LI.imc_selected { background-color: #666; border-color: #fff; color: #fff; }
 #imi_command_selecter LI:hover { background-color: #666; border-color: #fff; color: #fff; }
+#imi_command_selecter LABEL { float: left; width: 65px; height: 20px; margin-right: 8px; line-height: 20px; text-align: center; font-weight: bold; color: #76601D; border: solid 1px #76601D; background-color: #E0DCC1; }
 
 /* 募集・チャット用 */
 #commentBody TD { height: 14px; }
@@ -3301,15 +3302,206 @@ var Deck = function() {};
 //. Deck
 $.extend( Deck, {
 
-//.. filter
-filter: function( selecter ) {
-	var $card_list = $('#ig_deck_smallcardarea_out').find('.ig_deck_smallcardarea');
+//.. analyzedData
+analyzedData: {},
 
-	if ( selecter == '.imc_all' ) {
-		$card_list.show();
+//.. updateDeckCard
+updateDeckCard: function() {
+	var cardlist = Deck.targetList();
+
+	for ( var i = 0, len = cardlist.length; i < len; i++ ) {
+		cardlist[ i ].element.show();
 	}
-	else {
-		$card_list.hide().filter( selecter ).show();
+
+	$('#ig_deck_smallcardarea_out').trigger('update');
+	Util.countDown();
+},
+
+//.. targetList
+targetList: function() {
+	var cardlist;
+
+	cardlist = Deck.filter( Deck.analyzedData, Deck.filter.conditions );
+
+	return cardlist;
+},
+
+//.. filter
+filter: function( cardlist, conditions ) {
+	var list = [];
+
+	for ( var card_id in cardlist ) {
+		let card = cardlist[ card_id ];
+
+		if ( card.match( conditions ) ) {
+			list.push( card );
+		}
+		else {
+			card.element.hide();
+		}
+	}
+
+	return list;
+},
+
+//.. commandMenu
+commandMenu: function( container, up ) {
+	Deck.filterMenu( container, up );
+
+	//表示条件ボタン
+	container
+	.on('update', function() {
+		var $li = container.find('LI'),
+			conditions, cardlist;
+
+		conditions = [];
+		$li.filter('.imc_filter').each(function() {
+			var selecter = $(this).data('selecter');
+			if ( selecter ) { conditions.push( selecter ); }
+		});
+		Deck.filter.conditions = conditions;
+
+		Deck.updateDeckCard();
+	})
+	.on('click', 'A', function() {
+		var $this = $(this),
+			data = $this.data('selecter'),
+			$li = $this.closest('LI');
+
+		$li.find('SPAN').text( $this.text() );
+		$li.data( 'selecter', data );
+
+		if ( data == null ) {
+			$li.removeClass('imc_selected');
+		}
+		else {
+			$li.addClass('imc_selected');
+		}
+
+		container.trigger('update');
+	});
+},
+
+//.. filterMenu
+filterMenu: function( container, up ) {
+	var menulist;
+
+	container.append('<label>フィルタ</label>');
+
+	menulist = [
+		[
+			{ title: '全て',   selecter: null },
+			{ title: '未編成', selecter: [ 'soltype', 'none' ] }
+		],
+		[
+			{ title: '槍',       selecter: [ 'soltype', [ 321, 322, 323, 324 ] ] },
+			{ title: '武士',     selecter: [ 'soltype', [ 323 ] ] },
+			{ title: '長槍足軽', selecter: [ 'soltype', [ 322 ] ] },
+			{ title: '足軽',     selecter: [ 'soltype', [ 321 ] ] },
+			{ title: '国人衆',   selecter: [ 'soltype', [ 324 ] ] }
+		],
+		[
+			{ title: '弓',     selecter: [ 'soltype', [ 325, 326, 327, 328 ] ] },
+			{ title: '弓騎馬', selecter: [ 'soltype', [ 327 ] ] },
+			{ title: '長弓兵', selecter: [ 'soltype', [ 326 ] ] },
+			{ title: '弓足軽', selecter: [ 'soltype', [ 325 ] ] },
+			{ title: '海賊衆', selecter: [ 'soltype', [ 328 ] ] }
+		],
+		[
+			{ title: '馬',       selecter: [ 'soltype', [ 329, 330, 331, 332 ] ] },
+			{ title: '赤備え',   selecter: [ 'soltype', [ 331 ] ] },
+			{ title: '精鋭騎馬', selecter: [ 'soltype', [ 330 ] ] },
+			{ title: '騎馬兵',   selecter: [ 'soltype', [ 329 ] ] },
+			{ title: '母衣衆',   selecter: [ 'soltype', [ 332 ] ] }
+		],
+		[
+			{ title: '兵器',     selecter: [ 'soltype', [ 333, 334, 335, 336, 337, 338 ] ] },
+			{ title: '騎馬鉄砲', selecter: [ 'soltype', [ 337 ] ] },
+			{ title: '雑賀衆',   selecter: [ 'soltype', [ 338 ] ] },
+			{ title: '鉄砲足軽', selecter: [ 'soltype', [ 336 ] ] },
+			{ title: '大筒兵',   selecter: [ 'soltype', [ 335 ] ] },
+			{ title: '攻城櫓',   selecter: [ 'soltype', [ 334 ] ] },
+			{ title: '破城鎚',   selecter: [ 'soltype', [ 333 ] ] }
+		]
+	];
+
+	Deck.createMenu( container, 'imc_filter', menulist, '全て', up );
+
+	menulist = [
+		[
+			{ title: '指定無し', selecter: null },
+			{ title: '配置可', selecter: [ '', true, 'eq', function( card ) { return card.canAssign(); } ] }
+		],
+		[
+			{ title: 'Cost 4',   selecter: [ 'cost', 4 ] },
+			{ title: 'Cost 3.5', selecter: [ 'cost', 3.5 ] },
+			{ title: 'Cost 3',   selecter: [ 'cost', 3 ] },
+			{ title: 'Cost 2.5', selecter: [ 'cost', 2.5 ] },
+			{ title: 'Cost 2',   selecter: [ 'cost', 2 ] },
+			{ title: 'Cost 1.5', selecter: [ 'cost', 1.5 ] },
+			{ title: 'Cost 1',   selecter: [ 'cost', 1 ] },
+		],
+		[
+			{ title: '★★★★★', selecter: [ 'rank', 5 ] },
+			{ title: '★★★★',   selecter: [ 'rank', 4 ] },
+			{ title: '★★★',     selecter: [ 'rank', 3 ] },
+			{ title: '★★',       selecter: [ 'rank', 2 ] },
+			{ title: '★',         selecter: [ 'rank', 1 ] },
+			{ title: '☆',         selecter: [ 'rank', 0 ] },
+		],
+		[
+			{ title: 'Lv20',     selecter: [ 'lv', 20 ] },
+			{ title: 'Lv19以下', selecter: [ 'lv', 19, 'lt' ] },
+			{ title: 'Lv1以上',  selecter: [ 'lv', 1, 'gt' ] },
+			{ title: 'Lv0',      selecter: [ 'lv', 0 ] },
+		],
+		[
+			{ title: '兵数最大',   selecter: [ 'solNum', 'max' ] },
+			{ title: '最大以外',   selecter: [ 'solNum', 'max', 'ne' ] },
+			{ title: '兵数２以上', selecter: [ 'solNum', 2, 'gt' ] },
+			{ title: '兵数１以上', selecter: [ 'solNum', 1, 'gt' ] },
+			{ title: '兵数１',     selecter: [ 'solNum', 1 ] }
+		],
+		[
+			{ title: 'HP最大',    selecter: [ 'hp', 'max' ] },
+			{ title: 'HP99以下',  selecter: [ 'hp', 99, 'lt' ] }
+		],
+	];
+
+	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
+	Deck.filter.conditions = [];
+},
+
+//.. createMenu
+createMenu: function( container, type, menulist, selected, up ) {
+	var $li = $('<li class="' + type + '"><span></span></li>'),
+		submenu = $('<div class="imc_pulldown" />');
+
+	for ( var i = 0, len = menulist.length; i < len; i++ ) {
+		let list = menulist[ i ],
+			$div = $('<div/>').appendTo( submenu );
+
+		for ( var j = 0, lenj = list.length; j < lenj; j++ ) {
+			let $a = $('<a class="imc_pulldown_item" href="javascript:void(0);">' + list[ j ].title + '</a>');
+
+			$a.data('selecter', list[ j ].selecter);
+			$div.append( $a );
+
+			if ( list[ j ].title == selected ) {
+				$li.data( 'selecter', list[ j ].selecter ).find('SPAN').text( list[ j ].title );
+			}
+		}
+	}
+
+	if ( submenu.find('A').length == 0 ) { return; }
+
+	$li
+	.appendTo( container )
+	.append( submenu );
+
+	if ( up ) {
+		submenu.css({ marginTop: -( submenu.outerHeight() + $li.height() ) });
 	}
 },
 
@@ -3329,7 +3521,7 @@ addCard: function() {
 addCardDeck: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
-		data = SmallCard.analyzedData[ card_id ],
+		data = Deck.analyzedData[ card_id ],
 		card_list = [], speed;
 
 	if ( !data || !data.squadId ) { return; }
@@ -3365,7 +3557,7 @@ addCardDeck: function() {
 
 		$card.each(function() {
 			var card_id = $(this).attr('card_id'),
-				data = SmallCard.analyzedData[ card_id ];
+				data = Deck.analyzedData[ card_id ];
 
 			if ( data.name == name ) {
 				found = true;
@@ -3396,7 +3588,7 @@ addCardDeck: function() {
 
 	$card.each(function() {
 		var card_id = $(this).attr('card_id'),
-			card = SmallCard.analyzedData[ card_id ];
+			card = Deck.analyzedData[ card_id ];
 
 		card_list.push( card );
 
@@ -3416,7 +3608,7 @@ addCardDeck: function() {
 addCardUnion: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
-		data = SmallCard.analyzedData[ card_id ];
+		data = Deck.analyzedData[ card_id ];
 
 	if ( $this.hasClass('imc_selected') ) {
 		//選択武将削除
@@ -3537,7 +3729,7 @@ assignCard: function() {
 	card_list.each(function() {
 		var $this = $(this),
 			card_id = $this.attr('card_id'),
-			data = SmallCard.analyzedData[ card_id ],
+			data = Deck.analyzedData[ card_id ],
 			name = data.name;
 
 		name_list[ name ] = ( name_list[ name ] || 0 ) + 1;
@@ -3654,7 +3846,7 @@ assignCard: function() {
 contextmenu: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
-		card = SmallCard.analyzedData[ card_id ],
+		card = Deck.analyzedData[ card_id ],
 		menu = {}, submenu;
 
 	//出品中
@@ -3685,7 +3877,7 @@ contextmenu: function() {
 		separator = false,
 		added_card;
 
-	if ( added_cid ) { added_card = SmallCard.analyzedData[ added_cid ]; }
+	if ( added_cid ) { added_card = Deck.analyzedData[ added_cid ]; }
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -3919,6 +4111,57 @@ power: function() {
 	this.totalDes = ( data.destroy * this.solNum );
 },
 
+//.. match
+match: function( conditions ) {
+	var result = true;
+
+	for ( var i = 0, len = conditions.length; i < len; i++ ) {
+		let [ prop, value, option, convert ] = conditions[ i ],
+			cardValue, maxprop, soltype;
+
+		if ( prop == 'soltype' ) {
+			if ( value == 'none' ) {
+				//未編成
+				result &= ( !this.solName );
+			}
+			else {
+				soltype = this.solType;
+				result &= value.some(function( classType, idx, array ) { return ( classType == soltype ); });
+			}
+		}
+		else {
+			if ( value == 'max' ) {
+				maxprop = 'max' + prop[ 0 ].toUpperCase() + prop.slice( 1 );
+				value = this[ maxprop ];
+			}
+
+			if ( convert ) {
+				cardValue = convert( this );
+			}
+			else {
+				cardValue = this[ prop ];
+			}
+
+			if ( option == 'gt' ) {
+				result &= ( cardValue >= value );
+			}
+			else if ( option == 'lt' ) {
+				result &= ( cardValue <= value );
+			}
+			else if ( option == 'ne' ) {
+				result &= ( cardValue != value );
+			}
+			else {
+				result &= ( cardValue == value );
+			}
+		}
+
+		if ( !result ) { return result; }
+	}
+
+	return result;
+},
+
 //.. editUnit
 editUnit: function() {
 	var card = this,
@@ -4127,6 +4370,11 @@ getRecoveryTime: function() {
 	return Math.ceil( time * 60 * ( this.maxHp - this.hp ) / 100 );
 },
 
+//.. canAssign
+canAssign: function() {
+	return ( this.squadId && this.solNum > 0 );
+},
+
 //.. canUnion
 canUnion: function() {
 	return ( this.rarity !== '祝' && this.rarity !== '雅' && this.cardId !== undefined );
@@ -4178,14 +4426,6 @@ var LargeCard = function( element ) {
 	this.analyze( $elem );
 	this.power();
 }
-
-//. LargeCard
-$.extend( LargeCard, {
-
-//.. analyzedData
-analyzedData: {}
-
-});
 
 //. LargeCard.prototype
 $.extend( LargeCard.prototype, Card.prototype, {
@@ -4323,15 +4563,12 @@ var SmallCard = function( element ) {
 //. SmallCard
 $.extend( SmallCard, {
 
-//.. analyzedData
-analyzedData: {},
-
 //.. setup
 setup: function( $list ) {
 	$list.each(function() {
 		var card = new SmallCard( this );
 		if ( card.cardId ) {
-			SmallCard.analyzedData[ card.cardId ] = card;
+			Deck.analyzedData[ card.cardId ] = card;
 		}
 	});
 }
@@ -4347,7 +4584,7 @@ isExhibited: false,
 //.. analyze
 analyze: function() {
 	var $elem = this.element,
-		$card, text, array;
+		$card, $img, text, array;
 
 	text = $elem.find('A').attr('href') || '';
 	array = text.match(/cardWindow_(\d+)/);
@@ -4364,7 +4601,8 @@ analyze: function() {
 
 	//squad_id
 	//「選択中の部隊へ」ボタンがある：部隊配置可
-	text = $elem.find('IMG[alt="選択中の部隊へ"]').parent().attr('onClick') || '';
+	$img = $elem.find('IMG[alt="選択中の部隊へ"]').addClass('imc_assign_button');
+	text = $img.parent().attr('onClick') || '';
 	array = text.match(/confirmRegist\('\d*', '(\d+)'/);
 	if ( array != null ) {
 		this.squadId = array[ 1 ];
@@ -4416,6 +4654,9 @@ layouter: function() {
 	}
 	else if ( this.solNum > 0 ) {
 		cssClass = 'class="emphasis"';
+	}
+	else {
+		cssClass = '';
 	}
 
 	//指揮兵・兵種・総攻撃力・総防御力を表示
@@ -4498,6 +4739,12 @@ update: function() {
 	$tr.eq( 1 ).find('TD').text( this.solName || '' );
 	$tr.eq( 2 ).find('TD').text( Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) );
 	$tr.eq( 3 ).find('TD').text( Math.floor( this.totalDef ).toFormatNumber( '', '-' ) );
+
+	if ( !this.canAssign() ) {
+		$elem.addClass('imc_disabled');
+		$elem.find('.imc_assign_button').hide();
+		delete this.squadId;
+	}
 }
 
 });
@@ -7775,8 +8022,9 @@ SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
 #imi_card_container2:after { content: '　素材カード'; color: #999; font-size: 18px; line-height: 200px; }
 #imi_card_container3:after { content: '　追加素材カード'; color: #999; font-size: 18px; line-height: 200px; }
 
-#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }
-#imi_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }
+#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 0px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }
+#imi_command_selecter LI:hover .imc_pulldown { display: block; }
+#imi_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }
 #imi_command_selecter LI A:hover { color: #fff; background-color: #666; }
 
 /* 兵種変更 */
@@ -7870,11 +8118,7 @@ autoPager: function() {
 
 			SmallCard.setup( $card_list );
 			$card_list.appendTo('#ig_deck_smallcardarea_out');
-
-			var selecter = $('#imi_command_selecter').find('LI.imc_selected').attr('selecter');
-			Deck.filter( selecter );
-
-			Util.countDown();
+			Deck.updateDeckCard();
 		},
 		ended: function() {
 			Display.info('全ページ読み込み完了');
@@ -7918,13 +8162,7 @@ layouter: function() {
 				<li id="imi_open" class="imc_is_close"></li>
 				<li id="imi_card_assign">選択武将を部隊へ登録</li>
 			</ul>
-			<ul id="imi_command_selecter">
-				<li class="imc_all" selecter=".imc_all"><span>全て</span></li>
-				<li class="imc_yari" selecter=".yari1, .yari2, .yari3, .yari4"><span>槍</span></li>
-				<li class="imc_yumi" selecter=".yumi1, .yumi2, .yumi3, .yumi4"><span>弓</span></li>
-				<li class="imc_kiba" selecter=".kiba1, .kiba2, .kiba3, .kiba4"><span>馬</span></li>
-				<li class="imc_heiki" selecter=".heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6"><span>兵器</span></li>
-			</ul>
+			<ul id="imi_command_selecter" />
 		</div>
 		<div id="imi_card_container" />
 		<div id="imi_card_container1">
@@ -7967,92 +8205,7 @@ layouter: function() {
 	//選択武将を登録ボタン
 	$('#imi_card_assign').click( Deck.assignCard );
 
-	//表示条件ボタン
-	$('#imi_command_selecter LI').click(function() {
-		var $this = $(this),
-			selecter = $this.attr('selecter');
-
-		$('#imi_command_selecter').find('LI.imc_selected').removeClass('imc_selected');
-		$this.addClass('imc_selected');
-
-		Deck.filter( selecter );
-		MetaStorage('SETTINGS').set('command_selecter', selecter);
-	});
-
-	createMenu( $('.imc_all'), [
-		{ title: '全て', selecter: '.imc_all' },
-		{ title: '無し', selecter: '.imc_none' },
-		{ title: 'Cost 2', selecter: '.imc_cost' }
-	]);
-
-	createMenu( $('.imc_yari'), [
-		{ title: '槍', selecter: '.yari1, .yari2, .yari3, .yari4' },
-		{ title: '武士', selecter: '.yari3' },
-		{ title: '長槍足軽', selecter: '.yari2' },
-		{ title: '足軽', selecter: '.yari1' },
-		{ title: '国人衆', selecter: '.yari4' }
-	]);
-
-	createMenu( $('.imc_yumi'), [
-		{ title: '弓', selecter: '.yumi1, .yumi2, .yumi3, .yumi4' },
-		{ title: '弓騎馬', selecter: '.yumi3' },
-		{ title: '長弓兵', selecter: '.yumi2' },
-		{ title: '弓足軽', selecter: '.yumi1' },
-		{ title: '海賊衆', selecter: '.yumi4' }
-	]);
-
-	createMenu( $('.imc_kiba'), [
-		{ title: '馬', selecter: '.kiba1, .kiba2, .kiba3, .kiba4' },
-		{ title: '赤備え', selecter: '.kiba3' },
-		{ title: '精鋭騎馬', selecter: '.kiba2' },
-		{ title: '騎馬兵', selecter: '.kiba1' },
-		{ title: '母衣衆', selecter: '.kiba4' }
-	]);
-
-	createMenu( $('.imc_heiki'), [
-		{ title: '兵器', selecter: '.heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6' },
-		{ title: '騎馬鉄砲', selecter: '.heiki5' },
-		{ title: '雑賀衆', selecter: '.heiki6' },
-		{ title: '鉄砲足軽', selecter: '.heiki4' },
-		{ title: '大筒兵', selecter: '.heiki3' },
-		{ title: '攻城櫓', selecter: '.heiki2' },
-		{ title: '破城鎚', selecter: '.heiki1' }
-	]);
-
-	function createMenu( target, menu ) {
-		var submenu = $('<div class="imc_pulldown" />');
-
-		$.each( menu, function() {
-			if ( !( 'title' in this ) ) { return; }
-
-			var $a = $('<a class="imc_pulldown_item" />').text( this.title );
-
-			$a.attr({ href: 'javascript:void(0);', selecter: this.selecter });
-
-			submenu.append( $a );
-		});
-
-		if ( submenu.children().length == 0 ) { return; }
-
-		target
-		.append( submenu )
-		.hover(
-			function() { submenu.show(); },
-			function() { submenu.hide(); }
-		);
-
-		target.find('A').click(function() {
-			var $this = $(this),
-				$li = $this.closest('LI');
-
-			$li.find('SPAN').text( $this.text() );
-			$li.attr( 'selecter', $this.attr('selecter') );
-
-			submenu.hide();
-		});
-
-		submenu.css({ marginTop: -(submenu.height() + target.outerHeight()) });
-	}
+	Deck.commandMenu( $('#imi_command_selecter'), true );
 },
 
 //. unregistAll
