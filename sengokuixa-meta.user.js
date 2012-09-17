@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.11
+// @version        1.0.4.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6948,8 +6948,125 @@ Page.registerAction( 'facility', 'set_unit', {
 
 //. style
 style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
-]]></>
+#team_fighting INPUT { ime-mode: disabled; }
+#team_fighting .cntchangetitle { padding-top: 10px; }
+#team_fighting BUTTON { width: 60px; }
+#imi_soldier_pool { margin-top: 10px; color: #000; }
+.imc_table TD { text-align: right; }
+]]></>,
+
+//. main
+main: function() {
+	if ( $('#set_unit_form').length == 1 ) {
+		this.layouter();
+	}
+},
+
+//. layouter
+layouter: function() {
+	this.commandButton();
+	this.showSoldierPool();
+
+	$('#team_fighting')
+	.on('click', 'SPAN', function() {
+		$('#imi_soldier_pool').trigger('update');
+	})
+	.on('change', function() {
+		$('#imi_soldier_pool').trigger('update');
+	});
+},
+
+//. commandButton
+commandButton: function() {
+	$('#team_fighting')
+	.on('click', 'BUTTON', function() {
+		var text = $(this).text(),
+			type = $('#unit_id_arr\\[0\\]').val(),
+			num = $('#unit_count_arr\\[0\\]').val();
+
+		if ( text == '同兵種' ) {
+			$('#team_job SELECT').val( type );
+		}
+		else if ( text == '同兵数' ) {
+			$('#team_cntchange INPUT[type="text"]').val( num );
+		}
+		else if ( text == '全兵１' ) {
+			$('#team_cntchange INPUT[type="text"]').val( 1 );
+		}
+
+		$('#imi_soldier_pool').trigger('update');
+		return false;
+	});
+
+	$('.job_stitle').html('<button>同兵種</button>');
+	$('.cntchangetitle').html('<button>同兵数</button><button>全兵１</button>');
+},
+
+//. showSoldierPool
+showSoldierPool: function() {
+	var pool = {};
+
+	$.each( Soldier.typeKeys, function( type ) {
+		var $span = $('#pool_unit_now_' + type ),
+			num;
+
+		if ( $span.length == 0 ) { return; }
+
+		pool[ type ] = $span.text().toInt();
+	});
+
+	$('#ig_boxInner > DIV:not("#sidebar")').each(function() {
+		var card = new LargeCard( this ),
+			type = Soldier.getType( card.solName );
+
+		pool[ type ] += card.solNum;
+	});
+
+	$('#team_fighting').after('<div id="imi_soldier_pool" />');
+
+	$('#imi_soldier_pool')
+	.on('update', function() {
+		var len = $('.job_s').length,
+			reserve = {}, html = '', idx = 0;
+
+		for ( var i = 0; i < len; i++ ) {
+			let type = $('#unit_id_arr\\[' + i + '\\]').val(),
+				num = $('#unit_count_arr\\[' + i + '\\]').val();
+
+			if ( !reserve[ type ] ) { reserve[ type ] = 0; }
+			reserve[ type ] += num.toInt();
+		};
+
+		html += '<tr>' +
+			'<th style="width: 58px;">兵種</th><th style="width: 42px;">全体</th><th style="width: 42px;">待機</th><th style="width: 42px;">部隊</th>'.repeat( 3 ) +
+		'</tr>';
+
+		$.each( pool, function( type ) {
+			if ( pool[ type ] == 0 ) { return; }
+
+			if ( idx % 3 == 0 ) { html += '<tr style="height: 18px;">'; }
+
+			html += '<th>' + Soldier.getNameByType( type ) + '</th>';
+			html += '<td>' + pool[ type ] + '</td>';
+			if ( reserve[ type ] > pool[ type ] ) {
+				html += '<td style="color: #f33; font-weight: bold;">' + ( pool[ type ] - ( reserve[ type ] || 0 ) ) + '</td>';
+				html += '<td style="color: #f33; font-weight: bold;">' + ( reserve[ type ] || '0' ) + '</td>';
+			}
+			else {
+				html += '<td>' + ( pool[ type ] - ( reserve[ type ] || 0 ) ) + '</td>';
+				html += '<td>' + ( reserve[ type ] || '0' ) + '</td>';
+			}
+
+			idx++;
+			if ( idx % 3 == 0 ) { html += '</tr>'; }
+		});
+
+		if ( idx % 3 != 0 ) { html += '<td></td></tr>'; }
+		html = '<table class="imc_table">' + html + '</table>';
+
+		$(this).html( html );
+	}).trigger('update');
+}
 
 });
 
