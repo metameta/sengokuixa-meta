@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.13
+// @version        1.0.4.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -649,6 +649,8 @@ getSpeed: function( cards, unitskill ) {
 		var card = cards[ i ];
 
 		data = Soldier.getByName( card.solName );
+		if ( !data ) { return 0; }
+
 		if ( !speed_list[ data.skillType ] ) {
 			speed_list[ data.skillType ] = data.speed;
 		}
@@ -3307,33 +3309,53 @@ analyzedData: {},
 
 //.. updateDeckCard
 updateDeckCard: function() {
-	var cardlist = Deck.targetList();
+	var cardlist = Deck.targetList(),
+		$container = $('#ig_deck_smallcardarea_out'),
+		$cards = $();
 
 	for ( var i = 0, len = cardlist.length; i < len; i++ ) {
-		cardlist[ i ].element.show();
+		$cards.push( cardlist[ i ].element[ 0 ] );
 	}
 
-	$('#ig_deck_smallcardarea_out').trigger('update');
-	Util.countDown();
+	$container.append( $cards ).trigger('update');
+},
+
+//.. updateDeckInfo
+updateDeckInfo: function() {
+	var { freeCost, freeCard, useCost, useCard, totalAtk, totalDef, totalDes, speed } = $('#imi_card_container').data(),
+		time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed ),
+		dtitle = '破壊力：' + totalDes.toFormatNumber(),
+		stitle = time.toFormatTime() + '／距離';
+
+	$('.imc_info1').text( useCost.toFixed( 1 ) );
+	$('.imc_info1_free').text( freeCost.toFixed( 1 ) );
+	$('.imc_info2').text( useCard );
+	$('.imc_info2_free').text( freeCard );
+	$('.imc_info3').text( Math.floor( totalAtk ).toFormatNumber() ).parent().attr( 'title', dtitle );
+	$('.imc_info4').text( Math.floor( totalDef ).toFormatNumber() );
+	$('.imc_info5').text( speed.toRound( 1 ) ).parent().attr( 'title', stitle );
 },
 
 //.. targetList
 targetList: function() {
 	var cardlist;
 
-	cardlist = Deck.filter( Deck.analyzedData, Deck.filter.conditions );
+	cardlist = Deck.filter( Deck.analyzedData );
+	cardlist = Deck.sort( cardlist );
 
 	return cardlist;
 },
 
 //.. filter
-filter: function( cardlist, conditions ) {
-	var list = [];
+filter: function( cardlist ) {
+	var conditions = Deck.filter.conditions,
+		list = [];
 
 	for ( var card_id in cardlist ) {
 		let card = cardlist[ card_id ];
 
 		if ( card.match( conditions ) ) {
+			card.element.show();
 			list.push( card );
 		}
 		else {
@@ -3344,9 +3366,48 @@ filter: function( cardlist, conditions ) {
 	return list;
 },
 
+//.. sort
+sort: function( cardlist ) {
+	var order = Deck.sort.conditions;
+
+	return cardlist.sort(function( a, b ) {
+		for ( var i = 0, len = order.length; i < len; i++ ) {
+			let [ prop, option, convert ] = order[ i ],
+				aValue, bValue;
+
+			if ( convert ) {
+				aValue = convert( a );
+				bValue = convert( b );
+			}
+			else {
+				aValue = a[ prop ];
+				bValue = b[ prop ];
+			}
+
+			if ( option == 'desc' && aValue < bValue ) {
+				//降順
+				return true;
+			}
+			else if ( option == 'asc' && aValue > bValue ) {
+				//昇順
+				return true;
+			}
+			else if ( aValue == bValue ) {
+				continue;
+			}
+			else {
+				return false;
+			}
+		}
+
+		return false;
+	});
+},
+
 //.. commandMenu
 commandMenu: function( container, up ) {
 	Deck.filterMenu( container, up );
+	Deck.sortMenu( container, up );
 
 	//表示条件ボタン
 	container
@@ -3360,6 +3421,13 @@ commandMenu: function( container, up ) {
 			if ( selecter ) { conditions.push( selecter ); }
 		});
 		Deck.filter.conditions = conditions;
+
+		conditions = [];
+		$li.filter('.imc_sort').each(function() {
+			var selecter = $(this).data('selecter');
+			if ( selecter ) { conditions.push( selecter ); }
+		});
+		Deck.sort.conditions = conditions;
 
 		Deck.updateDeckCard();
 	})
@@ -3471,6 +3539,63 @@ filterMenu: function( container, up ) {
 	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
 	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
 	Deck.filter.conditions = [];
+},
+
+//.. sortMenu
+sortMenu: function( container, up ) {
+	var menulist;
+
+	container.append('<label>ソート</label>');
+
+	menulist = [
+		[
+			{ title: '指定無し', selecter: null },
+		],
+		[
+			{ title: '総攻：降', selecter: [ 'totalAtk', 'desc' ] },
+			{ title: '総攻：昇', selecter: [ 'totalAtk', 'asc' ] },
+			{ title: '総防：降', selecter: [ 'totalDef', 'desc' ] },
+			{ title: '総防：昇', selecter: [ 'totalDef', 'asc' ] },
+			{ title: '速度：降', selecter: [ 'speed', 'desc', function( card ) { return Util.getSpeed( [ card ] ); } ] },
+			{ title: '速度：昇', selecter: [ 'speed', 'asc', function( card ) { return Util.getSpeed( [ card ] ); } ] }
+		],
+		[
+			{ title: '攻撃力：降', selecter: [ 'atk', 'desc' ] },
+			{ title: '攻撃力：昇', selecter: [ 'atk', 'asc' ] },
+			{ title: '防御力：降', selecter: [ 'def', 'desc' ] },
+			{ title: '防御力：昇', selecter: [ 'def', 'asc' ] },
+			{ title: '兵法：降', selecter: [ 'int', 'desc' ] },
+			{ title: '兵法：昇', selecter: [ 'int', 'asc' ] }
+		],
+		[
+			{ title: '兵数：降', selecter: [ 'solNum', 'desc' ] },
+			{ title: '兵数：昇', selecter: [ 'solNum', 'asc' ] },
+			{ title: '指揮力：降', selecter: [ 'maxSolNum', 'desc' ] },
+			{ title: '指揮力：昇', selecter: [ 'maxSolNum', 'asc' ] }
+		],
+		[
+			{ title: 'コスト：降', selecter: [ 'cost', 'desc' ] },
+			{ title: 'コスト：昇', selecter: [ 'cost', 'asc' ] },
+			{ title: 'レア度：降', selecter: [ 'rarity', 'desc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] },
+			{ title: 'レア度：昇', selecter: [ 'rarity', 'asc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] }
+		],
+		[
+			{ title: 'ランク：降', selecter: [ 'rank', 'desc' ] },
+			{ title: 'ランク：昇', selecter: [ 'rank', 'asc' ] },
+			{ title: 'レベル：降', selecter: [ 'lv', 'desc' ] },
+			{ title: 'レベル：昇', selecter: [ 'lv', 'asc' ] }
+		],
+		[
+			{ title: 'HP：降',   selecter: [ 'hp', 'desc' ] },
+			{ title: 'HP：昇',   selecter: [ 'hp', 'asc' ] },
+			{ title: '討伐：降', selecter: [ 'battleGage', 'desc' ] },
+			{ title: '討伐：昇', selecter: [ 'battleGage', 'asc' ] }
+		]
+	];
+
+	Deck.createMenu( container, 'imc_sort', menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_sort', menulist, '指定無し', up );
+	Deck.sort.conditions = [];
 },
 
 //.. createMenu
@@ -3651,22 +3776,6 @@ addCardUnion: function() {
 	}
 
 	return;
-},
-
-//.. updateDeckInfo
-updateDeckInfo: function() {
-	var { freeCost, freeCard, useCost, useCard, totalAtk, totalDef, totalDes, speed } = $('#imi_card_container').data(),
-		time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed ),
-		dtitle = '破壊力：' + totalDes.toFormatNumber(),
-		stitle = time.toFormatTime() + '／距離';
-
-	$('.imc_info1').text( useCost.toFixed( 1 ) );
-	$('.imc_info1_free').text( freeCost.toFixed( 1 ) );
-	$('.imc_info2').text( useCard );
-	$('.imc_info2_free').text( freeCard );
-	$('.imc_info3').text( Math.floor( totalAtk ).toFormatNumber() ).parent().attr( 'title', dtitle );
-	$('.imc_info4').text( Math.floor( totalDef ).toFormatNumber() );
-	$('.imc_info5').text( speed.toRound( 1 ) ).parent().attr( 'title', stitle );
 },
 
 //.. assignCard
@@ -3907,13 +4016,21 @@ contextmenu: function() {
 	}
 
 	if ( card.solNum > 0 && card.solNum < card.maxSolNum ) {
-		menu['最大補充'] = function() { card.setUnitMax(); };
+		menu['最大補充'] = function() {
+			card.setUnitMax()
+			.done( Deck.updateDeckCard )
+			.fail(function() { Display.alert('編成できませんでした。'); });
+		};
 	}
 	if ( card.solNum > 1 ) {
-		menu['兵数を１にする'] = function() { card.setUnit( 1 ); };
+		menu['兵数を１にする'] = function() {
+			card.setUnit( 1 )
+			.done( Deck.updateDeckCard )
+			.fail(function() { Display.alert('編成できませんでした。'); });
+		};
 	}
 
-	menu['兵編成'] = function() { card.editUnit(); };
+	menu['兵編成'] = function() { card.editUnit().done( Deck.updateDeckCard ); };
 	menu['セパレーター2'] = $.contextMenu.separator;
 
 	//合成可能な場合のメニュー
@@ -4269,6 +4386,7 @@ editUnit: function() {
 
 					if ( num == card.solNum && type == card_soltype ) {
 						Display.alert('変更はありません。');
+						dfd.reject();
 						self.close();
 						return;
 					}
@@ -4313,13 +4431,6 @@ setUnit: function( value, type ) {
 		card.solName = Soldier.getNameByType( unit_type );
 		card.power();
 		card.update();
-	})
-	.done(function() {
-		Display.info('編成完了しました。');
-	})
-	.fail(function( text ) {
-		text = text || '編成できませんでした。';
-		Display.alert( text );
 	});
 },
 
@@ -4328,7 +4439,7 @@ setUnitMax: function() {
 	var card = this,
 		card_id = card.cardId;
 
-	$.get('/facility/set_unit.php?card_id=' + card_id + '&ano=0&p=1')
+	return $.get('/facility/set_unit.php?card_id=' + card_id + '&ano=0&p=1')
 	.pipe(function( html ) {
 		var $html = $(html),
 			$form = $html.find('#set_unit_form'),
@@ -4356,10 +4467,7 @@ setUnitMax: function() {
 		//最大補充時の人数取得
 		sol_num = $input.val().toInt();
 
-		card.setUnit( sol_num );
-	})
-	.fail(function() {
-		Display.alert('編成できませんでした。');
+		return card.setUnit( sol_num );
 	});
 },
 
@@ -8172,7 +8280,12 @@ layouter: function() {
 	</div>
 	]]></>;
 
-	$( html ).appendTo( document.body );
+	$( html ).appendTo('BODY');
+
+	$('#ig_deck_smallcardarea_out')
+	.on( 'update', function() {
+		Util.countDown();
+	});
 
 	//合成モードボタン
 	$('#imi_mode').click(function() {
