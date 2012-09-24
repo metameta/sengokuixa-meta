@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.14
+// @version        1.0.4.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3307,6 +3307,37 @@ $.extend( Deck, {
 //.. analyzedData
 analyzedData: {},
 
+//.. currentUnit
+currentUnit: null,
+
+//.. union
+union: {
+	added: null,
+	materials: [],
+},
+
+//.. freeCost
+freeCost: 0,
+
+//.. ano
+ano: 0,
+
+//.. setup
+setup: function( free_cost, ano, card_list ) {
+	Deck.currentUnit = new Unit( card_list );
+	Deck.freeCost = free_cost + Deck.currentUnit.cost;
+	Deck.ano = ano;
+	Deck.filter.conditions = Deck.filter.conditions || [];
+	Deck.sort.conditions = Deck.sort.conditions || [];
+},
+
+//.. update
+update: function() {
+	Deck.currentUnit.update();
+	Deck.updateDeckInfo();
+	Deck.updateDeckCard();
+},
+
 //.. updateDeckCard
 updateDeckCard: function() {
 	var cardlist = Deck.targetList(),
@@ -3322,18 +3353,7 @@ updateDeckCard: function() {
 
 //.. updateDeckInfo
 updateDeckInfo: function() {
-	var { freeCost, freeCard, useCost, useCard, totalAtk, totalDef, totalDes, speed } = $('#imi_card_container').data(),
-		time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed ),
-		dtitle = '破壊力：' + totalDes.toFormatNumber(),
-		stitle = time.toFormatTime() + '／距離';
-
-	$('.imc_info1').text( useCost.toFixed( 1 ) );
-	$('.imc_info1_free').text( freeCost.toFixed( 1 ) );
-	$('.imc_info2').text( useCard );
-	$('.imc_info2_free').text( freeCard );
-	$('.imc_info3').text( Math.floor( totalAtk ).toFormatNumber() ).parent().attr( 'title', dtitle );
-	$('.imc_info4').text( Math.floor( totalDef ).toFormatNumber() );
-	$('.imc_info5').text( speed.toRound( 1 ) ).parent().attr( 'title', stitle );
+	$('#imi_deck_info').trigger('update');
 },
 
 //.. targetList
@@ -3631,8 +3651,11 @@ createMenu: function( container, type, menulist, selected, up ) {
 },
 
 //.. addCard
-addCard: function() {
-	var deck_mode = $('#imi_mode').hasClass('imc_deck_mode');
+addCard: function( e ) {
+	var $target = $(e.target),
+		deck_mode = $('#imi_mode').hasClass('imc_deck_mode');
+
+	if ( $target.is('A') || $target.parent().is('A') ) { return; }
 
 	if ( deck_mode ) {
 		Deck.addCardDeck.call( this );
@@ -3646,86 +3669,22 @@ addCard: function() {
 addCardDeck: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
-		data = Deck.analyzedData[ card_id ],
-		card_list = [], speed;
+		card = Deck.analyzedData[ card_id ];
 
-	if ( !data || !data.squadId ) { return; }
-
-	var $container = $('#imi_card_container'),
-		{ freeCost, freeCard, useCost, useCard, totalAtk, totalDef, totalDes } = $container.data(),
-		$card, name, found;
+	if ( !card || !card.canAssign() ) { return; }
 
 	if ( $this.hasClass('imc_selected') ) {
 		//選択武将削除
-		$('#ig_deck_smallcardarea_out').find('.ig_deck_smallcardarea[card_id="' + card_id + '"]').removeClass('imc_selected');
-		$container.find('DIV[card_id="' + card_id + '"]').remove();
+		Deck.currentUnit.removeCard( card );
+		card.element.removeClass('imc_selected');
 	}
 	else {
 		//選択武将追加
-		$card = $container.children();
-
-		//武将数チェック
-		useCard = $card.length + 1;
-		if ( useCard > freeCard ) {
-			Display.alert('武将枠に空きが在りません。');
-			return;
+		if ( Deck.currentUnit.addCard( card ) ) {
+			card.element.addClass('imc_selected');
 		}
-
-		if ( useCost + data.cost > freeCost ) {
-			Display.alert('デッキコストが足りません。');
-			return;
-		}
-
-		//武将名チェック
-		name = data.name;
-		found = false;
-
-		$card.each(function() {
-			var card_id = $(this).attr('card_id'),
-				data = Deck.analyzedData[ card_id ];
-
-			if ( data.name == name ) {
-				found = true;
-				return false;
-			}
-		});
-
-		if ( found ) {
-			Display.alert('武将名が重複しています。');
-			return;
-		}
-
-		//選択武将追加
-		$this.addClass('imc_selected');
-		$container
-		.append(
-			$this.clone()
-			.children('DIV:gt(1)').remove().end()
-			.find('DIV.ranklvup_m').remove().end()
-			.find('.smallcard_chara').unwrap().end()
-		);
 	}
 
-	//武将数・コスト更新
-	$card = $container.children();
-	useCard = $card.length;
-	useCost = totalAtk = totalDef = totalDes = 0;
-
-	$card.each(function() {
-		var card_id = $(this).attr('card_id'),
-			card = Deck.analyzedData[ card_id ];
-
-		card_list.push( card );
-
-		useCost += card.cost;
-		totalAtk += card.totalAtk;
-		totalDef += card.totalDef;
-		totalDes += card.totalDes;
-	});
-
-	speed = Util.getSpeed( card_list );
-
-	$container.data({ useCost: useCost, useCard: useCard, totalAtk: totalAtk, totalDef: totalDef, totalDes: totalDes, speed: speed });
 	Deck.updateDeckInfo();
 },
 
@@ -3733,42 +3692,47 @@ addCardDeck: function() {
 addCardUnion: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
-		data = Deck.analyzedData[ card_id ];
+		card = Deck.analyzedData[ card_id ];
 
 	if ( $this.hasClass('imc_selected') ) {
 		//選択武将削除
-		$('#ig_deck_smallcardarea_out').find('.ig_deck_smallcardarea[card_id="' + card_id + '"]').removeClass('imc_selected');
+		if ( card_id == Deck.union.added ) {
+			Deck.union.added = null;
+		}
+		else {
+			Deck.union.materials = Deck.union.materials.filter(function( elem, idx, array ) {
+				return ( elem != card_id );
+			});
+		}
+
+		$('#ig_deck_smallcardarea_out').children('.ig_deck_smallcardarea, TR').filter('[card_id="' + card_id + '"]').removeClass('imc_selected imc_added');
 		$('#imi_card_container1').find('DIV[card_id="' + card_id + '"]').remove();
 	}
-	else if ( $('#imi_card_container2').children().length == 0 ) {
-		if ( !data.canUnion() ) {
+	else if ( !Deck.union.added ) {
+		if ( !card.canUnion() ) {
 			Display.info('このカードは合成に使用できません。');
 			return;
 		}
 
+		Deck.union.added = card_id;
+
 		//選択武将追加
-		$this.addClass('imc_selected');
-		$('#imi_card_container2').append(
-			$this.clone()
-			.children('DIV:gt(1)').remove().end()
-			.find('DIV.ranklvup_m').remove().end()
-			.find('.smallcard_chara').unwrap().end()
-		);
+		$this.addClass('imc_selected imc_added');
+		$('#imi_card_container2').append( card.clone() );
 	}
-	else if ( $('#imi_card_container3').children().length < 5 ) {
-		if ( !data.useMaterial() ) {
+	else if ( Deck.union.materials.length < 5 ) {
+		if ( !card.useMaterial() ) {
 			Display.info('このカードは合成に使用できません。');
 			return;
 		}
+
+		Deck.union.materials.push( card_id );
 
 		//選択武将追加
 		$this.addClass('imc_selected');
 		$('#imi_card_container3').append(
-			$this.clone()
-			.children('DIV:gt(1)').remove().end()
+			card.clone()
 			.find('.imc_card_header, .ig_deck_smallcarddataarea').remove().end()
-			.find('DIV.ranklvup_m').remove().end()
-			.find('.smallcard_chara').unwrap().end()
 		);
 	}
 	else {
@@ -3779,176 +3743,16 @@ addCardUnion: function() {
 },
 
 //.. assignCard
-assignCard: function() {
-	var ol = Display.dialog(),
-		card_list = $('#imi_card_container').children(),
-		deck_card = card_list.length,
-		free_card = 4,
-		village_id = $('#imi_select_village').val() || '',
-		assign_id = '',
-		error_list = [];
-
-	if ( village_id == '' ) {
-		//拠点IDを取得できない場合、部隊IDチェック
-		var href = $('#ig_deck_unititle').find('A').attr('href') || '',
-			unit_assign_id = href.match(/unit_assign_id=(\d+)/);
-
-		if ( !unit_assign_id ) {
-			//拠点IDも部隊IDも取得できない・・・
-			ol.close();
-			return;
-		}
-
-		assign_id = unit_assign_id[1];
-		//デッキの（小隊長の）空きチェック
-		free_card = $('#id_deck_card2, #id_deck_card3, #id_deck_card4').not(':has(DIV)').length;
-
-		ol.message('選択中の部隊に登録します。');
-	}
-	else {
-		ol.message('新規部隊を登録します。');
+assignCard: function( village_id, unit_id ) {
+	if ( Deck.ano >= 5 ) {
+		Display.alert('これ以上部隊を作成できません。');
+		return $.Deferred().reject();
 	}
 
-	ol.message('選択武将数： ' + deck_card + ' ／ 武将枠残： ' + free_card);
+	if ( unit_id ) { village_id = ''; }
+	else { unit_id = ''; }
 
-	//選択部隊No
-	var unit_list = $('#ig_unitchoice LI'),
-		unit_no;
-
-	if ( assign_id != '' ) {
-		//追加の場合、現在選択されているano
-		unit_no = unit_list.index( unit_list.filter('.now:first') );
-	}
-	else {
-		//新規の場合、セットされていない（画面上での）一番若いano
-		unit_no = unit_list.index( unit_list.filter('.unset:first') );
-	}
-
-	$('#deck_file #select_assign_no').val( unit_no );
-
-	//武将数チェック
-	if ( card_list.length == 0 ) { error_list.push('・武将が選択されていません'); }
-	if ( card_list.length > free_card ) { error_list.push('・部隊の武将枠の空きが足りません'); }
-
-	//武将名チェック
-	var name_list = {},
-		squad_list = [],
-		use_cost = 0;
-
-	card_list.each(function() {
-		var $this = $(this),
-			card_id = $this.attr('card_id'),
-			data = Deck.analyzedData[ card_id ],
-			name = data.name;
-
-		name_list[ name ] = ( name_list[ name ] || 0 ) + 1;
-		if ( name_list[ name ] == 2 ) {
-			error_list.push('・「' + key + '」は重複しています');
-		}
-
-		if ( data.squadId ) {
-			squad_list.push({ name: name, squad_id: data.squadId });
-			use_cost += data.cost;
-		}
-		else {
-			error_list.push('・「' + name + '」は部隊にセットすることはできません');
-		}
-	});
-
-	//デッキコストチェック
-	var deck_cost = $('#ig_deckcost').find('SPAN.ig_deckcostdata').text().match(/(\d+\.?\d?)\/(\d+)/),
-		free_cost = deck_cost[2].toFloat() - deck_cost[1].toFloat();
-
-	ol.message('消費コスト： ' + use_cost + ' ／ コスト残： ' + free_cost);
-
-	if ( use_cost > free_cost ) {
-		error_list.push('・デッキコストが不足しています');
-	}
-
-	//ここまでのエラー表示
-	if ( error_list.length > 0 ) {
-		ol
-		.message('エラーの内容を確認してください。')
-		.message( error_list.join('<br/>') )
-		.message('閉じる場合はクリックしてください。');
-
-		$('#imi_overlay').click(function() { ol.close(); });
-		return;
-	}
-
-	ol.message('登録処理開始...');
-
-	$.Deferred().resolve()
-	.pipe(function() {
-		if ( assign_id != '' ) { return assign_id; }
-
-		//部隊長を登録し部隊IDを取得する
-		var squad = squad_list.shift(),
-			postData = getPostData( '', village_id, squad );
-
-		return $.post( '/card/deck.php', postData )
-		.pipe(function( html ) {
-			var $html = $(html),
-				text = $html.find('#ig_deck_unititle P').text(),
-				name = ( text.match(/\[(.+)\]/) || [,''] )[ 1 ],
-				href = $html.find('#ig_deck_unititle A').attr('href') || '',
-				unit_assign_id = href.match(/unit_assign_id=(\d+)/),
-				$li = $html.find('#ig_unitchoice LI');
-
-			if ( name != squad.name ) {
-				var idx = $li.index( $li.filter(':contains("' + squad.name + '")') );
-
-				if ( idx == -1 ) { return $.Deferred().reject(); }
-				if ( squad_list.length == 0 ) { return $.Deferred().resolve(); }
-
-				ol.message('部隊IDの取得失敗').message('部隊ID再取得中...');
-
-				unit_no = idx;
-
-				return $.get( '/card/deck.php?ano=' + idx ).pipe( arguments.callee );
-			}
-			else if ( unit_assign_id == null ) {
-				return $.Deferred().reject();
-			}
-
-			return unit_assign_id[1];
-		});
-	})
-	.pipe(function( assign_id ) {
-		var tasks = [];
-
-		if ( squad_list.length == 0 ) { return $.Deferred().resolve(); }
-
-		ol.message('部隊IDの取得成功');
-
-		while ( squad_list.length > 0 ) {
-			let postData = getPostData( assign_id, '', squad_list.shift() );
-			tasks.push( $.post( '/card/deck.php', postData ) );
-		}
-
-		return $.when.apply( $, tasks );
-	})
-	.done(function() {
-		ol.message('登録処理終了').message('ページを更新します...');
-
-	})
-	.fail(function() {
-		ol.message('部隊IDの取得失敗').message('処理を中断します。');
-	})
-	.always(function() {
-		Page.move( '/card/deck.php?ano=' + unit_no + '&dmo=nomal&p=1' );
-	});
-
-	function getPostData( assign_id, village_id, squad ) {
-		ol.message('「' + squad.name + '」を登録中...');
-
-		$('#mode').val( 'assign_insert' );
-		$('#set_assign_id').val( assign_id );
-		$('#set_village_id').val( village_id );
-		$('#set_squad_id').val( squad.squad_id );
-
-		return $('#deck_file').serialize();
-	};
+	return Deck.currentUnit.assignCard( village_id, unit_id );
 },
 
 //.. contextmenu
@@ -3979,10 +3783,8 @@ contextmenu: function() {
 
 	var union_mode = $('#imi_mode').hasClass('imc_union_mode'),
 		selected = $this.hasClass('imc_selected'),
-		added_cid = $('#imi_card_container2').find('.ig_deck_smallcardarea').attr('card_id') || '',
-		material_cid = $.map( $('#imi_card_container3').find('.ig_deck_smallcardarea'), function( value ) {
-			return $( value ).attr('card_id') || null;
-		}),
+		added_cid = Deck.union.added || '',
+		material_cid = Deck.union.materials,
 		separator = false,
 		added_card;
 
@@ -4018,19 +3820,19 @@ contextmenu: function() {
 	if ( card.solNum > 0 && card.solNum < card.maxSolNum ) {
 		menu['最大補充'] = function() {
 			card.setUnitMax()
-			.done( Deck.updateDeckCard )
+			.done( Deck.update )
 			.fail(function() { Display.alert('編成できませんでした。'); });
 		};
 	}
 	if ( card.solNum > 1 ) {
 		menu['兵数を１にする'] = function() {
 			card.setUnit( 1 )
-			.done( Deck.updateDeckCard )
+			.done( Deck.update )
 			.fail(function() { Display.alert('編成できませんでした。'); });
 		};
 	}
 
-	menu['兵編成'] = function() { card.editUnit().done( Deck.updateDeckCard ); };
+	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
 	menu['セパレーター2'] = $.contextMenu.separator;
 
 	//合成可能な場合のメニュー
@@ -4083,6 +3885,176 @@ contextmenu: function() {
 	menu['カードを削除'] = function() { Card.delete( [ card_id ] ); };
 
 	return menu;
+}
+
+});
+
+//■ Unit
+var Unit = function( card_list ) {
+	this.list = card_list || [];
+	this.assignList = [];
+
+	this.update();
+
+	return this;
+}
+
+//. Unit.prototype
+$.extend( Unit.prototype, {
+
+//.. update
+update: function() {
+	var cost = 0, atk = 0, def = 0, des = 0, speed = 0,
+		list = this.list.concat( this.assignList );
+
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		let card = list[ i ];
+
+		cost += card.cost;
+		atk += card.totalAtk;
+		def += card.totalDef;
+		des += card.totalDes;
+	}
+
+	this.card = list.length;
+	this.cost = cost;
+	this.atk = atk;
+	this.def = def;
+	this.des = des;
+	this.speed = Util.getSpeed( list );
+},
+
+//.. addCard
+addCard: function( card ) {
+	var list = this.list.concat( this.assignList );
+
+	if ( this.card >= 4 ) {
+		Display.alert('武将枠に空きが在りません。');
+		return false;
+	}
+
+	if ( this.cost + card.cost > Deck.freeCost ) {
+		Display.alert('デッキコストが足りません。');
+		return false;
+	}
+
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		if ( card.name == list[ i ].name ) {
+			Display.alert('武将名が重複しています。');
+			return false;
+		}
+	}
+
+	this.assignList.push( card );
+	this.update();
+
+	return true;
+},
+
+//.. removeCard
+removeCard: function( card ) {
+	this.assignList = this.assignList.filter(function( elem, idx, array ) {
+		return ( elem.cardId != this.cardId );
+	}, card);
+
+	this.update();
+},
+
+//.. assignCard
+assignCard: function( village_id, unit_id ) {
+	if ( !village_id && !unit_id ) { return; }
+	if ( this.assignList.length == 0 ) {
+		Display.alert('武将が選択されていません');
+		return $.Deferred().reject();
+	}
+
+	var ol = Display.dialog(),
+		list = [].concat( this.assignList );
+
+	if ( unit_id ) {
+		ol.message('選択中の部隊に登録します。');
+	}
+	else {
+		ol.message('新規部隊を登録します。');
+	}
+
+	ol.message('登録処理開始...');
+
+	return $.Deferred().resolve()
+	.pipe(function() {
+		if ( unit_id != '' ) { return unit_id; }
+
+		//部隊長を登録し部隊IDを取得する
+		var card = list.shift(),
+			postData = getPostData( '', village_id, card );
+
+		return $.post( '/card/deck.php', postData )
+		.pipe(function( html ) {
+			var $html = $(html),
+				text = $html.find('#ig_deck_unititle P').text(),
+				name = ( text.match(/\[(.+)\]/) || [,''] )[ 1 ],
+				href = $html.find('#ig_deck_unititle A').attr('href') || '',
+				unit_id = href.match(/unit_assign_id=(\d+)/),
+				$li = $html.find('#ig_unitchoice LI');
+
+			if ( name != card.name ) {
+				var idx = $li.index( $li.filter(':contains("' + card.name + '")') );
+
+				if ( idx == -1 || list.length == 0 ) {
+					return $.Deferred().reject( ol );
+				}
+
+				ol.message('部隊IDの取得失敗').message('部隊ID再取得中...');
+
+				Deck.ano = idx;
+
+				return $.get( '/card/deck.php?ano=' + idx ).pipe( arguments.callee );
+			}
+			else if ( unit_id == null ) {
+				return $.Deferred().reject( ol );
+			}
+
+			return unit_id[ 1 ];
+		});
+	})
+	.pipe(function( unit_id ) {
+		var tasks;
+
+		if ( list.length == 0 ) { return $.Deferred().resolve( ol ); }
+
+		ol.message('部隊IDの取得成功');
+
+		tasks = [ ol ];
+		while ( list.length > 0 ) {
+			let postData = getPostData( unit_id, '', list.shift() );
+			tasks.push( $.post( '/card/deck.php', postData ) );
+		}
+
+		return $.when.apply( $, tasks );
+	})
+	.done(function() {
+		ol.message('登録処理終了').message('ページを更新します...');
+	})
+	.fail(function() {
+		ol.message('登録処理失敗').message('処理を中断します。');
+	});
+
+	function getPostData( unit_id, village_id, card ) {
+		ol.message('「' + card.name + '」を登録中...');
+
+		return {
+			target_card: '',
+			select_assign_no: Deck.ano,
+			mode: 'assign_insert',
+			btn_change_flg: '',
+			set_village_id: village_id,
+			set_assign_id: unit_id,
+			set_squad_id: card.squadId,
+			deck_mode: 'nomal',
+			p: 1,
+			myselect_2: ''
+		};
+	};
 }
 
 });
@@ -4808,7 +4780,7 @@ layouter: function() {
 	//フッタ部
 	//配置ボタンと編成ボタンを入れ替える
 	//ボタンがない場合は出品中とみなす
-	$a = $div2.find('A');
+	$a = $div2.addClass('imc_button_container').find('A');
 	if ( $a.length > 0 ) {
 		$div2.empty().append( $a.get().reverse() );
 	}
@@ -4826,6 +4798,18 @@ layouter: function() {
 	//微調整
 	$div1.css({ marginBottom: '2px' });
 	$div2.css({ height: '29px', lineHeight: '29px', marginBottom: '2px' });
+},
+
+//.. clone
+clone: function() {
+	var $clone = this.element.clone().show();
+
+	$clone
+	.find('.imc_button_container').remove().end()
+	.find('.ranklvup_m').remove().end()
+	.find('.smallcard_chara').unwrap().end();
+
+	return $clone;
 },
 
 //.. update
@@ -8159,6 +8143,29 @@ SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
 
 //. main
 main: function() {
+	//デッキ関係の情報保存
+	var unit_list = $('#ig_unitchoice LI'),
+		ano, deck_cost, free_cost, card_list;
+
+	deck_cost = $('#ig_deckcost').find('SPAN.ig_deckcostdata').text().match(/(\d+\.?\d?)\/(\d+)/);
+	free_cost = deck_cost[2].toFloat() - deck_cost[1].toFloat();
+	card_list = [];
+
+	//追加の場合、現在選択されているano
+	ano = unit_list.index( unit_list.filter('.now').first() );
+
+	$('#id_deck_card1, #id_deck_card2, #id_deck_card3, #id_deck_card4').each(function() {
+		var $this = $(this),
+			card;
+
+		if ( $this.children().length == 0 ) { return; }
+		if ( $this.find('#deck_none').length > 0) { return; }
+
+		card = new LargeCard( $this );
+		card_list.push( card );
+	});
+
+	Deck.setup( free_cost, ano, card_list );
 	this.autoPager();
 	this.layouter();
 	this.unitPower();
@@ -8166,31 +8173,14 @@ main: function() {
 	this.villageSelecter();
 	this.cardOrderSelecter();
 
-	//デッキ関係の情報保存
-	var deck_cost, free_cost, free_card, data;
-
-	deck_cost = $('#ig_deckcost').find('SPAN.ig_deckcostdata').text().match(/(\d+\.?\d?)\/(\d+)/);
-	free_cost = deck_cost[2].toFloat() - deck_cost[1].toFloat();
-	free_card = $('#id_deck_card1').find('#deck_none').length;	//空き武将枠（新規部隊の時「id_deck_card1」が２つあるので注意）
-	free_card += $('#ig_deck_subcardarea_out').find('.ig_deck_subcardarea').not(':has(DIV)').length;
-
-	data = { freeCost: free_cost, freeCard: free_card, useCost: 0, useCard: 0, totalAtk: 0, totalDef: 0, totalDes: 0, speed: 0 };
-
-	$('#imi_card_container').data( data );
-	Deck.updateDeckInfo();
-
 	$('#ig_deck_smallcardarea_out, #imi_mode').addClass('imc_deck_mode');
 
-	var $card_list = $('.ig_deck_smallcardarea');
-	$card_list.live('click', Deck.addCard );
-	$card_list.contextMenu( Deck.contextmenu, true );
+	var $card_list = $('.ig_deck_smallcardarea')
+	.live('click', Deck.addCard )
+	.contextMenu( Deck.contextmenu, true );
 
 	SmallCard.setup( $card_list );
-
-	//下準備が終わったら、前回の設定を読み込む
-	//var selecter = MetaStorage('SETTINGS').get('command_selecter') || '.imc_all';
-	var selecter = '.imc_all';
-	$('#imi_command_selecter A[selecter="' + selecter + '"]').click();
+	Deck.updateDeckInfo();
 },
 
 //. autoPager
@@ -8251,34 +8241,33 @@ layouter: function() {
 	}
 
 	//仮想デッキ用
-	var html = '' + <><![CDATA[
-	<div id="imi_bottom_container">
-		<div class="imc_overlay" />
-		<div class="imc_contents">
-			<ul id="imi_village_info" />
-			<ul id="imi_deck_info">
-				<li>コスト：<span class="imc_info1"></span>/<span class="imc_info1_free"></span></li>
-				<li>武将枠：<span class="imc_info2"></span>/<span class="imc_info2_free"></span></li>
-				<li>攻撃力：<span class="imc_info3">0</span></li>
-				<li>防御力：<span class="imc_info4">0</span></li>
-				<li>速度：<span class="imc_info5">0</span></li>
-				<li id="imi_mode"></li>
-			</ul>
-		</div>
-		<div class="imc_contents">
-			<ul id="imi_new_deck">
-				<li id="imi_open" class="imc_is_close"></li>
-				<li id="imi_card_assign">選択武将を部隊へ登録</li>
-			</ul>
-			<ul id="imi_command_selecter" />
-		</div>
-		<div id="imi_card_container" />
-		<div id="imi_card_container1">
-			<div id="imi_card_container2" />
-			<div id="imi_card_container3" />
-		</div>
-	</div>
-	]]></>;
+	var html = '' +
+	'<div id="imi_bottom_container">' +
+		'<div class="imc_overlay" />' +
+		'<div class="imc_contents">' +
+			'<ul id="imi_village_info" />' +
+			'<ul id="imi_deck_info">' +
+				'<li>コスト：<span class="imc_info1"></span>/<span class="imc_info1_free"></span></li>' +
+				'<li>武将枠：<span class="imc_info2"></span>/<span class="imc_info2_free"></span></li>' +
+				'<li>攻撃力：<span class="imc_info3">0</span></li>' +
+				'<li>防御力：<span class="imc_info4">0</span></li>' +
+				'<li>速度：<span class="imc_info5">0</span></li>' +
+				'<li id="imi_mode"></li>' +
+			'</ul>' +
+		'</div>' +
+		'<div class="imc_contents">' +
+			'<ul id="imi_new_deck">' +
+				'<li id="imi_open" class="imc_is_close"></li>' +
+				'<li id="imi_card_assign">選択武将を部隊へ登録</li>' +
+			'</ul>' +
+			'<ul id="imi_command_selecter" />' +
+		'</div>' +
+		'<div id="imi_card_container" />' +
+		'<div id="imi_card_container1">' +
+			'<div id="imi_card_container2" />' +
+			'<div id="imi_card_container3" />' +
+		'</div>' +
+	'</div>';
 
 	$( html ).appendTo('BODY');
 
@@ -8287,8 +8276,8 @@ layouter: function() {
 		Util.countDown();
 	});
 
-	//合成モードボタン
-	$('#imi_mode').click(function() {
+	$('#imi_bottom_container')
+	.on( 'click', '#imi_mode', function() {
 		var $this = $(this);
 
 		if ( $this.hasClass('imc_union_mode') ) {
@@ -8299,10 +8288,8 @@ layouter: function() {
 		}
 
 		self.changeMode( true );
-	});
-
-	//開くボタン
-	$('#imi_open').click(function() {
+	})
+	.on( 'click', '#imi_open', function() {
 		var $this = $(this);
 
 		if ( $this.hasClass('imc_is_close') ) {
@@ -8313,10 +8300,49 @@ layouter: function() {
 		}
 
 		self.changeMode( false );
-	});
+	})
+	.on( 'click', '#imi_card_assign', function() {
+		var village_id = $('#imi_select_village').val() || '',
+			unit_id = '';
 
-	//選択武将を登録ボタン
-	$('#imi_card_assign').click( Deck.assignCard );
+		if ( village_id == '' ) {
+			//拠点IDを取得できない場合、部隊IDチェック
+			var href = $('#ig_deck_unititle').find('A').attr('href') || '',
+				unit_assign_id = href.match(/unit_assign_id=(\d+)/);
+
+			if ( !unit_assign_id ) {
+				//拠点IDも部隊IDも取得できない・・・
+				return;
+			}
+
+			unit_id = unit_assign_id[ 1 ];
+		}
+
+		Deck.assignCard( village_id, unit_id )
+		.always(function() {
+			Page.move( '/card/deck.php?ano=' + Deck.ano + '&dmo=nomal&p=1' );
+		});
+	})
+	.on( 'update', '#imi_deck_info', function() {
+		var unit = Deck.currentUnit,
+			speed = unit.speed,
+			time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed ),
+			dtitle = '破壊力：' + unit.des.toFormatNumber(),
+			stitle = time.toFormatTime() + '／距離';
+
+		$('.imc_info1').text( unit.cost.toFixed( 1 ) );
+		$('.imc_info1_free').text( Deck.freeCost.toFixed( 1 ) );
+		$('.imc_info2').text( unit.card );
+		$('.imc_info2_free').text( 4 );
+		$('.imc_info3').text( Math.floor( unit.atk ).toFormatNumber() ).parent().attr( 'title', dtitle );
+		$('.imc_info4').text( Math.floor( unit.def ).toFormatNumber() );
+		$('.imc_info5').text( speed.toRound( 1 ) ).parent().attr( 'title', stitle );
+
+		$('#imi_card_container').empty();
+		for ( var i = 0, len = unit.assignList.length; i < len; i++ ) {
+			$('#imi_card_container').append( unit.assignList[ i ].clone() );
+		}
+	});
 
 	Deck.commandMenu( $('#imi_command_selecter'), true );
 },
@@ -8391,35 +8417,17 @@ unregistAll: function() {
 
 //. unitPower
 unitPower: function() {
-	var total_atk = 0, total_def = 0, total_des = 0, card_list = [], speed, time;
-
-	$('#id_deck_card1, #id_deck_card2, #id_deck_card3, #id_deck_card4').each(function() {
-		var $this = $(this),
-			card, data;
-
-		if ( $this.children().length == 0 ) { return; }
-		if ( $this.find('#deck_none').length > 0) { return; }
-
-		card = new LargeCard( $this );
-		card_list.push( card );
-
-		total_atk += card.totalAtk;
-		total_def += card.totalDef;
-		total_des += card.totalDes;
-	});
-
-	total_atk = Math.floor( total_atk );
-	total_def = Math.floor( total_def );
-	speed = Util.getSpeed( card_list );
-	time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed );
+	var unit = Deck.currentUnit,
+		speed = unit.speed,
+		time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed );
 
 	$('#ig_deck_unitdetailbox')
 	.prepend(
-		$('<span class="imc_deck_unitdata">' + total_def + '</span>')
+		$('<span class="imc_deck_unitdata">' + Math.floor( unit.def ) + '</span>')
 		.css({ background: 'url(' + Data.images.result_defend + ') no-repeat scroll -3px 0px transparent' })
 	)
 	.prepend(
-		$('<span class="imc_deck_unitdata">' + total_atk + ' / ' + total_des + '</span>')
+		$('<span class="imc_deck_unitdata">' + Math.floor( unit.atk ) + ' / ' + unit.des + '</span>')
 		.css({ background: 'url(' + Data.images.result_attack + ') no-repeat scroll -3px 0px transparent' })
 	);
 
@@ -8480,10 +8488,11 @@ changeMode: function( release ) {
 
 	if ( release ) {
 		//選択状態解除
-		$('#ig_deck_smallcardarea_out').find('.imc_selected').removeClass('imc_selected');
+		$('#ig_deck_smallcardarea_out').find('.imc_selected').removeClass('imc_selected imc_added');
 		$('#imi_bottom_container').find('.ig_deck_smallcardarea').remove();
 
-		$('#imi_card_container').data({ useCost: 0, useCard: 0, totalAtk: 0, totalDef: 0, speed: 0 });
+		Deck.currentUnit.assignList = [];
+		Deck.currentUnit.update();
 		Deck.updateDeckInfo();
 	}
 
@@ -9352,7 +9361,7 @@ layouterSituation: function() {
 
 		menu['セパレーター1'] = $.contextMenu.separator;
 		menu['この拠点を選択'] = function() {
-			var { ebase } = $(this).data();
+			var { ebase } = $(this).data(),
 				village = Util.getVillageByName( ebase );
 
 			if ( village.id ) {
