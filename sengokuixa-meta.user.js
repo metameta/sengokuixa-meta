@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.4.16
+// @version        1.0.4.17
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -341,7 +341,7 @@ getVillageByName: function( name ) {
 		return list[ i ];
 	}
 
-	return {};
+	return null;
 },
 
 //. getVillageById
@@ -363,7 +363,7 @@ getVillageById: function( id ) {
 		return list[ i ];
 	}
 
-	return {};
+	return null;
 },
 
 //. getVillageList
@@ -385,9 +385,10 @@ getVillageList: function() {
 				point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
 				x     = point[ 1 ].toInt(),
 				y     = point[ 2 ].toInt(),
-				country = point[ 3 ].toInt();
+				country = point[ 3 ].toInt(),
+				fall  = $this.find('TD').eq( 4 ).find('.red').length;
 
-			list.push({ type: type, id: id, name: name, x: x, y: y, country: country });
+			list.push({ type: type, id: id, name: name, x: x, y: y, country: country, fall: fall });
 		});
 
 		//出城・陣・領地
@@ -400,15 +401,42 @@ getVillageList: function() {
 				point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
 				x     = point[ 1 ].toInt(),
 				y     = point[ 2 ].toInt(),
-				country = point[ 3 ].toInt();
+				country = point[ 3 ].toInt(),
+				fall  = $this.find('TD').eq( 4 ).find('.red').length;
 
-			list.push({ type: type, id: id, name: name, x: x, y: y, country: country });
+			list.push({ type: type, id: id, name: name, x: x, y: y, country: country, fall: fall });
 		});
 
 		MetaStorage('VILLAGE').set('list', list);
 	});
 
 	return list;
+},
+
+//. getVillageNearby
+getVillageNearby: function( x, y, country ) {
+	var list  = Util.getVillageList(),
+		minDist = Number.MAX_VALUE,
+		village;
+
+	list.forEach(function( value ) {
+		if ( value.country != country ) { return; }
+		if ( value.type == '領地' ) { return; }
+		if ( value.fall == 1 ) { return; }
+
+		var dist = Util.getDistance( { x: x, y: y }, value );
+		if ( dist >= minDist ) { return; }
+
+		minDist = dist;
+		village = value;
+	});
+
+	return village;
+},
+
+//. getVillageChangeUrl
+getVillageChangeUrl: function( village_id, returnUrl ) {
+	return '/village_change.php?village_id=' + village_id + '&from=menu&page=' + encodeURIComponent( returnUrl );
 },
 
 //. getTrainingStatus
@@ -429,7 +457,7 @@ getTrainingStatus: function( $table ) {
 			var $this = $(this),
 				$tr = $this.find('TR'),
 				name = $tr.eq( 0 ).find('A').text(),
-				id = Util.getVillageByName( name ).id,
+				village = Util.getVillageByName( name ),
 				list = [];
 
 			$tr.slice( 1 ).each(function() {
@@ -440,7 +468,7 @@ getTrainingStatus: function( $table ) {
 				list.push( [ date.getTime(), name ] );
 			});
 
-			data[ id ] = list;
+			data[ village.id ] = list;
 		});
 
 		MetaStorage('COUNTDOWN').set('訓練', data);
@@ -880,6 +908,13 @@ keyBindMap: function() {
 	});
 },
 
+//. wait
+wait: function( ms ) {
+	var dfd = $.Deferred();
+	setTimeout( function() { dfd.resolve(); }, ms );
+	return dfd;
+},
+
 //. enter
 enter: function() { $(this).addClass('imc_current'); },
 //. leave
@@ -1271,7 +1306,7 @@ return {
 		show( msg, timeout, 'imc_alert' );
 	},
 	dialog: function( options ) {
-		return new Dialog( options );;
+		return new Dialog( options );
 	}
 }
 
@@ -1302,23 +1337,23 @@ style: '' + <><![CDATA[
 #imi_dialog_container { position: relative; margin: auto; width: 500px; height: auto; background-color: #f1f0dc; border: solid 2px #666; overflow: hidden; }
 #imi_dialog_container .imc_dialog_header { background-color: #ccc; padding: 8px; font-weight: bold; }
 #imi_dialog_container .imc_dialog_body { margin: 10px 0px 10px 10px; padding-right: 10px; font-size: 12px; height: 200px; overflow: auto; }
-#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px; border-top: solid 1px black; text-align: right; }
+#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px 10px; border-top: solid 1px black; text-align: right; }
 #imi_dialog_container .imc_message { margin: 4px; }
-#imi_dialog_container BUTTON { margin-right: 5px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }
+#imi_dialog_container BUTTON { margin-left: 8px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }
 #imi_dialog_container BUTTON:hover { background: -moz-linear-gradient(bottom, #fff, #ccc); }
 #imi_dialog_container BUTTON:active { border-style: inset; }
-#imi_dialog_container BUTTON:disabled { color: #666; border-style: solid; background: none; background-color: #ccc; }
+#imi_dialog_container BUTTON:disabled { color: #666; border-style: solid; background: none; background-color: #ccc; cursor: default; }
 
 /* コンテキストメニュー用 z-index: 9999 */
-.imc_menulist { position: absolute; padding: 2px; min-width: 120px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
+.imc_menulist { position: absolute; padding: 2px; min-width: 120px; font-size: 12px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
 .imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }
-.imc_menuitem { margin: 0px; padding: 3px 20px 3px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }
+.imc_menuitem { margin: 0px; padding: 4px 20px 4px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }
 .imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }
 .imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }
 .imc_menuitem:hover { color: #000; background: #ccc; }
 .imc_menuitem > .imc_submenu { display: none; }
 .imc_menuitem:hover > .imc_submenu { display: block; }
-.imc_submenu { position: absolute; left: 100%; margin: -6px 0px 0px -2px; }
+.imc_submenu { position: absolute; left: 100%; margin: -7px 0px 0px -2px; }
 .imc_submenu_mark { position: absolute; left: 100%; margin-left: -10px; font-size: 14px; }
 
 /* 下部表示欄 z-index: 99 */
@@ -2471,8 +2506,8 @@ changeVillage: function() {
 		data  = analyzedData[ idx ],
 		village = Util.getVillageByName( data.castle );
 
-	if ( village.id ) {
-		location.href = '/village_change.php?village_id=' + village.id + '&from=menu&page=/map.php';
+	if ( village ) {
+		location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
 	}
 	else{
 		Display.alert( '拠点は見つかりませんでした。' );
@@ -2484,24 +2519,10 @@ nearbyVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = analyzedData[ idx ],
-		list  = Util.getVillageList(),
-		country = Map.info.country,
-		minDist = Number.MAX_VALUE,
-		village;
-
-	list.forEach(function( value ) {
-		if ( value.country != country ) { return; }
-		if ( value.type == '領地' ) { return; }
-
-		var dist = Util.getDistance( data, value );
-		if ( dist >= minDist ) { return; }
-
-		minDist = dist;
-		village = value;
-	});
+		village = Util.getVillageNearby( data.x, data.y, data.country );
 
 	if ( village ) {
-		location.href = '/village_change.php?village_id=' + village.id + '&from=menu&page=/map.php';
+		location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
 	}
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
@@ -4820,6 +4841,7 @@ analyze: function( $elem ) {
 	//レア
 	text = $param.children('SPAN').eq( 0 ).attr('class');
 	this.rarity = Card.getRarityByClassName( text );
+	this.secret = /_new/.test( text );
 	//コスト ig_card_cost_overは大殿の饗宴用
 	this.cost = $param.find('.ig_card_cost, .ig_card_cost_over').eq( 0 ).text().toFloat();
 	//ランク・レベル
@@ -6406,9 +6428,7 @@ receive: function() {
 				return $.Deferred().reject();
 			}
 
-			var dfd = $.Deferred();
-			setTimeout( function() { dfd.resolve(); }, 300 );
-			return dfd;
+			return Util.wait( 300 );
 		})
 		.pipe( arguments.callee );
 	})
@@ -6500,7 +6520,7 @@ iconLv: function() {
 getBuildStatus: function() {
 	var storage = MetaStorage('COUNTDOWN'),
 		name = $('#basepointTop .basename').text(),
-		id = Util.getVillageByName( name ).id,
+		village = Util.getVillageByName( name ),
 		data, list;
 
 	data = storage.get('建設') || {};
@@ -6524,8 +6544,8 @@ getBuildStatus: function() {
 		list.push( [ Util.getTargetDate( time, clock ), name ] );
 	});
 
-	if ( list.length == 0 ) { delete data[ id ] }
-	else { data[ id ] = list; }
+	if ( list.length == 0 ) { delete data[ village.id ] }
+	else { data[ village.id ] = list; }
 
 	storage.set( '建設', data );
 
@@ -6542,8 +6562,8 @@ getBuildStatus: function() {
 		list.push( [ Util.getTargetDate( time, clock ), name ] );
 	});
 
-	if ( list.length == 0 ) { delete data[ id ] }
-	else { data[ id ] = list; }
+	if ( list.length == 0 ) { delete data[ village.id ] }
+	else { data[ village.id ] = list; }
 
 	storage.set( '削除', data );
 },
@@ -6552,7 +6572,7 @@ getBuildStatus: function() {
 getFacilityList: function() {
 	var storage = MetaStorage('FACILITY'),
 		basename = $('#basepointTop .basename').text(),
-		id = Util.getVillageByName( basename ).id,
+		village = Util.getVillageByName( basename ),
 		data, list = {};
 
 	$('#mapOverlayMap')
@@ -6564,7 +6584,7 @@ getFacilityList: function() {
 
 	storage.begin();
 	data = storage.data;
-	data[ id ] = list;
+	data[ village.id ] = list;
 
 	//表示拠点選択にある拠点だけで登録
 	var baselist = BaseList.home(),
@@ -6615,7 +6635,7 @@ main: function() {
 getBuildStatus: function() {
 	var storage = MetaStorage('COUNTDOWN'),
 		name = $('.ig_mappanel_maindataarea H3').text().trim(),
-		id = Util.getVillageByName( name ).id,
+		village = Util.getVillageByName( name ),
 		data, list;
 
 	data = storage.get('建設') || {};
@@ -6636,7 +6656,7 @@ getBuildStatus: function() {
 		list.push( [ Util.getTargetDate( time, clock ), name ] );
 	});
 
-	data[ id ] = list;
+	data[ village.id ] = list;
 	storage.set( '建設', data );
 
 	//破棄
@@ -6652,8 +6672,8 @@ getBuildStatus: function() {
 		list.push( [ Util.getTargetDate( time, clock ), name ] );
 	});
 
-	if ( list.length == 0 ) { delete data[ id ] }
-	else { data[ id ] = list; }
+	if ( list.length == 0 ) { delete data[ village.id ] }
+	else { data[ village.id ] = list; }
 
 	storage.set( '削除', data );
 }
@@ -7020,7 +7040,7 @@ trainingExecute: function( facility, current, ol ) {
 
 	$.Deferred().resolve()
 	.pipe(function() {
-		var href = '/village_change.php?village_id=' + data.id + '&from=menu&page=' + encodeURIComponent('/user/');
+		var href = Util.getVillageChangeUrl( data.id, '/user/' );
 
 		return $.get( href );
 	})
@@ -7035,7 +7055,7 @@ trainingExecute: function( facility, current, ol ) {
 		if ( facility.length == 0 ) {
 			ol.message('訓練登録処理完了').message('ページを更新します...');
 
-			var href = '/village_change.php?village_id=' + current.id + '&from=menu&page=' + encodeURIComponent('/facility/unit_list.php');
+			var href = Util.getVillageChangeUrl( current.id, '/facility/unit_list.php' );
 
 			Page.move( href );
 		}
@@ -9870,8 +9890,8 @@ layouterSituation: function() {
 			var { ebase } = $(this).data(),
 				village = Util.getVillageByName( ebase );
 
-			if ( village.id ) {
-				location.href = '/village_change.php?village_id=' + village.id + '&from=menu&page=/map.php';
+			if ( village ) {
+				location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
 			}
 			else{
 				Display.alert( '拠点は見つかりませんでした。' );
@@ -10732,6 +10752,30 @@ main: function() {
 
 //. layouter
 layouter: Page.getAction( 'union', 'union_levelup', 'layouter' )
+
+});
+
+//■ /union/result
+Page.registerAction( 'union', 'result', {
+
+//. main
+main: function() {
+	var search = location.search,
+		cid = search.match(/cid=(\d+)/)[ 1 ],
+		type = search.match(/ut=(\d)/)[ 1 ];
+
+	if ( type == '4' ) {
+		this.layouter( cid );
+	}
+},
+
+//. layouter
+layouter: function( cid ) {
+	if ( $('IMG[src$="hd_success.jpg"]').length == 0 ) { return; }
+
+	var html = '<span class="rankup_btn"><a href="/card/lead_info.php?cid=' + cid + '&p=1&ano=0&dmo=nomal">指揮力強化</a></span>';
+	$('.parameta_area').append( html );
+}
 
 });
 
