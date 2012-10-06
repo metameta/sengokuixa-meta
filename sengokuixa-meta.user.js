@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.5.0
+// @version        1.0.5.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2229,7 +2229,12 @@ function contextmenu() {
 	menu['ここへ部隊出陣'] = contextmenu.send;
 
 	if ( data.user != load ) {
-		menu['最寄りの拠点を選択'] = contextmenu.nearbyVillage;
+		menu['最寄りの拠点'] = {
+			'部隊作成': contextmenu.createUnitNearby,
+			'ここへ部隊出陣': contextmenu.send2,
+			'セパレーター': $.contextMenu.separator,
+			'拠点選択': contextmenu.nearbyVillage
+		};
 	}
 	else if ( data.type == '領地' ) {
 		menu['この領地を陣にする'] = contextmenu.toCamp;
@@ -2294,6 +2299,21 @@ send: function() {
 		data  = analyzedData[ idx ];
 
 	send( data.x, data.y, data.country );
+},
+
+//.. send2 - 最寄りの拠点から出陣
+send2: function() {
+	var $this = $(this),
+		idx   = $this.attr('idx').toInt(),
+		data  = analyzedData[ idx ],
+		village = Util.getVillageNearby( data.x, data.y, data.country );
+
+	if ( village ) {
+		send( data.x, data.y, data.country, village );
+	}
+	else {
+		Display.alert( '最寄りの拠点は見つかりませんでした。' );
+	}
 },
 
 //.. fightHistory - 周辺の敵襲
@@ -2497,6 +2517,22 @@ createUnit: function() {
 		village = Util.getVillageByName( data.castle );
 
 	Deck.dialog( village );
+},
+
+//.. createUnitNearby
+createUnitNearby: function() {
+	var $this = $(this),
+		idx   = $this.attr('idx').toInt(),
+		data  = analyzedData[ idx ],
+		village = Util.getVillageNearby( data.x, data.y, data.country ),
+		coord = data.x + ',' + data.y;
+
+	if ( village ) {
+		Deck.dialog( village, coord );
+	}
+	else {
+		Display.alert( '最寄りの拠点は見つかりませんでした。' );
+	}
 },
 
 //.. changeVillage - この拠点を選択
@@ -2833,13 +2869,20 @@ function moveUrl( url ) {
 }
 
 //. send
-function send( x, y, country ) {
-	var search = 'x=' + x + '&y=' + y;
+function send( x, y, country, village ) {
+	var search = 'x=' + x + '&y=' + y,
+		url;
 
 	country = country || Map.info.country || '';
 	if ( country ) { search += '&c=' + country; }
 
-	location.href = '/facility/send_troop.php?' + search;
+	url = '/facility/send_troop.php?' + search;
+
+	if ( village ) {
+		url = Util.getVillageChangeUrl( village.id, url );
+	}
+
+	location.href = url;
 }
 
 //. npcPower
