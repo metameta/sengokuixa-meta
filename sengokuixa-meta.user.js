@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.5.1
+// @version        1.0.5.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3059,6 +3059,7 @@ return {
 	showCoord: showCoord,
 	showMark: showMark,
 	move: move,
+	send: send,
 	warList: contextmenu.warList
 };
 
@@ -3982,6 +3983,7 @@ Deck.dialog = function( village, coord ) {
 				'<li><label>攻撃力</label><span class="imc_info3">0</span><label>破壊力</label><span class="imc_info6"></span></li>' +
 				'<li><label>防御力</label><span class="imc_info4">0</span></li>' +
 				'<li><label>速度</label><span class="imc_info5">0</span><label>時間</label><span class="imc_info7"></span></li>' +
+				'<li><label>目的地</label><input class="imc_info8" /><label>時間</label><span class="imc_info9"></span></li>' +
 			'</ul>' +
 		'</div>' +
 		'<div>' +
@@ -4011,6 +4013,10 @@ Deck.dialog = function( village, coord ) {
 			$('.imc_infotype_2').removeClass('imc_infotype_2').addClass('imc_infotype_1');
 		}
 	})
+	.on( 'change', '.imc_info8', function() {
+		$('#imi_deck_info').trigger('update');
+		dialog.buttons.eq( 0 ).attr('disabled', ( $('.imc_info9').text() == '' ) );
+	})
 	.on( 'update', '#imi_deck_info', function() {
 		var unit = Deck.currentUnit,
 			speed = unit.speed,
@@ -4025,6 +4031,22 @@ Deck.dialog = function( village, coord ) {
 		$('.imc_info5').text( speed.toRound( 1 ) );
 		$('.imc_info6').text( unit.des.toFormatNumber() );
 		$('.imc_info7').text( time.toFormatTime() + '／距離' );
+
+		var text = $('.imc_info8').val(),
+			match = text.match(/(-?\d{1,3})[^\d-]+(-?\d{1,3})/),
+			dist;
+
+		if ( match ) {
+			target_x = match[ 1 ].toInt();
+			target_y = match[ 2 ].toInt();
+			dist = Util.getDistance( village, { x: target_x, y: target_y } );
+			time = ( speed == 0 ) ? 0 : Math.floor( 3600 * dist / speed );
+
+			$('.imc_info9').text( time.toFormatTime() + '／' + dist.toRound( 2 ) );
+		}
+		else {
+			$('.imc_info9').text('');
+		}
 
 		$('#imi_card_container').empty();
 		for ( var i = 0, len = unit.assignList.length; i < len; i++ ) {
@@ -4073,6 +4095,7 @@ Deck.dialog = function( village, coord ) {
 		width: 880, height: 550, top: 20,
 		content: $content,
 		buttons: {
+			'目的地へ出陣': function() { Map.send( target_x, target_y, village.country, village ); },
 			'編成を終了': function() {
 				Util.getUnitStatus();
 				this.close();
@@ -4105,7 +4128,12 @@ Deck.dialog = function( village, coord ) {
 	Deck.commandMenu( $('#imi_command_selecter') );
 	Deck.dialog.loadCard().done(function() {
 		Deck.update();
-		dialog.buttons.attr('disabled', false);
+		if ( coord ) {
+			dialog.buttons.attr('disabled', false);
+		}
+		else {
+			dialog.buttons.eq( 1 ).attr('disabled', false);
+		}
 	});
 }
 
