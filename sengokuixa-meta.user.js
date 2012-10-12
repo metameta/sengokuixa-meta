@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.0.5.2
+// @version        1.0.5.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1316,143 +1316,141 @@ return {
 var Data = {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* ajax用 */
-.imc_ajax_load { position: fixed; top: 0px; left: 0px; padding: 2px; background-color: #fff; border-right: solid 3px #999; border-bottom: solid 3px #999; border-bottom-right-radius: 5px; z-index: 3001; }
+'.imc_ajax_load { position: fixed; top: 0px; left: 0px; padding: 2px; background-color: #fff; border-right: solid 3px #999; border-bottom: solid 3px #999; border-bottom-right-radius: 5px; z-index: 3001; }' +
 
 /* お知らせダイアログ用 */
-.imc_dialog { position: fixed; top: 145px; left: 0px; width: 100%; height: 0px; z-index: 3000; }
-.imc_dialog_content { min-width: 300px; font-size: 1.2em; color: Black; font-weight: bold; text-align: center; padding: 10px 20px; margin: 3px auto; border-radius: 10px; }
-.imc_dialog_content { box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(255, 255, 255, 0.7), 3px 3px 4px rgba(0, 0, 0, 0.7); }
-.imc_dialog_content UL { display: inline-block; }
-.imc_dialog_content LI { text-align: left; }
-.imc_dialog_content.imc_infomation { border: solid 2px #06f; background-color: #eff; }
-.imc_dialog_content.imc_alert { border: solid 2px #c00; background-color: #fee; }
+'.imc_dialog { position: fixed; top: 145px; left: 0px; width: 100%; height: 0px; z-index: 3000; }' +
+'.imc_dialog_content { min-width: 300px; font-size: 1.2em; color: Black; font-weight: bold; text-align: center; padding: 10px 20px; margin: 3px auto; border-radius: 10px; }' +
+'.imc_dialog_content { box-shadow: inset 1px 1px 2px rgba(0, 0, 0, 0.5), inset -1px -1px 2px rgba(255, 255, 255, 0.7), 3px 3px 4px rgba(0, 0, 0, 0.7); }' +
+'.imc_dialog_content UL { display: inline-block; }' +
+'.imc_dialog_content LI { text-align: left; }' +
+'.imc_dialog_content.imc_infomation { border: solid 2px #06f; background-color: #eff; }' +
+'.imc_dialog_content.imc_alert { border: solid 2px #c00; background-color: #fee; }' +
 
 /* overlay用 z-index: 2000 */
-#imi_overlay { position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 2000; }
-#imi_overlay .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }
+'#imi_overlay { position: fixed; top: 0px; left: 0px; width: 100%; height: 100%; z-index: 2000; }' +
+'#imi_overlay .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }' +
 
 /* ダイアログメッセージ用 */
-#imi_dialog_container { position: relative; margin: auto; width: 500px; height: auto; background-color: #f1f0dc; border: solid 2px #666; overflow: hidden; }
-#imi_dialog_container .imc_dialog_header { background-color: #ccc; padding: 8px; font-weight: bold; }
-#imi_dialog_container .imc_dialog_body { margin: 10px 0px 10px 10px; padding-right: 10px; font-size: 12px; height: 200px; overflow: auto; }
-#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px 10px; border-top: solid 1px black; text-align: right; }
-#imi_dialog_container .imc_message { margin: 4px; }
-#imi_dialog_container BUTTON { margin-left: 8px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }
-#imi_dialog_container BUTTON:hover { background: -moz-linear-gradient(bottom, #fff, #ccc); }
-#imi_dialog_container BUTTON:active { border-style: inset; }
-#imi_dialog_container BUTTON:disabled { color: #666; border-style: solid; background: none; background-color: #ccc; cursor: default; }
+'#imi_dialog_container { position: relative; margin: auto; width: 500px; height: auto; background-color: #f1f0dc; border: solid 2px #666; overflow: hidden; }' +
+'#imi_dialog_container .imc_dialog_header { background-color: #ccc; padding: 8px; font-weight: bold; }' +
+'#imi_dialog_container .imc_dialog_body { margin: 10px 0px 10px 10px; padding-right: 10px; font-size: 12px; height: 200px; overflow: auto; }' +
+'#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px 10px; border-top: solid 1px black; text-align: right; }' +
+'#imi_dialog_container .imc_message { margin: 4px; }' +
+'#imi_dialog_container BUTTON { margin-left: 8px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }' +
+'#imi_dialog_container BUTTON:hover { background: -moz-linear-gradient(bottom, #fff, #ccc); }' +
+'#imi_dialog_container BUTTON:active { border-style: inset; }' +
+'#imi_dialog_container BUTTON:disabled { color: #666; border-style: solid; background: none; background-color: #ccc; cursor: default; }' +
 
 /* コンテキストメニュー用 z-index: 9999 */
-.imc_menulist { position: absolute; padding: 2px; min-width: 120px; font-size: 12px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }
-.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }
-.imc_menuitem { margin: 0px; padding: 4px 20px 4px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }
-.imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }
-.imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }
-.imc_menuitem:hover { color: #000; background: #ccc; }
-.imc_menuitem > .imc_submenu { display: none; }
-.imc_menuitem:hover > .imc_submenu { display: block; }
-.imc_submenu { position: absolute; left: 100%; margin: -7px 0px 0px -2px; }
-.imc_submenu_mark { position: absolute; left: 100%; margin-left: -10px; font-size: 14px; }
+'.imc_menulist { position: absolute; padding: 2px; min-width: 120px; font-size: 12px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }' +
+'.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }' +
+'.imc_menuitem { margin: 0px; padding: 4px 20px 4px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }' +
+'.imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }' +
+'.imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }' +
+'.imc_menuitem:hover { color: #000; background: #ccc; }' +
+'.imc_menuitem > .imc_submenu { display: none; }' +
+'.imc_menuitem:hover > .imc_submenu { display: block; }' +
+'.imc_submenu { position: absolute; left: 100%; margin: -7px 0px 0px -2px; }' +
+'.imc_submenu_mark { position: absolute; left: 100%; margin-left: -10px; font-size: 14px; }' +
 
 /* 下部表示欄 z-index: 99 */
-#imi_bottom_container { position: fixed; bottom: 0px; left: 0px; width: 100%; height: auto; border-bottom: solid 2px #000; z-index: 99; }
-#imi_bottom_container .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }
+'#imi_bottom_container { position: fixed; bottom: 0px; left: 0px; width: 100%; height: auto; border-bottom: solid 2px #000; z-index: 99; }' +
+'#imi_bottom_container .imc_overlay { position: absolute; width: 100%; height: 100%; background-color: #000; opacity: 0.75; }' +
 
 /* コマンド群 */
-#imi_command_selecter { height: 22px; margin: 0px 0px 2px 0px; }
-#imi_command_selecter LI { float: left; width: 65px; height: 20px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }
-#imi_command_selecter LI.imc_selected { background-color: #666; border-color: #fff; color: #fff; }
-#imi_command_selecter LI:hover { background-color: #666; border-color: #fff; color: #fff; }
-#imi_command_selecter LABEL { float: left; width: 65px; height: 20px; margin-right: 8px; line-height: 20px; text-align: center; font-weight: bold; color: #76601D; border: solid 1px #76601D; background-color: #E0DCC1; }
+'#imi_command_selecter { height: 22px; margin: 0px 0px 2px 0px; }' +
+'#imi_command_selecter LI { float: left; width: 65px; height: 20px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }' +
+'#imi_command_selecter LI.imc_selected { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_command_selecter LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_command_selecter LABEL { float: left; width: 65px; height: 20px; margin-right: 8px; line-height: 20px; text-align: center; font-weight: bold; color: #76601D; border: solid 1px #76601D; background-color: #E0DCC1; }' +
 
 /* 募集・チャット用 */
-#commentBody TD { height: 14px; }
-#commentBody #chatComment TABLE TD.al { width: 105px; }
-#commentBody #chatComment TABLE TD.al A { width: 105px; }
-#commentBody #chatComment TABLE TD.msg > SPAN { width: 235px; }
-.imc_coord { display: inline !important; cursor: pointer; font-weight: bold; }
-SPAN.imc_coord:hover { background-color: #f9dea1 !important; }
+'#commentBody TD { height: 14px; }' +
+'#commentBody #chatComment TABLE TD.al { width: 105px; }' +
+'#commentBody #chatComment TABLE TD.al A { width: 105px; }' +
+'#commentBody #chatComment TABLE TD.msg > SPAN { width: 235px; }' +
+'.imc_coord { display: inline !important; cursor: pointer; font-weight: bold; }' +
+'SPAN.imc_coord:hover { background-color: #f9dea1 !important; }' +
 
 /* ステータスバー用 */
-#status { padding: 6px 5px 5px 5px; }
-#status_left { width: 930px; }
-#status_left .money_b,
-#status_left .money_c { display: inline; margin-left: 2px; background-position: 0px 3px; }
-#status_left > IMG { padding-left: 5px; }
-.imc_outer_bar { background: -moz-linear-gradient(left, #000, #444); border: solid 1px #666; width: auto; display: inline-block; border-radius: 2px; }
-.imc_outer_bar.imc_alert { background: none; background-color: #c99; border: solid 1px #c99; }
-.imc_outer_bar.imc_overflow { background: none; background-color: #f99; border: solid 1px #f99; color: #f99; }
-.imc_inner_bar { display: inline-block; }
-.imc_inner_bar.imc_wood  { background-color: #642; }
-.imc_inner_bar.imc_stone { background-color: #264; }
-.imc_inner_bar.imc_iron  { background-color: #646; }
-.imc_inner_bar.imc_rice  { background-color: #662; }
-.imc_bar_contents { margin: 2px 4px; display: inline-block; }
+'#status { padding: 6px 5px 5px 5px; }' +
+'#status_left { width: 930px; }' +
+'#status_left .money_b,' +
+'#status_left .money_c { display: inline; margin-left: 2px; background-position: 0px 3px; }' +
+'#status_left > IMG { padding-left: 5px; }' +
+'.imc_outer_bar { background: -moz-linear-gradient(left, #000, #444); border: solid 1px #666; width: auto; display: inline-block; border-radius: 2px; }' +
+'.imc_outer_bar.imc_alert { background: none; background-color: #c99; border: solid 1px #c99; }' +
+'.imc_outer_bar.imc_overflow { background: none; background-color: #f99; border: solid 1px #f99; color: #f99; }' +
+'.imc_inner_bar { display: inline-block; }' +
+'.imc_inner_bar.imc_wood  { background-color: #642; }' +
+'.imc_inner_bar.imc_stone { background-color: #264; }' +
+'.imc_inner_bar.imc_iron  { background-color: #646; }' +
+'.imc_inner_bar.imc_rice  { background-color: #662; }' +
+'.imc_bar_contents { margin: 2px 4px; display: inline-block; }' +
 
 /* プルダウンメニュー用 z-index: 2000 */
-#gnavi { height: 33px; }
-#gnavi .imc_pulldown { position: absolute; min-width: 130px; background-color: #000; border: solid 1px #b8860b; z-index: 2000; display: none; }
-#gnavi .imc_pulldown A.imc_pulldown_item { margin: 10px; text-indent: 0px; width: auto !important; height: 15px; color: #fff; background: #000 none; }
+'#gnavi { height: 33px; }' +
+'#gnavi .imc_pulldown { position: absolute; min-width: 130px; background-color: #000; border: solid 1px #b8860b; z-index: 2000; display: none; }' +
+'#gnavi .imc_pulldown A.imc_pulldown_item { margin: 10px; text-indent: 0px; width: auto !important; height: 15px; color: #fff; background: #000 none; }' +
 /* プルダウンメニュー微調整用 */
-#mapbox,
-#ig_deckbox,
-#ig_mapbox,
-#ig_mainareabox,
-#ig_battlebox { margin-top: 2px; }
-#ig_boxInner_japanmap { padding: 0px !important; width: 936px !important; }
-#ig_battle_mainmenu { position: relative; top: 5px; margin-bottom: 15px; }
+'#mapbox,' +
+'#ig_deckbox,' +
+'#ig_mapbox,' +
+'#ig_mainareabox,' +
+'#ig_battlebox { margin-top: 2px; }' +
+'#ig_boxInner_japanmap { padding: 0px !important; width: 936px !important; }' +
+'#ig_battle_mainmenu { position: relative; top: 5px; margin-bottom: 15px; }' +
 
 /* サイドバー微調整用 */
-#ig_boxInner_battle { margin-bottom: 5px; padding: 0px !important; width: 936px !important; }
+'#ig_boxInner_battle { margin-bottom: 5px; padding: 0px !important; width: 936px !important; }' +
 
 /* 武将名 */
-.ig_card_name { font-family: 'ＭＳ 明朝'; }
+'.ig_card_name { font-family: "ＭＳ 明朝"; }' +
 /* 統率微調整用 */
-.lv_sss, .graylv_sss { background-position:    0px 0px; width: 33px; }
-.lv_ss, .graylv_ss { background-position:  -35px 0px; width: 28px; }
-.lv_s, .graylv_s { background-position:  -65px 0px; width: 19px; }
-.lv_a, .graylv_a { background-position:  -86px 0px; width: 19px; }
-.lv_b, .graylv_b { background-position: -107px 0px; width: 19px; }
-.lv_c, .graylv_c { background-position: -128px 0px; width: 17px; }
-.lv_d, .graylv_d { background-position: -147px 0px; width: 19px; }
-.lv_e, .graylv_e { background-position: -168px 0px; width: 20px; }
-.lv_f, .graylv_f { background-position: -190px 0px; width: 17px; }
+'.lv_sss, .graylv_sss { background-position:    0px 0px; width: 33px; }' +
+'.lv_ss, .graylv_ss { background-position:  -35px 0px; width: 28px; }' +
+'.lv_s, .graylv_s { background-position:  -65px 0px; width: 19px; }' +
+'.lv_a, .graylv_a { background-position:  -86px 0px; width: 19px; }' +
+'.lv_b, .graylv_b { background-position: -107px 0px; width: 19px; }' +
+'.lv_c, .graylv_c { background-position: -128px 0px; width: 17px; }' +
+'.lv_d, .graylv_d { background-position: -147px 0px; width: 19px; }' +
+'.lv_e, .graylv_e { background-position: -168px 0px; width: 20px; }' +
+'.lv_f, .graylv_f { background-position: -190px 0px; width: 17px; }' +
 
 /* カーソル行用 */
-.imc_current { background-color: #f9dea1 !important; }
+'.imc_current { background-color: #f9dea1 !important; }' +
 
 /* テーブルスタイル */
-.imc_table { border-collapse: collapse; border: solid 1px #76601D; }
-.imc_table TH { padding: 5px 6px; text-align: center; vertical-align: middle; border-bottom: dotted 1px #76601D; border-left: solid 1px #76601D; color: #300; font-weight: bold; background-color: #E0DCC1; }
-.imc_table TD { padding: 4px 5px; text-align: center; vertical-align: middle; border-bottom: dotted 1px #76601D; border-left: solid 1px #76601D; }
-.imc_table.td_right TD { text-align: right; }
+'.imc_table { border-collapse: collapse; border: solid 1px #76601D; }' +
+'.imc_table TH { padding: 5px 6px; text-align: center; vertical-align: middle; border-bottom: dotted 1px #76601D; border-left: solid 1px #76601D; color: #300; font-weight: bold; background-color: #E0DCC1; }' +
+'.imc_table TD { padding: 4px 5px; text-align: center; vertical-align: middle; border-bottom: dotted 1px #76601D; border-left: solid 1px #76601D; }' +
+'.imc_table.td_right TD { text-align: right; }' +
 
 /* カウントダウン用 */
-.imc_countdown_alert { }
-.imc_countdown_finish { }
-.imc_countdown .imc_countdown_display { font-weight: bold; padding: 0px 1px; }
-.imc_countdown.imc_countdown_alert .imc_countdown_display { color: #c03; }
+'.imc_countdown_alert { }' +
+'.imc_countdown_finish { }' +
+'.imc_countdown .imc_countdown_display { font-weight: bold; padding: 0px 1px; }' +
+'.imc_countdown.imc_countdown_alert .imc_countdown_display { color: #c03; }' +
 /* タイムアウト */
-#header #lordNameBox #lordSiteArea { height: 19px; margin-top: 5px; padding-top: 0px; line-height: 19px; }
-#lordSiteArea.imc_countdown_alert { background-color: #c03; }
-#lordSiteArea.imc_countdown_alert .imc_countdown_display { color: #fff; }
+'#header #lordNameBox #lordSiteArea { height: 19px; margin-top: 5px; padding-top: 0px; line-height: 19px; }' +
+'#lordSiteArea.imc_countdown_alert { background-color: #c03; }' +
+'#lordSiteArea.imc_countdown_alert .imc_countdown_display { color: #fff; }' +
 
 /* サイドバーカウントダウン用 */
-.imc_side_countdown { line-height: 100% !important; margin-top: -3px; padding: 0px 2px 3px 2px; text-align: right; }
-.imc_side_countdown.last { margin-top: 1px; }
-.imc_break { color: #999; }
+'.imc_side_countdown { line-height: 100% !important; margin-top: -3px; padding: 0px 2px 3px 2px; text-align: right; }' +
+'.imc_side_countdown.last { margin-top: 1px; }' +
+'.imc_break { color: #999; }' +
 
 /* 全体地図用 */
-#imi_mapcontainer { position: relative; color: #000; background-color: #000; border: solid 30px #e0dcc1; }
-#imi_mapcontainer CANVAS { position: absolute; top: 0px; left: 0px; }
-#imi_mousemap { position: absolute; width: 100%; height: 100%; z-index: 2; }
+'#imi_mapcontainer { position: relative; color: #000; background-color: #000; border: solid 30px #e0dcc1; }' +
+'#imi_mapcontainer CANVAS { position: absolute; top: 0px; left: 0px; }' +
+'#imi_mousemap { position: absolute; width: 100%; height: 100%; z-index: 2; }' +
 /* 全体地図座標表示用 */
-#imi_label { position: absolute; width: 60px; height: 12px; padding-left: 3px; color: #fff; background-color: #666; border: solid 1px #fff; display: none; z-index: 3; }
-
-]]></>,
-
+'#imi_label { position: absolute; width: 60px; height: 12px; padding-left: 3px; color: #fff; background-color: #666; border: solid 1px #fff; display: none; z-index: 3; }' +
+'',
 
 //. images
 images: {
@@ -6199,9 +6197,9 @@ serverSelected: function() {
 Page.registerAction( 'user', {
 
 //. style
-style: '' + <><![CDATA[
-.imc_link { padding-left: 5px; font-size: 12px; font-weight: normal }
-]]></>,
+style: '' +
+'.imc_link { padding-left: 5px; font-size: 12px; font-weight: normal }' +
+'',
 
 //. main
 main: function() {
@@ -6359,11 +6357,11 @@ checkFall: function() {
 Page.registerAction( 'user', 'ranking', {
 
 //. style
-style: '' + <><![CDATA[
-TABLE.common_table1 TH,
-TABLE.common_table1 TD { padding: 4px 6px; }
-TABLE.common_table1 TD:nth-child(1) { width: 65px; padding: 4px; }
-]]></>
+style: '' +
+'TABLE.common_table1 TH,' +
+'TABLE.common_table1 TD { padding: 4px 6px; }' +
+'TABLE.common_table1 TD:nth-child(1) { width: 65px; padding: 4px; }' +
+''
 
 });
 
@@ -6389,15 +6387,15 @@ main: function() {
 Page.registerAction( 'user', 'present', {
 
 //. style
-style: '' + <><![CDATA[
-#ig_deckheadmenubox { top: 0px; }
-#ig_deckheadmenubox IMG { top: 0px !important; }
+style: '' +
+'#ig_deckheadmenubox { top: 0px; }' +
+'#ig_deckheadmenubox IMG { top: 0px !important; }' +
 
-BUTTON.imc_receive { position: relative; top: -25px; left: 395px; }
+'BUTTON.imc_receive { position: relative; top: -25px; left: 395px; }' +
 
-.common_box3 LABEL { position: relative; top: -6px; font-size: 14px; padding: 2px 4px; border-radius: 3px; }
-.common_box3:hover LABEL { background-color: #f9dea1; }
-]]></>,
+'.common_box3 LABEL { position: relative; top: -6px; font-size: 14px; padding: 2px 4px; border-radius: 3px; }' +
+'.common_box3:hover LABEL { background-color: #f9dea1; }' +
+'',
 
 //. main
 main: function() {
@@ -6530,21 +6528,21 @@ style: Page.getAction( 'user', 'present', 'style' )
 Page.registerAction( 'village', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 実行中の作業 */
-#actionLog { width: 527px; padding: 33px 8px 7px 8px; }
-#actionLog TABLE { position: relative; z-index: 503; }
-#actionLog TABLE TD DIV { width: 522px; height: 68px; max-height: 68px; min-height: 68px; padding: 0px 0px 0px 5px; }
-#actionLog UL { width: 500px; height: 1px; }
-#actionLog UL LI { width: 500px; margin-bottom: 2px; }
-.cover_bottom { top: 96px; }
+'#actionLog { width: 527px; padding: 33px 8px 7px 8px; }' +
+'#actionLog TABLE { position: relative; z-index: 503; }' +
+'#actionLog TABLE TD DIV { width: 522px; height: 68px; max-height: 68px; min-height: 68px; padding: 0px 0px 0px 5px; }' +
+'#actionLog UL { width: 500px; height: 1px; }' +
+'#actionLog UL LI { width: 500px; margin-bottom: 2px; }' +
+'.cover_bottom { top: 96px; }' +
 
-#imi_icon_lv { position: absolute; top: 5px; left: 300px; }
-#imi_icon_lv { float: left; height: 20px; padding: 0px 12px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }
-#imi_icon_lv.imc_selected { background-color: #666; border-color: #fff; color: #fff; }
-#imi_icon_lv:hover { background-color: #666; border-color: #fff; color: #fff; }
-#maps.imc_icon_disabled DIV.imc_map_icon { display: none; }
-]]></>,
+'#imi_icon_lv { position: absolute; top: 5px; left: 300px; }' +
+'#imi_icon_lv { float: left; height: 20px; padding: 0px 12px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }' +
+'#imi_icon_lv.imc_selected { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_icon_lv:hover { background-color: #666; border-color: #fff; color: #fff; }' +
+'#maps.imc_icon_disabled DIV.imc_map_icon { display: none; }' +
+'',
 
 //. main
 main: function() {
@@ -6755,32 +6753,32 @@ getBuildStatus: function() {
 Page.registerAction( 'facility', 'facility', {
 
 //. style
-style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
+style: '' +
+'INPUT { ime-mode: disabled; }' +
 
 /* 兵舎用 */
-TABLE.paneltable { margin-bottom: 10px; }
-TABLE.imc_training { width: 100%; margin-top: 5px; }
-TABLE.imc_training TH IMG { margin: 0px; }
-TABLE.imc_training TD { min-width: 80px; padding: 0px; }
-.ig_tilesection_innerborder { padding-bottom: 0px; margin-bottom: 0px; }
-.ig_tilesection_innermid2 { width: 700px; }
-.ig_tilesection_iconarea { height: 100px; margin-bottom: 5px; }
-.ig_tilesection_iconarea IMG { margin: 0px; }
-.ig_tilesection_btnarea_left { margin-top: 5px; }
-.imc_training_button { float: right; width: 50px; height: 14px; font-size: 14px; text-align: center; padding: 3px 8px; border: solid 1px #543; border-radius: 3px; cursor: pointer; user-select: none; }
-.imc_training_button:hover { color: #fff; background-color: #543; }
-.imc_training_button:after { content: '閉じる'; }
-.imc_training_button.is_close:after { content: '開く'; }
-TR.imc_facility TD { text-align: center; }
-TR.imc_facility TD ~ TD { border-left: solid 1px #fff; }
-BUTTON { position: relative; top: 1px; }
+'TABLE.paneltable { margin-bottom: 10px; }' +
+'TABLE.imc_training { width: 100%; margin-top: 5px; }' +
+'TABLE.imc_training TH IMG { margin: 0px; }' +
+'TABLE.imc_training TD { min-width: 80px; padding: 0px; }' +
+'.ig_tilesection_innerborder { padding-bottom: 0px; margin-bottom: 0px; }' +
+'.ig_tilesection_innermid2 { width: 700px; }' +
+'.ig_tilesection_iconarea { height: 100px; margin-bottom: 5px; }' +
+'.ig_tilesection_iconarea IMG { margin: 0px; }' +
+'.ig_tilesection_btnarea_left { margin-top: 5px; }' +
+'.imc_training_button { float: right; width: 50px; height: 14px; font-size: 14px; text-align: center; padding: 3px 8px; border: solid 1px #543; border-radius: 3px; cursor: pointer; user-select: none; }' +
+'.imc_training_button:hover { color: #fff; background-color: #543; }' +
+'.imc_training_button:after { content: "閉じる"; }' +
+'.imc_training_button.is_close:after { content: "開く"; }' +
+'TR.imc_facility TD { text-align: center; }' +
+'TR.imc_facility TD ~ TD { border-left: solid 1px #fff; }' +
+'BUTTON { position: relative; top: 1px; }' +
 /* 学舎用 */
-TR.im_dou TD { padding: 0px; }
-TR.im_dou TD .money_b { padding: 5px 5px 4px 24px; margin: 0px 5px; background-position: 0px 0px; }
-.ig_tilesection_btnarea { margin-top: 5px; }
-.ig_tilesection_btnarea2 { margin-top: 5px; }
-]]></>,
+'TR.im_dou TD { padding: 0px; }' +
+'TR.im_dou TD .money_b { padding: 5px 5px 4px 24px; margin: 0px 5px; background-position: 0px 0px; }' +
+'.ig_tilesection_btnarea { margin-top: 5px; }' +
+'.ig_tilesection_btnarea2 { margin-top: 5px; }' +
+'',
 
 //. main
 main: function() {
@@ -7209,9 +7207,9 @@ main: function() {
 Page.registerAction( 'facility', 'dungeon', {
 
 //. style
-style: '' + <><![CDATA[
-.table_waigintunit TH ~ TD { min-width: 110px; }
-]]></>,
+style: '' +
+'.table_waigintunit TH ~ TD { min-width: 110px; }' +
+'',
 
 
 //. main
@@ -7278,35 +7276,35 @@ showSoldier: function() {
 Page.registerAction( 'facility', 'send_troop', {
 
 //. style
-style: '' + <><![CDATA[
-#ig_deckheadmenubox { height: 50px; }
-.btnarea { height: auto; margin-bottom: 0px; }
-.ig_decksection_mid { padding-bottom: 0px; }
-.ig_decksection_bottom { height: 15px; }
+style: '' +
+'#ig_deckheadmenubox { height: 50px; }' +
+'.btnarea { height: auto; margin-bottom: 0px; }' +
+'.ig_decksection_mid { padding-bottom: 0px; }' +
+'.ig_decksection_bottom { height: 15px; }' +
 
 /* 待機武将一覧 */
-.table_waigintunit { width: 620px; margin: 10px auto; }
-.table_waigintunit TH ~ TD { min-width: 110px; }
-.table_waigintunit TD.imc_command { width: 50px; }
-.imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }
-.imc_command_button.imc_backup:hover  { background-color: #09c; color: #fff; }
-.imc_command_button.imc_attack:hover  { background-color: #f66; }
-.imc_command_button.imc_camp:hover    { background-color: #c33; color: #fff; }
-.imc_command_button.imc_develop:hover { background-color: #390; color: #fff; }
-.imc_command_button.imc_meeting:hover { background-color: #6cf; }
+'.table_waigintunit { width: 620px; margin: 10px auto; }' +
+'.table_waigintunit TH ~ TD { min-width: 110px; }' +
+'.table_waigintunit TD.imc_command { width: 50px; }' +
+'.imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }' +
+'.imc_command_button.imc_backup:hover  { background-color: #09c; color: #fff; }' +
+'.imc_command_button.imc_attack:hover  { background-color: #f66; }' +
+'.imc_command_button.imc_camp:hover    { background-color: #c33; color: #fff; }' +
+'.imc_command_button.imc_develop:hover { background-color: #390; color: #fff; }' +
+'.imc_command_button.imc_meeting:hover { background-color: #6cf; }' +
 
 /* 出陣確認画面 */
-TH.imc_speed { font-size: 12px; }
-.imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }
-.imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }
-.imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }
+'TH.imc_speed { font-size: 12px; }' +
+'.imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }' +
+'.imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }' +
+'.imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }' +
 
 /* 部隊スキル */
-#imi_speed { margin: 0px; }
-.imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }
-#imi_unit_skill { width: 40px; text-align: right; ime-mode: disabled; }
-.imc_unit_skill BUTTON { margin-left: 5px; }
-]]></>,
+'#imi_speed { margin: 0px; }' +
+'.imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }' +
+'#imi_unit_skill { width: 40px; text-align: right; ime-mode: disabled; }' +
+'.imc_unit_skill BUTTON { margin-left: 5px; }' +
+'',
 
 //. main
 main: function() {
@@ -7613,9 +7611,9 @@ confluence: function() {
 Page.registerAction( 'facility', 'confluence_list', {
 
 //. style
-style: '' + <><![CDATA[
-.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer;
-]]></>,
+style: '' +
+'.imc_button { position: relative; top: -15px; left: 10px; display: inline-block; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }' +
+'',
 
 //. main
 main: function() {
@@ -7656,11 +7654,11 @@ main: Page.getAction( 'facility', 'send_troop', 'layouter2' )
 Page.registerAction( 'facility', 'unit_status', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 敵襲 */
-LI.imc_enemy * { color: #f33 !important; }
-.imc_new_enemy { border: solid 4px #f66; }
-]]></>,
+'LI.imc_enemy * { color: #f33 !important; }' +
+'.imc_new_enemy { border: solid 4px #f66; }' +
+'',
 
 //. main
 main: function() {
@@ -7801,13 +7799,13 @@ analyzeRaid: function() {
 Page.registerAction( 'facility', 'set_unit', {
 
 //. style
-style: '' + <><![CDATA[
-#team_fighting INPUT { ime-mode: disabled; }
-#team_fighting .cntchangetitle { padding-top: 10px; }
-#team_fighting BUTTON { width: 60px; }
-#imi_soldier_pool { margin-top: 10px; color: #000; }
-.imc_table TD { text-align: right; }
-]]></>,
+style: '' +
+'#team_fighting INPUT { ime-mode: disabled; }' +
+'#team_fighting .cntchangetitle { padding-top: 10px; }' +
+'#team_fighting BUTTON { width: 60px; }' +
+'#imi_soldier_pool { margin-top: 10px; color: #000; }' +
+'.imc_table TD { text-align: right; }' +
+'',
 
 //. main
 main: function() {
@@ -7928,63 +7926,63 @@ showSoldierPool: function() {
 Page.registerAction( 'facility', 'set_unit_list', {
 
 //. style
-style: '' + <><![CDATA[
-TD INPUT { ime-mode: disabled; }
+style: '' +
+'TD INPUT { ime-mode: disabled; }' +
 
-.imc_rarity { float: left; margin-right: 5px; }
-#imi_bottom_container .ig_solder_commentarea { position: relative; float: left; height: 34px; padding: 2px; margin: 7px 15px; }
-#imi_bottom_container TABLE.imc_soldier_total { position: relative; font-size: 10px; background-color: #eed; margin: 7px 0px; }
-#imi_bottom_container TABLE.imc_soldier_total TH { width: 45px; padding: 3px 3px; line-height: 1.2; }
-.imc_set_value { color: #060; text-decoration: underline; cursor: pointer; }
+'.imc_rarity { float: left; margin-right: 5px; }' +
+'#imi_bottom_container .ig_solder_commentarea { position: relative; float: left; height: 34px; padding: 2px; margin: 7px 15px; }' +
+'#imi_bottom_container TABLE.imc_soldier_total { position: relative; font-size: 10px; background-color: #eed; margin: 7px 0px; }' +
+'#imi_bottom_container TABLE.imc_soldier_total TH { width: 45px; padding: 3px 3px; line-height: 1.2; }' +
+'.imc_set_value { color: #060; text-decoration: underline; cursor: pointer; }' +
 
-#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }
-#imi_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }
-#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }
+'#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }' +
+'#imi_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }' +
+'#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
 /* 兵種による色分け */
-.yari1 { background-color: #bd9; }
-.yari2 { background-color: #bd9; }
-.yari3 { background-color: #9b7; }
-.yari4 { background-color: #bd9; }
+'.yari1 { background-color: #bd9; }' +
+'.yari2 { background-color: #bd9; }' +
+'.yari3 { background-color: #9b7; }' +
+'.yari4 { background-color: #bd9; }' +
 
-.yumi1 { background-color: #fcb; }
-.yumi2 { background-color: #fcb; }
-.yumi3 { background-color: #da9; }
-.yumi4 { background-color: #fcb; }
+'.yumi1 { background-color: #fcb; }' +
+'.yumi2 { background-color: #fcb; }' +
+'.yumi3 { background-color: #da9; }' +
+'.yumi4 { background-color: #fcb; }' +
 
-.kiba1 { background-color: #fe8; }
-.kiba2 { background-color: #fe8; }
-.kiba3 { background-color: #dc6; }
-.kiba4 { background-color: #fe8; }
+'.kiba1 { background-color: #fe8; }' +
+'.kiba2 { background-color: #fe8; }' +
+'.kiba3 { background-color: #dc6; }' +
+'.kiba4 { background-color: #fe8; }' +
 
-.heiki1 { background-color: #c9c; }
-.heiki2 { background-color: #c9c; }
-.heiki3 { background-color: #c9c; }
-.heiki4 { background-color: #dbd; }
-.heiki5 { background-color: #b9b; }
-.heiki6 { background-color: #b9b; }
+'.heiki1 { background-color: #c9c; }' +
+'.heiki2 { background-color: #c9c; }' +
+'.heiki3 { background-color: #c9c; }' +
+'.heiki4 { background-color: #dbd; }' +
+'.heiki5 { background-color: #b9b; }' +
+'.heiki6 { background-color: #b9b; }' +
 
-TABLE.common_table1 TR.imc_selected { border: solid 2px #09c; }
-TABLE.common_table1 TR.imc_selected TD { padding: 3px 8px 4px 8px; background-color: rgba( 0, 153, 204, 0.2 ); }
-TABLE.common_table1 TR.imc_selected TD.left { padding: 3px 8px 4px 7px; }
-TABLE.common_table1 TR.imc_selected.imc_added TD { background-color: rgba( 0, 153, 204, 0.6 ); }
-TABLE.common_table1 TR.imc_selected + TR TD { padding: 3px 8px 4px 8px; }
+'TABLE.common_table1 TR.imc_selected { border: solid 2px #09c; }' +
+'TABLE.common_table1 TR.imc_selected TD { padding: 3px 8px 4px 8px; background-color: rgba( 0, 153, 204, 0.2 ); }' +
+'TABLE.common_table1 TR.imc_selected TD.left { padding: 3px 8px 4px 7px; }' +
+'TABLE.common_table1 TR.imc_selected.imc_added TD { background-color: rgba( 0, 153, 204, 0.6 ); }' +
+'TABLE.common_table1 TR.imc_selected + TR TD { padding: 3px 8px 4px 8px; }' +
 
 /* ソート条件選択用 */
-.ig_decksection_innermid > DIV:first-child { width: 705px; padding: 3px 0px; border: solid 1px #cc9; border-radius: 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); }
-.ig_decksection_innermid > DIV:first-child SELECT { margin-right: 10px; }
-#imi_order_open { margin-left: 50px; padding: 3px 2px 2px 3px; color: #000; border: solid 1px #666; border-radius: 3px; cursor: pointer; }
-#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }
-#imi_order_open.imc_is_open:after { content: '▲' }
-#imi_order_open.imc_is_close:after { content: '▼' }
-#imi_cardorder_list { position: absolute; clear: both; padding: 10px; margin-left: -1px; width: 685px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }
-#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; text-align: left; }
-#imi_cardorder_list INPUT { width: 400px; }
-#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 485px; cursor: default; white-space: nowrap; overflow: hidden; }
-#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }
-#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }
-#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }
-]]></>,
+'.ig_decksection_innermid > DIV:first-child { width: 705px; padding: 3px 0px; border: solid 1px #cc9; border-radius: 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); }' +
+'.ig_decksection_innermid > DIV:first-child SELECT { margin-right: 10px; }' +
+'#imi_order_open { margin-left: 50px; padding: 3px 2px 2px 3px; color: #000; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
+'#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }' +
+'#imi_order_open.imc_is_open:after { content: "▲" }' +
+'#imi_order_open.imc_is_close:after { content: "▼" }' +
+'#imi_cardorder_list { position: absolute; clear: both; padding: 10px; margin-left: -1px; width: 685px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }' +
+'#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; text-align: left; }' +
+'#imi_cardorder_list INPUT { width: 400px; }' +
+'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 485px; cursor: default; white-space: nowrap; overflow: hidden; }' +
+'#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
+'#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
+'#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
+'',
 
 //. main
 main: function() {
@@ -8536,125 +8534,125 @@ contextmenu: function() {
 Page.registerAction( 'card', 'deck', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* デッキ用 */
-#ig_deckcost { top: 8px; left: 160px; }
-#ig_keikenup { top: 8px; left: 500px }
-#ig_deckheadmenubox { height: 80px; }
-#deck_skill_display { top: 188px; }
-DIV.deck_select_lead { display: none; }
+'#ig_deckcost { top: 8px; left: 160px; }' +
+'#ig_keikenup { top: 8px; left: 500px }' +
+'#ig_deckheadmenubox { height: 80px; }' +
+'#deck_skill_display { top: 188px; }' +
+'DIV.deck_select_lead { display: none; }' +
 
 /* ユニットデータ表示用 */
-.imc_deck_unitdata { width: 114px; height: 18px; line-height: 18px; font-size: 13px; font-weight: bold; color: #300; padding-left: 95px; padding-bottom: 3px; border-bottom: dotted 1px #666; display: inline-block; }
-.imc_deck_unitdata_speed { width: 40px; height: 18px; line-height: 18px; font-size: 13px; font-weight: bold; color: #300; padding-left: 55px; padding-bottom: 3px; display: inline-block; }
-.ig_deck_unitdata_allcost { width: 40px; display: inline-block; }
+'.imc_deck_unitdata { width: 114px; height: 18px; line-height: 18px; font-size: 13px; font-weight: bold; color: #300; padding-left: 95px; padding-bottom: 3px; border-bottom: dotted 1px #666; display: inline-block; }' +
+'.imc_deck_unitdata_speed { width: 40px; height: 18px; line-height: 18px; font-size: 13px; font-weight: bold; color: #300; padding-left: 55px; padding-bottom: 3px; display: inline-block; }' +
+'.ig_deck_unitdata_allcost { width: 40px; display: inline-block; }' +
 
 /* 全部隊解散ボタン用 */
-#imi_unregist_all { position: absolute; top: 53px; left: 260px; cursor: pointer; }
+'#imi_unregist_all { position: absolute; top: 53px; left: 260px; cursor: pointer; }' +
 
 /* 小カード用 */
-.ig_deck_smallcardtitle { height: 17px; margin-bottom: 2px; }
-.ranklvup_m { top: -75px; width: 0px; }
-.ig_deck_smallcardimage .ranklvup_m .rankup_btn { width: 0px; }
-.ig_deck_smallcardimage .ranklvup_m .rankup_btn A { width: 40px; background-position: -75px 0px; }
-.ig_deck_smallcardimage .ranklvup_m .rankup_btn A:hover { width: 105px; background-position: -10px -25px; }
-.ig_deck_smallcardimage .ranklvup_m .levelup_btn { width: 0px; }
-.ig_deck_smallcardimage .ranklvup_m .levelup_btn A { width: 40px; background-position: -75px 0px; }
-.ig_deck_smallcardimage .ranklvup_m .levelup_btn A:hover { width: 105px; background-position: -10px -25px; }
-SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }
-.imc_cardname { font-weight: bold; line-height: 17px; }
-.imc_card_header SPAN { height: 17px; font-size: 11px; letter-spacing: -1px; line-height: 17px; }
-.imc_card_header .imc_lv { margin-top: -1px; font-size: 12px; font-weight: bold; letter-spacing: 0px; }
-.imc_card_header .imc_lv_20 { color: #fc9; }
-.imc_card_skill { position: relative; top: 116px; background-color: #333; z-index: 4; }
-.imc_card_skill TABLE { margin-bottom: 0px; }
-.imc_card_skill TH { width: 20px; }
-.imc_card_status TH { width: 45px; }
-.imc_card_status .imc_solmax { background-color: #642; }
-.imc_card_status .imc_power { background-color: #246; }
-.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }
+'.ig_deck_smallcardtitle { height: 17px; margin-bottom: 2px; }' +
+'.ranklvup_m { top: -75px; width: 0px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .rankup_btn { width: 0px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .rankup_btn A { width: 40px; background-position: -75px 0px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .rankup_btn A:hover { width: 105px; background-position: -10px -25px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .levelup_btn { width: 0px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .levelup_btn A { width: 40px; background-position: -75px 0px; }' +
+'.ig_deck_smallcardimage .ranklvup_m .levelup_btn A:hover { width: 105px; background-position: -10px -25px; }' +
+'SPAN.imc_card_header { float: right; margin-right: 5px; padding-top: 2px; }' +
+'.imc_cardname { font-weight: bold; line-height: 17px; }' +
+'.imc_card_header SPAN { height: 17px; font-size: 11px; letter-spacing: -1px; line-height: 17px; }' +
+'.imc_card_header .imc_lv { margin-top: -1px; font-size: 12px; font-weight: bold; letter-spacing: 0px; }' +
+'.imc_card_header .imc_lv_20 { color: #fc9; }' +
+'.imc_card_skill { position: relative; top: 116px; background-color: #333; z-index: 4; }' +
+'.imc_card_skill TABLE { margin-bottom: 0px; }' +
+'.imc_card_skill TH { width: 20px; }' +
+'.imc_card_status TH { width: 45px; }' +
+'.imc_card_status .imc_solmax { background-color: #642; }' +
+'.imc_card_status .imc_power { background-color: #246; }' +
+'.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
 /* HP・討伐ゲージ用バー */
-.imc_bar_title { color: white; font-size: 10px; }
-.imc_bar_battle_gage { width: 100px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }
-.imc_bar_hp { width: 100px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }
-.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }
-.imc_recovery_time { width: 110px; height: 29px; line-height: 29px; text-align: center; float: right; }
-#ig_deck_smallcardarea_out .ig_deck_smallcardarea { height: 216px; padding-top: 5px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }
-#ig_deck_smallcardarea_out .ig_deck_smallcardarea.imc_selected { height: 215px; padding: 4px 4px 0px 8px; }
-#ig_deck_smallcardarea_out .ig_deck_smallcarddelete { display: none; }
-#ig_deck_smallcardarea_out .battlegage2 { display: none; }
+'.imc_bar_title { color: white; font-size: 10px; }' +
+'.imc_bar_battle_gage { width: 100px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
+'.imc_bar_hp { width: 100px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
+'.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
+'.imc_recovery_time { width: 110px; height: 29px; line-height: 29px; text-align: center; float: right; }' +
+'#ig_deck_smallcardarea_out .ig_deck_smallcardarea { height: 216px; padding-top: 5px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
+'#ig_deck_smallcardarea_out .ig_deck_smallcardarea.imc_selected { height: 215px; padding: 4px 4px 0px 8px; }' +
+'#ig_deck_smallcardarea_out .ig_deck_smallcarddelete { display: none; }' +
+'#ig_deck_smallcardarea_out .battlegage2 { display: none; }' +
 /* カード選択時の枠色 */
-.imc_deck_mode .imc_selected { border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }
-.imc_union_mode .imc_selected { border: solid 2px #09c !important; background: -moz-linear-gradient(top left, #456, #000) !important; }
+'.imc_deck_mode .imc_selected { border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
+'.imc_union_mode .imc_selected { border: solid 2px #09c !important; background: -moz-linear-gradient(top left, #456, #000) !important; }' +
 
 /* 下部表示欄 */
-.imc_contents { position: relative; width: 916px; padding: 0px 14px 0px 14px; margin: 7px auto; }
+'.imc_contents { position: relative; width: 916px; padding: 0px 14px 0px 14px; margin: 7px auto; }' +
 
-#imi_village_info { float: right; margin-right: 16px; }
-#imi_village_info .deck_wide_select { padding-bottom: 0px; }
+'#imi_village_info { float: right; margin-right: 16px; }' +
+'#imi_village_info .deck_wide_select { padding-bottom: 0px; }' +
 
-#imi_deck_info { height: 20px; margin: 0px 0px 0px 16px; }
-#imi_deck_info LI { float: left; min-width: 60px; height: 20px; line-height: 20px; padding: 0px 6px; margin-right: 8px; background-color: #f1f0dc; border: solid 1px #f1f0dc; }
-#imi_deck_info .imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }
-#imi_deck_info .imc_info1_free { width: 25px; text-align: right; display: inline-block; }
-#imi_deck_info .imc_info2 { width: 12px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }
-#imi_deck_info .imc_info2_free { width: 12px; text-align: right; display: inline-block; }
-#imi_deck_info .imc_info3,
-#imi_deck_info .imc_info4 { width: 45px; text-align: right; display: inline-block; }
-#imi_deck_info .imc_info5 { width: 30px; text-align: right; display: inline-block; }
+'#imi_deck_info { height: 20px; margin: 0px 0px 0px 16px; }' +
+'#imi_deck_info LI { float: left; min-width: 60px; height: 20px; line-height: 20px; padding: 0px 6px; margin-right: 8px; background-color: #f1f0dc; border: solid 1px #f1f0dc; }' +
+'#imi_deck_info .imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'#imi_deck_info .imc_info1_free { width: 25px; text-align: right; display: inline-block; }' +
+'#imi_deck_info .imc_info2 { width: 12px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'#imi_deck_info .imc_info2_free { width: 12px; text-align: right; display: inline-block; }' +
+'#imi_deck_info .imc_info3,' +
+'#imi_deck_info .imc_info4 { width: 45px; text-align: right; display: inline-block; }' +
+'#imi_deck_info .imc_info5 { width: 30px; text-align: right; display: inline-block; }' +
 
-#imi_deck_info #imi_mode { width: 75px; text-align: center; font-weight: bold; background-color: #000; cursor: pointer; }
-#imi_deck_info #imi_mode.imc_deck_mode { border: solid 1px #f80; }
-#imi_deck_info #imi_mode.imc_deck_mode:after { content: 'デッキモード'; color: #f80; }
-#imi_deck_info #imi_mode.imc_union_mode { border: solid 1px #09c; }
-#imi_deck_info #imi_mode.imc_union_mode:after { content: '合成モード'; color: #09c; }
-#imi_deck_info #imi_mode:hover { color: #fff; border-color: #fff; background-color: #666; }
+'#imi_deck_info #imi_mode { width: 75px; text-align: center; font-weight: bold; background-color: #000; cursor: pointer; }' +
+'#imi_deck_info #imi_mode.imc_deck_mode { border: solid 1px #f80; }' +
+'#imi_deck_info #imi_mode.imc_deck_mode:after { content: "デッキモード"; color: #f80; }' +
+'#imi_deck_info #imi_mode.imc_union_mode { border: solid 1px #09c; }' +
+'#imi_deck_info #imi_mode.imc_union_mode:after { content: "合成モード"; color: #09c; }' +
+'#imi_deck_info #imi_mode:hover { color: #fff; border-color: #fff; background-color: #666; }' +
 
-#imi_new_deck { float: right; margin-right: 16px; }
-#imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }
-#imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }
+'#imi_new_deck { float: right; margin-right: 16px; }' +
+'#imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
+'#imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
 
-#imi_open.imc_is_open:after { content: '閉じる' }
-#imi_open.imc_is_close:after { content: '開く' }
+'#imi_open.imc_is_open:after { content: "閉じる" }' +
+'#imi_open.imc_is_close:after { content: "開く" }' +
 
 /* デッキモード */
-#imi_card_container { display: none; position: relative; width: 998px; height: 200px; margin: 0px auto 5px auto; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }
-#imi_card_container .ig_deck_smallcardarea { height: 190px; border-bottom: solid 1px #666; }
+'#imi_card_container { display: none; position: relative; width: 998px; height: 200px; margin: 0px auto 5px auto; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }' +
+'#imi_card_container .ig_deck_smallcardarea { height: 190px; border-bottom: solid 1px #666; }' +
 /* 合成モード */
-#imi_card_container1 { display: none; position: relative; width: 1000px; height: auto; margin: 0px auto 3px auto; background-color: #000; overflow: hidden; }
-#imi_card_container2 { display: inline-block; width: 254px; height: 200px; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }
-#imi_card_container2 .ig_deck_smallcardarea { height: 190px; border-bottom: solid 1px #666; }
-#imi_card_container3 { display: inline-block; width: 722px; height: 200px; margin-left: 16px; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }
-#imi_card_container3 .ig_deck_smallcardarea { height: 190px; width: 121px; border: solid 1px #666; background-position: -1px -1px; }
-#imi_card_container2:after { content: '　素材カード'; color: #999; font-size: 18px; line-height: 200px; }
-#imi_card_container3:after { content: '　追加素材カード'; color: #999; font-size: 18px; line-height: 200px; }
+'#imi_card_container1 { display: none; position: relative; width: 1000px; height: auto; margin: 0px auto 3px auto; background-color: #000; overflow: hidden; }' +
+'#imi_card_container2 { display: inline-block; width: 254px; height: 200px; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }' +
+'#imi_card_container2 .ig_deck_smallcardarea { height: 190px; border-bottom: solid 1px #666; }' +
+'#imi_card_container3 { display: inline-block; width: 722px; height: 200px; margin-left: 16px; padding: 5px 0px; background-color: #000; border: solid 1px #970; overflow: hidden; }' +
+'#imi_card_container3 .ig_deck_smallcardarea { height: 190px; width: 121px; border: solid 1px #666; background-position: -1px -1px; }' +
+'#imi_card_container2:after { content: "　素材カード"; color: #999; font-size: 18px; line-height: 200px; }' +
+'#imi_card_container3:after { content: "　追加素材カード"; color: #999; font-size: 18px; line-height: 200px; }' +
 
-#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 0px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }
-#imi_command_selecter LI:hover .imc_pulldown { display: block; }
-#imi_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }
-#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }
+'#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 0px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
+'#imi_command_selecter LI:hover .imc_pulldown { display: block; }' +
+'#imi_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
+'#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
 /* 兵種変更 */
-#imi_unitedit { margin: auto; width: 350px; }
-#imi_unitedit TH:first-child { width: 60px; }
-#imi_unitedit TD { width: 40px; cursor: pointer; }
-#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }
-#imi_unitedit .imc_selected { background-color: #f9dea1; }
+'#imi_unitedit { margin: auto; width: 350px; }' +
+'#imi_unitedit TH:first-child { width: 60px; }' +
+'#imi_unitedit TD { width: 40px; cursor: pointer; }' +
+'#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
+'#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
 
 /* ソート条件選択用 */
-#selectarea SELECT { margin-right: 8px; }
-#imi_order_open { padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }
-#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }
-#imi_order_open.imc_is_open:after { content: '▲' }
-#imi_order_open.imc_is_close:after { content: '▼' }
-#imi_cardorder_list { position: relative; clear: both; left: -9px; padding: 10px; width: 727px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }
-#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; }
-#imi_cardorder_list INPUT { width: 400px; }
-#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 530px; cursor: default; white-space: nowrap; overflow: hidden; }
-#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }
-#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }
-#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }
-]]></>,
+'#selectarea SELECT { margin-right: 8px; }' +
+'#imi_order_open { padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
+'#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }' +
+'#imi_order_open.imc_is_open:after { content: "▲" }' +
+'#imi_order_open.imc_is_close:after { content: "▼" }' +
+'#imi_cardorder_list { position: relative; clear: both; left: -9px; padding: 10px; width: 727px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }' +
+'#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; }' +
+'#imi_cardorder_list INPUT { width: 400px; }' +
+'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 530px; cursor: default; white-space: nowrap; overflow: hidden; }' +
+'#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
+'#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
+'#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
+'',
 
 //. main
 main: function() {
@@ -9035,9 +9033,9 @@ changeMode: function( release ) {
 Page.registerAction( 'card', 'status_info', {
 
 //. style
-style: '' + <><![CDATA[
-.imc_update { background-color: #f9dea1 !important; }
-]]></>,
+style: '' +
+'.imc_update { background-color: #f9dea1 !important; }' +
+'',
 
 //. main
 main: function() {
@@ -9174,9 +9172,9 @@ layouter: function( $tr ) {
 Page.registerAction( 'card', 'trade_bid', {
 
 //. style
-style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
-]]></>
+style: '' +
+'INPUT { ime-mode: disabled; }' +
+''
 
 });
 
@@ -9184,9 +9182,9 @@ INPUT { ime-mode: disabled; }
 Page.registerAction( 'card', 'exhibit_confirm', {
 
 //. style
-style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
-]]></>,
+style: '' +
+'INPUT { ime-mode: disabled; }' +
+'',
 
 
 //. main
@@ -9299,10 +9297,10 @@ layouter: function() {
 Page.registerAction( 'card', 'card_album', {
 
 //. style
-style: '' + <><![CDATA[
-#ig_deckheadmenubox { top: 0px; }
-#ig_deckheadmenubox IMG { position: absolute; clip: rect(5px, 795px, 58px, 0px); }
-]]></>,
+style: '' +
+'#ig_deckheadmenubox { top: 0px; }' +
+'#ig_deckheadmenubox IMG { position: absolute; clip: rect(5px, 795px, 58px, 0px); }' +
+'',
 
 //. main
 main: function() {
@@ -9357,180 +9355,180 @@ contextmenu: function() {
 Page.registerAction( 'map', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 地図 */
-#box { min-height: 855px; }
-#ig_mapbox_container { left: 15px; top: 130px; }
-#ig_mapbox_container #ig_cur01   { left: 700px; top: 210px; }
-#ig_mapbox_container #ig_cur01_w { left: 700px; top: 190px; }
-#ig_mapbox_container #ig_cur02   { left: 700px; top: 235px; }
-#ig_mapbox_container #ig_cur02_w { left: 700px; top: 235px; }
-#ig_mapbox_container #ig_cur03   { left: 650px; top: 235px; }
-#ig_mapbox_container #ig_cur03_w { left: 620px; top: 235px; }
-#ig_mapbox_container #ig_cur04   { left: 650px; top: 210px; }
-#ig_mapbox_container #ig_cur04_w { left: 620px; top: 190px; }
-.ig_mappanel_maindataarea { left: 5px; top: 5px; }
+'#box { min-height: 855px; }' +
+'#ig_mapbox_container { left: 15px; top: 130px; }' +
+'#ig_mapbox_container #ig_cur01   { left: 700px; top: 210px; }' +
+'#ig_mapbox_container #ig_cur01_w { left: 700px; top: 190px; }' +
+'#ig_mapbox_container #ig_cur02   { left: 700px; top: 235px; }' +
+'#ig_mapbox_container #ig_cur02_w { left: 700px; top: 235px; }' +
+'#ig_mapbox_container #ig_cur03   { left: 650px; top: 235px; }' +
+'#ig_mapbox_container #ig_cur03_w { left: 620px; top: 235px; }' +
+'#ig_mapbox_container #ig_cur04   { left: 650px; top: 210px; }' +
+'#ig_mapbox_container #ig_cur04_w { left: 620px; top: 190px; }' +
+'.ig_mappanel_maindataarea { left: 5px; top: 5px; }' +
 
 /* 表示国セレクタ */
-#ig_map_country { top: 13px; left: 380px; height: 20px; color: #fff; background: none; }
-#ig_map_country SELECT { margin: 0px 5px; }
+'#ig_map_country { top: 13px; left: 380px; height: 20px; color: #fff; background: none; }' +
+'#ig_map_country SELECT { margin: 0px 5px; }' +
 
-#ig_map_movepanel { left: 7px; top: 327px; width: 200px; height: 53px; border: solid 2px #888; background-position: -10px -14px; }
-#ig_map_movepanel FORM { top: 0px; }
-#ig_map_movepanel UL { top: 25px; left: 460px; width: 158px; height: 26px; background-color: #f1f0dc; border: solid 2px #888; }
-#ig_map_movepanel UL LI { background-color: transparent; }
-.ig_map_movepanel_inputarea { top: 27px; left: 11px; }
-.ig_map_movepanel_btnarea { top: 20px; }
-.ig_map_movepanel_btnarea INPUT ~ INPUT { display: none; }
+'#ig_map_movepanel { left: 7px; top: 327px; width: 200px; height: 53px; border: solid 2px #888; background-position: -10px -14px; }' +
+'#ig_map_movepanel FORM { top: 0px; }' +
+'#ig_map_movepanel UL { top: 25px; left: 460px; width: 158px; height: 26px; background-color: #f1f0dc; border: solid 2px #888; }' +
+'#ig_map_movepanel UL LI { background-color: transparent; }' +
+'.ig_map_movepanel_inputarea { top: 27px; left: 11px; }' +
+'.ig_map_movepanel_btnarea { top: 20px; }' +
+'.ig_map_movepanel_btnarea INPUT ~ INPUT { display: none; }' +
 
 /* 部隊状況 */
-#imi_unitstatus { position: absolute; top: 110px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }
-#imi_unitstatus TABLE { width: 100%; height: 100%; }
-#imi_unitstatus TR { height: 16px; }
-#imi_unitstatus TD { padding: 0px; }
-#imi_unitstatus DIV { padding: 0px 2px; text-align: left; white-space: nowrap; overflow: hidden; }
-#imi_unitstatus A { color: #000; }
-#imi_unitstatus A:hover { background-color: #f9dea1; }
-#imi_unitstatus .imc_countdown_display { font-family: 'Verdana'; font-size: 10px; }
-#imi_unitstatus .imc_coord { font-weight: normal; }
+'#imi_unitstatus { position: absolute; top: 110px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }' +
+'#imi_unitstatus TABLE { width: 100%; height: 100%; }' +
+'#imi_unitstatus TR { height: 16px; }' +
+'#imi_unitstatus TD { padding: 0px; }' +
+'#imi_unitstatus DIV { padding: 0px 2px; text-align: left; white-space: nowrap; overflow: hidden; }' +
+'#imi_unitstatus A { color: #000; }' +
+'#imi_unitstatus A:hover { background-color: #f9dea1; }' +
+'#imi_unitstatus .imc_countdown_display { font-family: "Verdana"; font-size: 10px; }' +
+'#imi_unitstatus .imc_coord { font-weight: normal; }' +
 /* 部隊行動 */
-#imi_unitstatus .imc_attack  { background-color: #f66; }
-#imi_unitstatus .imc_camp    { background-color: #c33; color: #fff; }
-#imi_unitstatus .imc_meeting { background-color: #6cf; }
-#imi_unitstatus .imc_backup  { background-color: #09c; color: #fff; }
-#imi_unitstatus .imc_return  { background-color: #ddd; }
-#imi_unitstatus .imc_dungeon { background-color: #f96; }
-#imi_unitstatus .imc_develop { background-color: #390; color: #fff; }
-#imi_unitstatus .imc_move    { background-color: #93c; color: #fff; }
-#imi_unitstatus .imc_wait    { background-color: #9c3; }
-#imi_unitstatus .imc_backup_wait { background-color: #396; color: #fff; }
+'#imi_unitstatus .imc_attack  { background-color: #f66; }' +
+'#imi_unitstatus .imc_camp    { background-color: #c33; color: #fff; }' +
+'#imi_unitstatus .imc_meeting { background-color: #6cf; }' +
+'#imi_unitstatus .imc_backup  { background-color: #09c; color: #fff; }' +
+'#imi_unitstatus .imc_return  { background-color: #ddd; }' +
+'#imi_unitstatus .imc_dungeon { background-color: #f96; }' +
+'#imi_unitstatus .imc_develop { background-color: #390; color: #fff; }' +
+'#imi_unitstatus .imc_move    { background-color: #93c; color: #fff; }' +
+'#imi_unitstatus .imc_wait    { background-color: #9c3; }' +
+'#imi_unitstatus .imc_backup_wait { background-color: #396; color: #fff; }' +
 
 /* 座標ペーストエリア */
-#imi_coord_container { position: absolute; top: 329px; left: 9px; z-index: 1001; }
-#imi_coord_container LABEL { position: absolute; width: 90px; height: 20px; font-size: 12px; padding: 6px 0px 0px 3px; background-color: #F7F7D6; font-weight: bold; text-shadow: 1px 0px 3px #ddb, -1px 0px 3px #ddb, 0px 1px 3px #ddb, 0px -1px 3px #ddb; }
-#imi_coord_move { position: absolute; width: 80px; height: 17px; top: 2px; left: 82px; border: solid 1px #ccc; }
+'#imi_coord_container { position: absolute; top: 329px; left: 9px; z-index: 1001; }' +
+'#imi_coord_container LABEL { position: absolute; width: 90px; height: 20px; font-size: 12px; padding: 6px 0px 0px 3px; background-color: #F7F7D6; font-weight: bold; text-shadow: 1px 0px 3px #ddb, -1px 0px 3px #ddb, 0px 1px 3px #ddb, 0px -1px 3px #ddb; }' +
+'#imi_coord_move { position: absolute; width: 80px; height: 17px; top: 2px; left: 82px; border: solid 1px #ccc; }' +
 
 /* 情報表示エリア */
-#imi_tab_container { position: absolute; top: 392px; left: 7px; height: 16px; z-index: 1001; }
-#imi_tab_container LI { float: left; border: solid 1px #888; background-color: #f1f0dc; color: #666; font-size: 12px; line-height: 16px; text-align: center; padding: 0px 15px; margin-top: 1px; cursor: pointer; z-index: 1001; }
-#imi_tab_container LI.imc_selected { color: #000; font-weight: bold; border-width: 2px; border-bottom-color: #f1f0dc; margin-top: 0px; }
-#imi_container { font-size: 11px; }
-#imi_container > DIV { position: absolute; top: 410px; left: 5px; width: 770px; height: 425px; border: solid 2px #888; background-color: #f1f0dc; padding: 3px; overflow: auto; z-index: 1000; }
-#imi_container A { color: #060; }
-#imi_container INPUT { margin-right: 5px; }
-#imi_container LABEL { margin-right: 10px; cursor: pointer; }
+'#imi_tab_container { position: absolute; top: 392px; left: 7px; height: 16px; z-index: 1001; }' +
+'#imi_tab_container LI { float: left; border: solid 1px #888; background-color: #f1f0dc; color: #666; font-size: 12px; line-height: 16px; text-align: center; padding: 0px 15px; margin-top: 1px; cursor: pointer; z-index: 1001; }' +
+'#imi_tab_container LI.imc_selected { color: #000; font-weight: bold; border-width: 2px; border-bottom-color: #f1f0dc; margin-top: 0px; }' +
+'#imi_container { font-size: 11px; }' +
+'#imi_container > DIV { position: absolute; top: 410px; left: 5px; width: 770px; height: 425px; border: solid 2px #888; background-color: #f1f0dc; padding: 3px; overflow: auto; z-index: 1000; }' +
+'#imi_container A { color: #060; }' +
+'#imi_container INPUT { margin-right: 5px; }' +
+'#imi_container LABEL { margin-right: 10px; cursor: pointer; }' +
 
 /* 拠点情報 */
-#imi_base_conditions { margin-bottom: 10px; }
-#imi_base_conditions SELECT { position: relative; top: -1px; margin: -2px; }
+'#imi_base_conditions { margin-bottom: 10px; }' +
+'#imi_base_conditions SELECT { position: relative; top: -1px; margin: -2px; }' +
 
 /* 座標情報 */
-.imc_fort TD { width: 50px; }
-.imc_fort2 TD { width: 42px; }
+'.imc_fort TD { width: 50px; }' +
+'.imc_fort2 TD { width: 42px; }' +
 
 /* 敵襲情報 */
-#imi_tab_container LI.imc_enemy { color: #f30; }
-#imi_raid_list TR { cursor: pointer; }
-.imc_new_enemy { background-color: #fdc; }
-#imi_raid_list .imc_countdown_alert TD:last-child { background-color: #c03; }
-#imi_raid_list .imc_countdown_alert .imc_countdown_display { color: #fff; }
+'#imi_tab_container LI.imc_enemy { color: #f30; }' +
+'#imi_raid_list TR { cursor: pointer; }' +
+'.imc_new_enemy { background-color: #fdc; }' +
+'#imi_raid_list .imc_countdown_alert TD:last-child { background-color: #c03; }' +
+'#imi_raid_list .imc_countdown_alert .imc_countdown_display { color: #fff; }' +
 
 /* 新合戦耐久度 */
-.imc_gage { border-width: 2px; margin: 0px auto; }
-.imc_gage TD { padding: 0px; width: 5px; height: 7px; font-size: 10px; background-color: #fe0; }
-.imc_gage TD.imc_lose { background-color: #b00; }
+'.imc_gage { border-width: 2px; margin: 0px auto; }' +
+'.imc_gage TD { padding: 0px; width: 5px; height: 7px; font-size: 10px; background-color: #fe0; }' +
+'.imc_gage TD.imc_lose { background-color: #b00; }' +
 
 /* 合戦報告書・周辺の敵襲 */
-TABLE.ig_battle_table { width: 650px; }
-.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }
-.ig_battle_table A { line-height: 18px; }
-.ig_battle_report_icon1,
-.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }
-.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }
+'TABLE.ig_battle_table { width: 650px; }' +
+'.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
+'.ig_battle_table A { line-height: 18px; }' +
+'.ig_battle_report_icon1,' +
+'.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
+'.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }' +
 
-#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }
-#imi_mapcontainer { border-width: 3px; }
+'#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
+'#imi_mapcontainer { border-width: 3px; }' +
 
 /* 部隊編成 */
-#imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }
-#imi_deck_info { margin-left: 10px; padding: 2px; width: 280px; height: 149px; float: left; }
-#imi_deck_info LI { height: 18px; line-height: 18px; padding-top: 3px; border-bottom: solid 1px #cc9; font-size: 12px; }
-#imi_deck_info LI LABEL { width: 40px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }
-#imi_deck_info LI.imc_enemy { border-color: #f66; }
-#imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }
-#imi_deck_info .imc_countdown_display { padding-left: 5px; }
-.imc_village { margin-left: 5px; }
-.imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }
-.imc_info1_free { width: 30px; text-align: right; display: inline-block; margin-right: 20px; }
-.imc_info2 { width: 20px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }
-.imc_info2_free { width: 20px; text-align: right; display: inline-block; }
-.imc_info3,
-.imc_info4,
-.imc_info5 { width: 71px; text-align: right; display: inline-block; margin-right: 20px; }
-.imc_info6,
-.imc_info7 { width: 85px; text-align: right; display: inline-block; }
-.imc_info8 { width: 91px; border-style: none; }
-.imc_info9 { padding-left: 5px; }
+'#imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
+'#imi_deck_info { margin-left: 10px; padding: 2px; width: 280px; height: 149px; float: left; }' +
+'#imi_deck_info LI { height: 18px; line-height: 18px; padding-top: 3px; border-bottom: solid 1px #cc9; font-size: 12px; }' +
+'#imi_deck_info LI LABEL { width: 40px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }' +
+'#imi_deck_info LI.imc_enemy { border-color: #f66; }' +
+'#imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }' +
+'#imi_deck_info .imc_countdown_display { padding-left: 5px; }' +
+'.imc_village { margin-left: 5px; }' +
+'.imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'.imc_info1_free { width: 30px; text-align: right; display: inline-block; margin-right: 20px; }' +
+'.imc_info2 { width: 20px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'.imc_info2_free { width: 20px; text-align: right; display: inline-block; }' +
+'.imc_info3,' +
+'.imc_info4,' +
+'.imc_info5 { width: 71px; text-align: right; display: inline-block; margin-right: 20px; }' +
+'.imc_info6,' +
+'.imc_info7 { width: 85px; text-align: right; display: inline-block; }' +
+'.imc_info8 { width: 91px; border-style: none; }' +
+'.imc_info9 { padding-left: 5px; }' +
 /* カード */
-.ig_deck_smallcardarea { float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }
-.ig_deck_smallcardarea.imc_disabled { opacity:0.7; }
-.ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }
-.ig_deck_smallcardarea TR { height: 15px; }
-.ig_deck_smallcardarea TH { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #ff0; }
-.ig_deck_smallcardarea TD { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #fff; }
-.imc_card_header { position: relative; color: #fff; }
-.imc_infotype_2 .imc_status1 { display: none; }
-.imc_infotype_1 .imc_status2 { display: none; }
-.imc_disabled .imc_card_header { color: #999; }
-.imc_cardname { font-weight: bold; }
-.imc_rarity { position: absolute; left: 88px; font-size: 10px; line-height: 16px; }
-.imc_cost { position: absolute; left: 100px; font-size: 11px; line-height: 17px; letter-spacing: -1px; }
-.imc_rank { color: red; font-weight: bold; font-size: 11px; }
-.imc_lv { font-size: 11px; letter-spacing: -1px; }
-.imc_card_status TH { width: 45px; }
-.imc_card_status .emphasis { background-color: #808080; }
-.imc_card_status .imc_solmax { background-color: #642; }
-.imc_card_status .imc_power { background-color: #246; }
-.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }
-.imc_card_param { }
-.imc_card_skill { }
-.imc_card_skill TH { width: 20px; }
+'.ig_deck_smallcardarea { float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
+'.ig_deck_smallcardarea.imc_disabled { opacity:0.7; }' +
+'.ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }' +
+'.ig_deck_smallcardarea TR { height: 15px; }' +
+'.ig_deck_smallcardarea TH { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #ff0; }' +
+'.ig_deck_smallcardarea TD { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #fff; }' +
+'.imc_card_header { position: relative; color: #fff; }' +
+'.imc_infotype_2 .imc_status1 { display: none; }' +
+'.imc_infotype_1 .imc_status2 { display: none; }' +
+'.imc_disabled .imc_card_header { color: #999; }' +
+'.imc_cardname { font-weight: bold; }' +
+'.imc_rarity { position: absolute; left: 88px; font-size: 10px; line-height: 16px; }' +
+'.imc_cost { position: absolute; left: 100px; font-size: 11px; line-height: 17px; letter-spacing: -1px; }' +
+'.imc_rank { color: red; font-weight: bold; font-size: 11px; }' +
+'.imc_lv { font-size: 11px; letter-spacing: -1px; }' +
+'.imc_card_status TH { width: 45px; }' +
+'.imc_card_status .emphasis { background-color: #808080; }' +
+'.imc_card_status .imc_solmax { background-color: #642; }' +
+'.imc_card_status .imc_power { background-color: #246; }' +
+'.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
+'.imc_card_param { }' +
+'.imc_card_skill { }' +
+'.imc_card_skill TH { width: 20px; }' +
 /* HP・討伐ゲージ用バー */
-.imc_bar_title { color: white; font-size: 10px; }
-.imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }
-.imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }
-.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }
+'.imc_bar_title { color: white; font-size: 10px; }' +
+'.imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
+'.imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
+'.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
 
 /* フィルタ */
-#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }
-#imi_command_selecter LI:hover .imc_pulldown { display: block; }
-#imi_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }
-#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }
-#ig_deck_smallcardarea_out .imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }
+'#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
+'#imi_command_selecter LI:hover .imc_pulldown { display: block; }' +
+'#imi_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
+'#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
+'#ig_deck_smallcardarea_out .imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
 
-#imi_new_deck { float: right; margin-right: 16px; }
-#imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }
-#imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }
-#imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }
-#imi_new_deck #imi_info_change.imc_infotype_1:after { content: '表示１' }
-#imi_new_deck #imi_info_change.imc_infotype_2:after { content: '表示２' }
+'#imi_new_deck { float: right; margin-right: 16px; }' +
+'#imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
+'#imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_new_deck #imi_info_change.imc_infotype_1:after { content: "表示１" }' +
+'#imi_new_deck #imi_info_change.imc_infotype_2:after { content: "表示２" }' +
 
 /* 兵種変更 */
-#imi_unitedit { margin: auto; }
-#imi_unitedit TH:first-child { width: 60px; }
-#imi_unitedit TD { width: 40px; cursor: pointer; }
-#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }
-#imi_unitedit .imc_selected { background-color: #f9dea1; }
+'#imi_unitedit { margin: auto; }' +
+'#imi_unitedit TH:first-child { width: 60px; }' +
+'#imi_unitedit TD { width: 40px; cursor: pointer; }' +
+'#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
+'#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
 
 /* style調整 */
-#material { line-height: 14px; }
-#material IMG { margin-top: -3px; }
-#map_effect_atc { line-height: 14px; }
-#map_effect_atc IMG { vertical-align: middle; margin-top: -3px; padding-right: 2px; }
-DIV.ig_mappanel_maindataarea { height: auto !important; }
-DIV.ig_mappanel_dataarea{ height: auto !important; }
-P.areaDir { top: 202px; left: 536px; }
-]]></>,
+'#material { line-height: 14px; }' +
+'#material IMG { margin-top: -3px; }' +
+'#map_effect_atc { line-height: 14px; }' +
+'#map_effect_atc IMG { vertical-align: middle; margin-top: -3px; padding-right: 2px; }' +
+'DIV.ig_mappanel_maindataarea { height: auto !important; }' +
+'DIV.ig_mappanel_dataarea{ height: auto !important; }' +
+'P.areaDir { top: 202px; left: 536px; }' +
+'',
 
 //. main
 main: function() {
@@ -9665,64 +9663,64 @@ layouterMapInfo: function() {
 		html;
 
 	//拠点情報
-	html = '' + <><![CDATA[
-	<table id="imi_base_conditions" class="imc_table">
-	<tr/>
-		<th>種別</th>
-		<td style="text-align: left">
-			<label><input type="checkbox" name="imn_type" value="|城|" />本領</label>
-			<label><input type="checkbox" name="imn_type" value="|砦|村|" />所領</label>
-			<label><input type="checkbox" name="imn_type" value="|出城|" />出城</label>
-			<label><input type="checkbox" name="imn_type" value="|陣|" />陣</label>
-			<label><input type="checkbox" name="imn_type" value="|陥落|" />陥落</label>
-			<label><input type="checkbox" name="imn_type" value="|領地|" />領地</label>
-			<label><input type="checkbox" name="imn_type" value="|空き地|" />空き地</label>
-			<select name="imn_rank">
-				<option value="0">全て</option>
-				<option value="1">★１以下</option>
-				<option value="2">★２以下</option>
-				<option value="3">★３以下</option>
-				<option value="4">★４以下</option>
-				<option value="5">★５以下</option>
-				<option value="6">★６以上</option>
-				<option value="7">★７以上</option>
-				<option value="8">★８以上</option>
-			</select>
-		</td>
-	</tr>
-	<tr>
-		<th>識別</th>
-		<td style="text-align: left">
-			<label><input type="radio" name="imn_discriminant" value="" />全て</label>
-			<label><input type="radio" name="imn_discriminant" value="|自分|" />自分</label>
-			<label><input type="radio" name="imn_discriminant" value="|自分|同盟|" />同盟</label>
-			<label><input type="radio" name="imn_discriminant" value="|味方|" />味方</label>
-			<label><input type="radio" name="imn_discriminant" value="|敵|" />敵</label>
-			<label><input type="radio" name="imn_discriminant" value="|-|" />無し</label>
-		</td>
-	</tr>
-	<tr/>
-		<th>同盟名</th>
-		<td style="text-align: left">
-			<input type="text" name="imn_alliance" value="" />
-		</td>
-	</tr>
-	</table>
-	<table class="imc_table" style="margin-bottom: 20px;">
-	<thead><tr>
-		<th style="width: 120px">同盟名</th>
-		<th style="width: 120px">城主名</th>
-		<th style="width: 130px">城名</th>
-		<th style="width: 35px">種別</th>
-		<th style="width: 25px">規模</th>
-		<th style="width: 30px">識別</th>
-		<th style="width: 30px">人口</th>
-		<th style="width: 56px">座標</th>
-		<th style="width: 30px">距離</th>
-	</tr></thead>
-	<tbody id="imi_base_list"></tbody>
-	</table>
-	]]></>;
+	html = '' +
+	'<table id="imi_base_conditions" class="imc_table">' +
+	'<tr/>' +
+		'<th>種別</th>' +
+		'<td style="text-align: left">' +
+			'<label><input type="checkbox" name="imn_type" value="|城|" />本領</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|砦|村|" />所領</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|出城|" />出城</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|陣|" />陣</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|陥落|" />陥落</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|領地|" />領地</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|空き地|" />空き地</label>' +
+			'<select name="imn_rank">' +
+				'<option value="0">全て</option>' +
+				'<option value="1">★１以下</option>' +
+				'<option value="2">★２以下</option>' +
+				'<option value="3">★３以下</option>' +
+				'<option value="4">★４以下</option>' +
+				'<option value="5">★５以下</option>' +
+				'<option value="6">★６以上</option>' +
+				'<option value="7">★７以上</option>' +
+				'<option value="8">★８以上</option>' +
+			'</select>' +
+		'</td>' +
+	'</tr>' +
+	'<tr>' +
+		'<th>識別</th>' +
+		'<td style="text-align: left">' +
+			'<label><input type="radio" name="imn_discriminant" value="" />全て</label>' +
+			'<label><input type="radio" name="imn_discriminant" value="|自分|" />自分</label>' +
+			'<label><input type="radio" name="imn_discriminant" value="|自分|同盟|" />同盟</label>' +
+			'<label><input type="radio" name="imn_discriminant" value="|味方|" />味方</label>' +
+			'<label><input type="radio" name="imn_discriminant" value="|敵|" />敵</label>' +
+			'<label><input type="radio" name="imn_discriminant" value="|-|" />無し</label>' +
+		'</td>' +
+	'</tr>' +
+	'<tr/>' +
+		'<th>同盟名</th>' +
+		'<td style="text-align: left">' +
+			'<input type="text" name="imn_alliance" value="" />' +
+		'</td>' +
+	'</tr>' +
+	'</table>' +
+	'<table class="imc_table" style="margin-bottom: 20px;">' +
+	'<thead><tr>' +
+		'<th style="width: 120px">同盟名</th>' +
+		'<th style="width: 120px">城主名</th>' +
+		'<th style="width: 130px">城名</th>' +
+		'<th style="width: 35px">種別</th>' +
+		'<th style="width: 25px">規模</th>' +
+		'<th style="width: 30px">識別</th>' +
+		'<th style="width: 30px">人口</th>' +
+		'<th style="width: 56px">座標</th>' +
+		'<th style="width: 30px">距離</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_base_list"></tbody>' +
+	'</table>' +
+	'';
 
 	$( html ).appendTo('#imi_base')
 	.change( Map.analyzeReport )
@@ -9787,44 +9785,44 @@ layouterSituation: function() {
 		arrival = settings.arrival || 0,
 		html;
 
-	html = '' + <><![CDATA[
-	<table id="imi_raid_conditions" class="imc_table">
-	<tr>
-		<th>着弾まで</th>
-		<td>
-			<label><input type="radio" name="imn_arrival" value="10" />１０分以内</label>
-			<label><input type="radio" name="imn_arrival" value="20" />２０分以内</label>
-			<label><input type="radio" name="imn_arrival" value="30" />３０分以内</label>
-			<label><input type="radio" name="imn_arrival" value="0" />全て</label>
-		</td>
-	</tr>
-	</table>
-	<br/>
-	<table class="imc_table">
-	<thead><tr>
-		<th width="130">部隊</th>
-		<th width="140">発射地点</th>
-		<th>距離</th>
-		<th width="30">種別</th>
-		<th width="140">着弾地点</th>
-		<th width="80">着弾時間</th>
-		<th width="50">着弾まで</th>
-	</tr></thead>
-	<tbody id="imi_raid_list"></tbody>
-	</table>
-	<hr style="display: block; margin: 10px 0px; border-color: #ccc"/>
-	<table class="ig_battle_table imc_table">
-	<thead><tr>
-		<th width="30">拠点</th>
-		<th>城主名</th>
-		<th>同盟</th>
-		<th>地名</th>
-		<th width="50">部隊数</th>
-		<th width="50">敵襲</th>
-	</tr></thead>
-	<tbody id="imi_situation_list"></tbody>
-	</table>
-	]]></>;
+	html = '' +
+	'<table id="imi_raid_conditions" class="imc_table">' +
+	'<tr>' +
+		'<th>着弾まで</th>' +
+		'<td>' +
+			'<label><input type="radio" name="imn_arrival" value="10" />１０分以内</label>' +
+			'<label><input type="radio" name="imn_arrival" value="20" />２０分以内</label>' +
+			'<label><input type="radio" name="imn_arrival" value="30" />３０分以内</label>' +
+			'<label><input type="radio" name="imn_arrival" value="0" />全て</label>' +
+		'</td>' +
+	'</tr>' +
+	'</table>' +
+	'<br/>' +
+	'<table class="imc_table">' +
+	'<thead><tr>' +
+		'<th width="130">部隊</th>' +
+		'<th width="140">発射地点</th>' +
+		'<th>距離</th>' +
+		'<th width="30">種別</th>' +
+		'<th width="140">着弾地点</th>' +
+		'<th width="80">着弾時間</th>' +
+		'<th width="50">着弾まで</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_raid_list"></tbody>' +
+	'</table>' +
+	'<hr style="display: block; margin: 10px 0px; border-color: #ccc"/>' +
+	'<table class="ig_battle_table imc_table">' +
+	'<thead><tr>' +
+		'<th width="30">拠点</th>' +
+		'<th>城主名</th>' +
+		'<th>同盟</th>' +
+		'<th>地名</th>' +
+		'<th width="50">部隊数</th>' +
+		'<th width="50">敵襲</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_situation_list"></tbody>' +
+	'</table>' +
+	'';
 
 	$( html ).appendTo('#imi_situation');
 
@@ -9977,16 +9975,16 @@ layouterSituation: function() {
 layouterWarReport: function() {
 	var html;
 
-	html = '' + <><![CDATA[
-		<table class="ig_battle_table imc_table">
-		<thead><tr>
-			<th width="30">攻守</th>
-			<th>ログ</th>
-			<th width="80">時間</th>
-		</tr></thead>
-		<tbody id="imi_warreport_list"></tbody>
-		</table>
-	]]></>;
+	html = '' +
+	'<table class="ig_battle_table imc_table">' +
+	'<thead><tr>' +
+		'<th width="30">攻守</th>' +
+		'<th>ログ</th>' +
+		'<th width="80">時間</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_warreport_list"></tbody>' +
+	'</table>' +
+	'';
 
 	$( html ).appendTo('#imi_warlist');
 },
@@ -9995,22 +9993,22 @@ layouterWarReport: function() {
 layouterRanking: function() {
 	var html;
 
-	html = '' + <><![CDATA[
-	<table class="imc_table">
-	<thead><tr>
-		<th width="65">国</th>
-		<th width="30">順位</th>
-		<th width="130">城主名</th>
-		<th width="130">同盟</th>
-		<th width="45">戦功</th>
-		<th width="45">攻撃</th>
-		<th width="45">防御</th>
-		<th width="40">人口</th>
-		<th width="45">総合</th>
-	</tr></thead>
-	<tbody id="imi_ranking_list"></tbody>
-	</table>
-	]]></>;
+	html = '' +
+	'<table class="imc_table">' +
+	'<thead><tr>' +
+		'<th width="65">国</th>' +
+		'<th width="30">順位</th>' +
+		'<th width="130">城主名</th>' +
+		'<th width="130">同盟</th>' +
+		'<th width="45">戦功</th>' +
+		'<th width="45">攻撃</th>' +
+		'<th width="45">防御</th>' +
+		'<th width="40">人口</th>' +
+		'<th width="45">総合</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_ranking_list"></tbody>' +
+	'</table>' +
+	'';
 
 	$( html ).appendTo('#imi_ranking');
 },
@@ -10019,19 +10017,19 @@ layouterRanking: function() {
 layouterScore: function() {
 	var html;
 
-	html = '' + <><![CDATA[
-	<table class="imc_table">
-	<thead><tr>
-		<th width="65">国</th>
-		<th width="30">順位</th>
-		<th width="130">城主名</th>
-		<th width="130">同盟</th>
-		<th width="100">一戦撃破</th>
-		<th width="100">一戦防衛</th>
-	</tr></thead>
-	<tbody id="imi_score_list"></tbody>
-	</table>
-	]]></>;
+	html = '' +
+	'<table class="imc_table">' +
+	'<thead><tr>' +
+		'<th width="65">国</th>' +
+		'<th width="30">順位</th>' +
+		'<th width="130">城主名</th>' +
+		'<th width="130">同盟</th>' +
+		'<th width="100">一戦撃破</th>' +
+		'<th width="100">一戦防衛</th>' +
+	'</tr></thead>' +
+	'<tbody id="imi_score_list"></tbody>' +
+	'</table>' +
+	'';
 
 	$( html ).appendTo('#imi_score');
 },
@@ -10256,20 +10254,20 @@ fortressLink2: function() {
 Page.registerAction( 'war', 'list', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 合戦報告書 */
-.ig_battle_pagelist { height: auto; padding: 5px 0px; }
-.ig_battle_pagelist UL { padding: 0px; margin: 0px; }
-#imi_list { width: 668px; height: 210px; margin-bottom: 15px; overflow-y: scroll; }
-#imi_list .imc_selected { background-color: #f9dea1; }
-#imi_war_detail { width: 668px; height: 470px; overflow: auto; }
-TABLE.ig_battle_table { position: relative; }
-TABLE.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }
-TABLE.ig_battle_table TD A { line-height: 18px; }
-.ig_battle_report_icon1,
-.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }
-.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; }
-]]></>,
+'.ig_battle_pagelist { height: auto; padding: 5px 0px; }' +
+'.ig_battle_pagelist UL { padding: 0px; margin: 0px; }' +
+'#imi_list { width: 668px; height: 210px; margin-bottom: 15px; overflow-y: scroll; }' +
+'#imi_list .imc_selected { background-color: #f9dea1; }' +
+'#imi_war_detail { width: 668px; height: 470px; overflow: auto; }' +
+'TABLE.ig_battle_table { position: relative; }' +
+'TABLE.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
+'TABLE.ig_battle_table TD A { line-height: 18px; }' +
+'.ig_battle_report_icon1,' +
+'.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
+'.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; }' +
+'',
 
 //. main
 main: function() {
@@ -10354,14 +10352,14 @@ main: function() {
 Page.registerAction( 'country', 'all', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 日本地図 */
-#ig_boxInner_japanmap { margin-bottom: 5px; padding: 0px !important; width: 936px !important; }
-#ig_battle_mainmenu { position: relative; top: 5px; margin-bottom: 15px; }
-.ig_japanrank_unitname { width: 169px; }
-.ig_japanrank_unitname IMG { margin-top: -2px; }
-.ig_japanrank_unitnow { width: 257px; }
-]]></>
+'#ig_boxInner_japanmap { margin-bottom: 5px; padding: 0px !important; width: 936px !important; }' +
+'#ig_battle_mainmenu { position: relative; top: 5px; margin-bottom: 15px; }' +
+'.ig_japanrank_unitname { width: 169px; }' +
+'.ig_japanrank_unitname IMG { margin-top: -2px; }' +
+'.ig_japanrank_unitnow { width: 257px; }' +
+''
 
 });
 
@@ -10496,9 +10494,9 @@ layouter: function() {
 Page.registerAction( 'alliance', 'level', {
 
 //. style
-style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
-]]></>
+style: '' +
+'INPUT { ime-mode: disabled; }' +
+''
 
 });
 
@@ -10522,12 +10520,12 @@ style: Page.getAction( 'user', 'ranking', 'style' )
 Page.registerAction( 'alliance', 'alliance_gold_mine_history', {
 
 //.style
-style: '' + <><![CDATA[
-TD.imc_wood  { background-color: #b75; }
-TD.imc_stone { background-color: #5b7; }
-TD.imc_iron  { background-color: #b7b; }
-TD.imc_rice  { background-color: #bb5; }
-]]></>,
+style: '' +
+'TD.imc_wood  { background-color: #b75; }' +
+'TD.imc_stone { background-color: #5b7; }' +
+'TD.imc_iron  { background-color: #b7b; }' +
+'TD.imc_rice  { background-color: #bb5; }' +
+'',
 
 //. main
 main: function() {
@@ -10546,18 +10544,18 @@ main: function() {
 Page.registerAction( 'report', 'list', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 報告書 */
-#ig_deckheadmenubox { height: 55px; }
-.ig_decksection_innertop { height: 8px; }
-#imi_list { width: 710px; height: 210px; margin-bottom: 10px; overflow-y: scroll; }
-#imi_list .imc_selected TD { background-color: #f9dea1; }
-#imi_list TABLE { position: relative; width: 690px; margin: 0px; }
-#imi_list TABLE TD { height: 18px; padding: 2px 8px; line-height: 18px; }
-#imi_report_detail { width: 710px; min-height: 500px; }
-#imi_report_detail TABLE { width: 100%; }
-UL.pager { padding: 7px 0px 5px 0px; margin: 0px; }
-]]></>,
+'#ig_deckheadmenubox { height: 55px; }' +
+'.ig_decksection_innertop { height: 8px; }' +
+'#imi_list { width: 710px; height: 210px; margin-bottom: 10px; overflow-y: scroll; }' +
+'#imi_list .imc_selected TD { background-color: #f9dea1; }' +
+'#imi_list TABLE { position: relative; width: 690px; margin: 0px; }' +
+'#imi_list TABLE TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
+'#imi_report_detail { width: 710px; min-height: 500px; }' +
+'#imi_report_detail TABLE { width: 100%; }' +
+'UL.pager { padding: 7px 0px 5px 0px; margin: 0px; }' +
+'',
 
 //. main
 main: function() {
@@ -10650,21 +10648,21 @@ getDetail: function() {
 Page.registerAction( 'message', 'inbox', {
 
 //. style
-style: '' + <><![CDATA[
+style: '' +
 /* 受信箱 */
-#ig_deckheadmenubox.normal { height: 55px; margin-bottom: 0px; }
-#ig_deckmenu { width: 710px; padding: 0px; position: static; margin: 0px auto; color: black; }
-#ig_deckmenu UL.secondmenu { width: 100%; padding: 0px; }
-#ig_deckmenu LI { margin: 2px 0px; padding: 0px 8px; }
-#ig_deckmenu LI.textmenu { margin: 7px 0px; }
-.common_box3bottom { padding: 0px 15px 15px 12px; }
-#imi_list { width: 710px; height: 210px; margin: 0px auto; margin-bottom: 10px; overflow-y: scroll; }
-#imi_list .imc_selected { background-color: #f9dea1; }
-#imi_list TABLE { position: relative; }
-#imi_list TABLE TD { height: 18px; padding: 2px 8px; line-height: 18px; }
-#imi_message_detail { width: 710px; min-height: 500px; margin: 0px auto; }
-UL.pager { padding: 0px; margin: 5px 0px 5px 0px; }
-]]></>,
+'#ig_deckheadmenubox.normal { height: 55px; margin-bottom: 0px; }' +
+'#ig_deckmenu { width: 710px; padding: 0px; position: static; margin: 0px auto; color: black; }' +
+'#ig_deckmenu UL.secondmenu { width: 100%; padding: 0px; }' +
+'#ig_deckmenu LI { margin: 2px 0px; padding: 0px 8px; }' +
+'#ig_deckmenu LI.textmenu { margin: 7px 0px; }' +
+'.common_box3bottom { padding: 0px 15px 15px 12px; }' +
+'#imi_list { width: 710px; height: 210px; margin: 0px auto; margin-bottom: 10px; overflow-y: scroll; }' +
+'#imi_list .imc_selected { background-color: #f9dea1; }' +
+'#imi_list TABLE { position: relative; }' +
+'#imi_list TABLE TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
+'#imi_message_detail { width: 710px; min-height: 500px; margin: 0px auto; }' +
+'UL.pager { padding: 0px; margin: 5px 0px 5px 0px; }' +
+'',
 
 //. main
 main: function() {
@@ -10864,9 +10862,9 @@ main: function() {
 Page.registerAction( 'senkuji', 'senkuji_lineup', {
 
 //. style
-style: '' + <><![CDATA[
-.ig_deck_smallcardarea { border-bottom: solid 1px #666; }
-]]></>
+style: '' +
+'.ig_deck_smallcardarea { border-bottom: solid 1px #666; }' +
+''
 
 });
 
@@ -10874,9 +10872,9 @@ style: '' + <><![CDATA[
 Page.registerAction( 'quest', 'index', {
 
 //. style
-style: '' + <><![CDATA[
-INPUT { ime-mode: disabled; }
-]]></>
+style: '' +
+'INPUT { ime-mode: disabled; }' +
+''
 
 });
 
