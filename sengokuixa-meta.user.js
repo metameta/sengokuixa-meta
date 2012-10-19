@@ -945,7 +945,7 @@ tb_show: function( j, b, h ) {
 
 	//微調整
 	$tb.css({ height: 'auto' })
-	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 ) });
+	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 - 20 ) });
 
 	if ( $tb.find('.imc_table').length > 0 ) { return; }
 
@@ -1029,7 +1029,10 @@ tb_show: function( j, b, h ) {
 
 	$table = $( html ).appendTo( $tb );
 	$table.find('TR').filter(':even').css({ backgroundColor: '#eee' });
-	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 ) });
+	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 - 20 ) });
+	$tb.find('IMG[src$="nouryoku_title_white.png"]').parent().remove();
+	$tb.find('#trade_btn').css('padding-bottom', '10px');
+	$tb.find('#table_posi').css('background-color', '#000');
 
 	if ( card.rarity == '雅' ) {
 		$tb.find('.ig_card_cost').removeClass('ig_card_cost').addClass('ig_card_cost_over');
@@ -1430,6 +1433,8 @@ style: '' +
 '.imc_table TD { padding: 4px 5px; text-align: center; vertical-align: middle; border-bottom: dotted 1px #76601D; border-left: solid 1px #76601D; }' +
 '.imc_table.td_right TD { text-align: right; }' +
 
+'#TB_window .imc_table { background-color: #fff; color: #000; }' +
+
 /* カウントダウン用 */
 '.imc_countdown_alert { }' +
 '.imc_countdown_finish { }' +
@@ -1601,9 +1606,53 @@ npcPower: (function() {
 		'15112': [ 98560, 181360, 126160, 115120],
 		'21601': [125620,  95820, 230020, 109860],
 		'33310': [124800, 124800, 124800, 124800]
+	},
+	{
+		//５章
+		//★１
+		'10000': [245, 185, 430, 370],
+		'01000': [155, 245, 185, 173],
+		//★２
+		'00201': [370, 550, 155, 203],
+		'11020': [520, 520, 520, 448],
+		//★３
+		'11101': [ 735, 2265, 1245, 1041],
+		'11110': [1245,  735, 2265, 1041],
+		'11110': [2265, 1245,  735, 1551],
+		//★４
+		'11101': [5145, 5145, 5145, 5145],
+		'12100': [8255, 5265, 3770, 6162],
+		'11210': [5260, 3780, 8220, 4668],
+		'21131': [3645, 8005, 5165, 4597],
+		//★５
+		'50201': [10435, 28673, 19320, 13842],
+		'32010': [21680, 12200, 24050, 16466],
+		'23010': [18965, 10383, 28990, 14920],
+		'10501': [18535, 18535, 18535, 16771],
+		'01520': [28950, 19065, 10483, 20471],
+		'04150': [12630, 22090, 24160, 13804],
+		//★６
+		'22210': [ 69090,  34545, 78960, 50196],
+		'43311': [ 51985,  28288, 99380, 42506],
+		'45232': [ 76025,  38013, 67840, 53602],
+		'25132': [ 27140, 101930, 52070, 42098],
+		'32431': [ 72345,  69920, 37523, 57283],
+		'11450': [102015,  51985, 26970, 66994],
+		//★７
+		'15152':  [ 77070, 308280, 154140, 123312],
+		'22230':  [ 88105, 286555, 154255, 127795],
+		'12630':  [154050,  77025, 308100, 123240],
+		'910651': [169650, 169650, 169650, 150930],
+		'52222':  [291770, 164890,  82445, 194809],
+		'33341':  [240945, 154185, 110805, 180213],
+		//★８
+		'72221': [172340, 141805, 302010, 154246],
+		'27213': [257500, 178508, 150728, 203210],
+		'22702': [140220, 267480, 182640, 165672],
+		'33342': [182440, 182440, 182440, 182440]
 	}];
 
-	return [ {}, data[0], data[0], data[1], data[1] ][ Env.chapter ] || {};
+	return [ {}, data[0], data[0], data[1], data[1], data[2] ][ Env.chapter ] || {};
 })(),
 
 //. hpRecovery
@@ -2083,10 +2132,10 @@ function analyzeArea( $area_list, img_list ) {
 
 		//0:城名 1:城主名 2:人口 3:座標 4:同盟名 5:価値 6:距離 7:木 8:綿 9:鉄 10:糧 11:池 12:NPCフラグ 13:画像
 		data.castle     = ( array[0] != '　' ) ? array[0] : '';
-		data.user       = ( array[1] != '　' ) ? array[1].replace(/\(\d+\)$/, '') : '';
+		data.user       = ( array[1] != '　' ) ? array[1].replace(/\([\d-]+\)$/, '') : '';
 		data.population = ( array[2] != '　' ) ? array[2] : '-';
 		data.point      = array[3].replace(/[\(\)]/g, '');
-		data.alliance   = ( array[4] != '　' ) ? array[4].replace(/\(\d+\)$/, '') : '';
+		data.alliance   = ( array[4] != '　' ) ? array[4].replace(/\([\d-]+\)$/, '') : '';
 		data.distance   = array[6];
 		data.npc        = array[ array.length - 2 ]; //通常マップと新合戦場でパラメータ数が違う為
 
@@ -2236,7 +2285,11 @@ function contextmenu() {
 
 	if ( data.user != load ) {
 		menu['最寄りの拠点'] = {
-			'部隊作成': contextmenu.createUnitNearby,
+			'部隊作成【第一組】': function() { contextmenu.createUnitNearby( data, 1 ); },
+			'部隊作成【第二組】': function() { contextmenu.createUnitNearby( data, 2 ); },
+			'部隊作成【第三組】': function() { contextmenu.createUnitNearby( data, 3 ); },
+			'部隊作成【第四組】': function() { contextmenu.createUnitNearby( data, 4 ); },
+			'部隊作成【全武将】': function() { contextmenu.createUnitNearby( data, 0 ); },
 			'ここへ部隊出陣': contextmenu.send2,
 			'セパレーター': $.contextMenu.separator,
 			'拠点選択': contextmenu.nearbyVillage
@@ -2247,7 +2300,11 @@ function contextmenu() {
 	}
 	else {
 		menu['この拠点'] = {
-			'部隊作成': contextmenu.createUnit,
+			'部隊作成【第一組】': function() { contextmenu.createUnit( data, 1 ); },
+			'部隊作成【第二組】': function() { contextmenu.createUnit( data, 2 ); },
+			'部隊作成【第三組】': function() { contextmenu.createUnit( data, 3 ); },
+			'部隊作成【第四組】': function() { contextmenu.createUnit( data, 4 ); },
+			'部隊作成【全武将】': function() { contextmenu.createUnit( data, 0 ); },
 			'セパレーター': $.contextMenu.separator,
 			'拠点選択': contextmenu.changeVillage,
 			'拠点名変更': contextmenu.renameVillage
@@ -2514,25 +2571,23 @@ toCamp: function() {
 },
 
 //.. createUnit - この拠点に部隊作成
-createUnit: function() {
-	var $this = $(this),
-		idx   = $this.attr('idx').toInt(),
-		data  = analyzedData[ idx ],
-		village = Util.getVillageByName( data.castle );
+createUnit: function( data, brigade ) {
+	var village = Util.getVillageByName( data.castle );
 
-	Deck.dialog( village );
+	brigade |= 0;
+
+	Deck.dialog( village, brigade );
 },
 
 //.. createUnitNearby
-createUnitNearby: function() {
-	var $this = $(this),
-		idx   = $this.attr('idx').toInt(),
-		data  = analyzedData[ idx ],
-		village = Util.getVillageNearby( data.x, data.y, data.country ),
+createUnitNearby: function( data, brigade ) {
+	var village = Util.getVillageNearby( data.x, data.y, data.country ),
 		coord = data.x + ',' + data.y;
 
+	brigade |= 0;
+
 	if ( village ) {
-		Deck.dialog( village, coord );
+		Deck.dialog( village, brigade, coord );
 	}
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
@@ -4089,7 +4144,7 @@ contextmenu: function() {
 });
 
 //. Deck.dialog
-Deck.dialog = function( village, coord ) {
+Deck.dialog = function( village, brigade, coord ) {
 	var enemylist = MetaStorage('UNIT_STATUS').get('敵襲') || [],
 		now = Util.getServerTime(),
 		target_x, target_y,
@@ -4248,7 +4303,7 @@ Deck.dialog = function( village, coord ) {
 	}
 
 	Deck.commandMenu( $('#imi_command_selecter') );
-	Deck.dialog.loadCard().done(function() {
+	Deck.dialog.loadCard( brigade ).done(function() {
 		Deck.update();
 		if ( coord ) {
 			dialog.buttons.attr('disabled', false);
@@ -4262,13 +4317,13 @@ Deck.dialog = function( village, coord ) {
 $.extend( Deck.dialog, {
 
 //.. loaded
-loaded: false,
+loaded: null,
 
 //.. loadCard
-loadCard: function() {
+loadCard: function( brigade ) {
 	var pageData = [], cardlist;
 
-	if ( Deck.dialog.loaded ) {
+	if ( Deck.dialog.loaded === brigade ) {
 		$('#imi_info').remove();
 		Deck.setup( Deck.freeCost, Deck.ano );
 
@@ -4281,6 +4336,9 @@ loadCard: function() {
 		return $.Deferred().resolve();
 	}
 
+	Deck.dialog.loaded = null;
+	Deck.analyzedData = {};
+
 	return $.post( '/card/deck.php', {
 		target_card: '',
 		select_assign_no: 4,
@@ -4292,6 +4350,7 @@ loadCard: function() {
 		deck_mode: 'nomal',
 		p: 1,
 		myselect2: '',
+		select_card_group: brigade,
 		'sort_order[]': [ 1, 0, 0 ],
 		'sort_order_type[]': [ 0, 0, 0 ],
 		show_deck_card_count: 15
@@ -4331,7 +4390,7 @@ loadCard: function() {
 		if ( next > lastPage ) { return; }
 
 		for ( var i = 0; next <= lastPage && i < 3; next++, i++ ) {
-			tasks[ i ] = $.get( '/card/deck.php', { myselect: '', ano: 4, dmo: 'normal', p: next });
+			tasks[ i ] = $.get( '/card/deck.php', { myselect: '', ano: 4, dmo: 'normal', select_card_group: brigade, p: next });
 		}
 
 		return $.when.apply( $, tasks )
@@ -4359,7 +4418,7 @@ loadCard: function() {
 		}
 
 		$('#imi_info').remove();
-		Deck.dialog.loaded = true;
+		Deck.dialog.loaded = brigade;
 	});
 },
 
@@ -5181,7 +5240,7 @@ analyze: function() {
 
 	//組
 	text = $elem.find('.ig_deck_unitbox > DIV').attr('class');
-	this.brigade = text.match(/unit_brigade(\d)/)[ 1 ];
+	this.brigade = text.match(/unit_brigade(\d)/)[ 1 ].toInt();
 
 	//「兵士編成」ボタンがある：編成・合成可、ボタンがない：出品中
 	if ( $elem.find('IMG[alt="兵士編成"]').length == 0 ) {
@@ -6997,7 +7056,7 @@ training: function( name ) {
 			key   = '訓練_' + name,
 			data  = Soldier.getByName( name ),
 			close = storage.get( key ),
-			$close, text;
+			$close, html, text;
 
 		//兵種の説明
 		$this.find('.ig_tile_explain').hide();
@@ -7063,7 +7122,21 @@ training: function( name ) {
 		var $input = $this.find('INPUT[type="text"]');
 		if ( $input.length == 0 ) { return; }
 
+		html = '分割回数：<select id="create_count_' + data.type + '">' +
+			'<option value="1">1回</option>' +
+			'<option value="2">2回</option>' +
+			'<option value="3">3回</option>' +
+			'<option value="4">4回</option>' +
+			'<option value="5">5回</option>' +
+			'<option value="6">6回</option>' +
+			'<option value="7">7回</option>' +
+			'<option value="8">8回</option>' +
+			'<option value="9">9回</option>' +
+			'<option value="10">10回</option>' +
+		'</select>';
+
 		$tr.find('FORM').append('<button>複数拠点で訓練する</button>');
+		$tr.find('FORM').append( html );
 		$table
 		.append('<tr><th>拠点</th><th width="70">LV</th>' +
 			'<th width="120"><img alt="訓練する人数" src="' + Env.externalFilePath + '/img/tile/icon_training_num.png"></th>' +
@@ -7084,7 +7157,8 @@ training: function( name ) {
 
 	$('BUTTON').click(function() {
 		var $select = $(this).parent().find('SELECT'),
-			unit_value = $select.val(),
+			unit_value = $select.first().val(),
+			create_count = $select.last().val(),
 			facility = $select.data('facility'),
 			name = $('.basename .on SPAN').text(),
 			current = Util.getVillageByName( name ),
@@ -7096,7 +7170,7 @@ training: function( name ) {
 		ol.message('訓練登録処理開始...');
 
 		storage.set('unit_value', unit_value);
-		self.trainingExecute( facility, current, ol );
+		self.trainingExecute( facility, create_count, current, ol );
 
 		return false;
 	});
@@ -7238,7 +7312,7 @@ trainingDivide: function( e, list ) {
 },
 
 //. trainingExecute
-trainingExecute: function( facility, current, ol ) {
+trainingExecute: function( facility, create_count, current, ol ) {
 	var data = facility.shift(),
 		self = arguments.callee;
 
@@ -7255,7 +7329,7 @@ trainingExecute: function( facility, current, ol ) {
 
 		var href = '/facility/facility.php?x=' + data.x + '&y=' + data.y;
 
-		return $.post( href, { unit_id: data.type, x: data.x, y: data.y, count: data.unit_value, btnSend: true } );
+		return $.post( href, { unit_id: data.type, x: data.x, y: data.y, count: data.unit_value, create_count: create_count, btnSend: true } );
 	})
 	.pipe(function() {
 		if ( facility.length == 0 ) {
@@ -7266,7 +7340,7 @@ trainingExecute: function( facility, current, ol ) {
 			Page.move( href );
 		}
 		else {
-			self.call( self, facility, current, ol );
+			self.call( self, facility, create_count, current, ol );
 		}
 	});
 },
@@ -8108,14 +8182,14 @@ style: '' +
 /* ソート条件選択用 */
 '.ig_decksection_innermid > DIV:first-child { width: 705px; padding: 3px 0px; border: solid 1px #cc9; border-radius: 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); }' +
 '.ig_decksection_innermid > DIV:first-child SELECT { margin-right: 10px; }' +
-'#imi_order_open { margin-left: 50px; padding: 3px 2px 2px 3px; color: #000; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
+'#imi_order_open { margin-left: 40px; padding: 3px 2px 2px 3px; color: #000; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
 '#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }' +
 '#imi_order_open.imc_is_open:after { content: "▲" }' +
 '#imi_order_open.imc_is_close:after { content: "▼" }' +
-'#imi_cardorder_list { position: absolute; clear: both; padding: 10px; margin-left: -1px; width: 685px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }' +
+'#imi_cardorder_list { position: absolute; clear: both; left: 26px; padding: 10px; width: 700px; min-height: 35px; background-color: #F3F2DE; border: solid 1px #cc9; border-top: none; border-radius: 0px 0px 5px 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); z-index: 10; }' +
 '#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; text-align: left; }' +
 '#imi_cardorder_list INPUT { width: 400px; }' +
-'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 485px; cursor: default; white-space: nowrap; overflow: hidden; }' +
+'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 500px; cursor: default; white-space: nowrap; overflow: hidden; }' +
 '#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
 '#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
 '#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
@@ -8347,7 +8421,7 @@ cardOrderSelecter: function() {
 
 	//デッキ画面では両方マッチしてしまうためlastを使用
 	$('.center_posi, #selectarea').last().append( $span );
-	$('#ig_deck_cardlistmenu, .ig_decksection_innermid > DIV:first-child').append( $div );
+	$('#ig_deck_cardlistmenu2, .center_posi').append( $div );
 
 	$span.toggle(
 		function() {
@@ -8746,14 +8820,14 @@ style: '' +
 
 /* ソート条件選択用 */
 '#selectarea SELECT { margin-right: 8px; }' +
-'#imi_order_open { padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
-'#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }' +
+'#imi_order_open { color: #fff; padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
+'#imi_order_open:hover { background-color: #09f; border-color: #069; }' +
 '#imi_order_open.imc_is_open:after { content: "▲" }' +
 '#imi_order_open.imc_is_close:after { content: "▼" }' +
-'#imi_cardorder_list { position: relative; clear: both; left: -9px; padding: 10px; width: 727px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }' +
+'#imi_cardorder_list { position: relative; clear: both; left: 10px; padding: 10px; width: 727px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }' +
 '#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; }' +
 '#imi_cardorder_list INPUT { width: 400px; }' +
-'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 530px; cursor: default; white-space: nowrap; overflow: hidden; }' +
+'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 530px; text-align: left; cursor: default; white-space: nowrap; overflow: hidden; }' +
 '#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
 '#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
 '#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
@@ -8821,9 +8895,11 @@ autoPager: function() {
 		load: function( nextPage ) {
 			var page = nextPage,
 				ano = $('#assign_form INPUT[name="select_assign_no"]').val(),
-				dmo = $('#assign_form INPUT[name="deck_mode"]').val();
+				dmo = $('#assign_form INPUT[name="deck_mode"]').val(),
+				groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
+				group = groupclass.match(/\d(\d)/)[ 1 ];
 
-			return Page.post( '/card/deck.php', { myselect: '', ano: ano, dmo: dmo, p: page });
+			return Page.post( '/card/deck.php', { myselect: '', ano: ano, dmo: dmo, select_card_group: group, p: page });
 		},
 		loaded: function( html ) {
 			var $html = $(html),
@@ -9080,10 +9156,13 @@ villageSelecter: function() {
 		$('#select_village > OPTION[label="' + base + '"]').attr('selected', true);
 	}
 
-	$('#imi_village_info').append(
-		$('DIV.ig_deck_unitdata_assign').clone()
-		.find('#select_village').attr('id', 'imi_select_village').end()
-	)
+	if ( $('#select_village').length == 0 ) {
+		$('.ig_deck_unitdata_assign').clone().appendTo('#imi_village_info');
+	}
+	else {
+		$('#select_village').clone().attr('id', 'imi_select_village')
+		.appendTo('#imi_village_info').wrap('<div class="ig_deck_unitdata_assign deck_wide_select" />');
+	}
 
 	$('#select_village, #imi_select_village').change(function() {
 		var val = $(this).val();
@@ -9472,11 +9551,15 @@ style: '' +
 '#ig_mapbox_container #ig_cur03_w { left: 620px; top: 235px; }' +
 '#ig_mapbox_container #ig_cur04   { left: 650px; top: 210px; }' +
 '#ig_mapbox_container #ig_cur04_w { left: 620px; top: 190px; }' +
-'.ig_mappanel_maindataarea { left: 5px; top: 5px; }' +
-
-/* 表示国セレクタ */
-'#ig_map_country { top: 13px; left: 380px; height: 20px; color: #fff; background: none; }' +
-'#ig_map_country SELECT { margin: 0px 5px; }' +
+'.ig_mappanel_maindataarea { left: 5px; top: 1px; }' +
+'.ig_mappanel_dataarea { background-color: #191919; border: solid 1px #AE922E; background-position: -80px -1px; }' +
+'.ig_mappanel_dataarea TABLE { background-color: #191919; margin-left: -8px; padding-left: 8px; }' +
+'.ig_map_ownertitle,' +
+'.ig_map_grouptitle { width: 40px; }' +
+'.ig_map_ownername,' +
+'.ig_map_groupname { width: 140px; }' +
+'.ig_map_place1,' +
+'.ig_map_population { width: 135px; }' +
 
 '#ig_map_movepanel { left: 7px; top: 327px; width: 200px; height: 53px; border: solid 2px #888; background-position: -10px -14px; }' +
 '#ig_map_movepanel FORM { top: 0px; }' +
@@ -9486,7 +9569,12 @@ style: '' +
 '.ig_map_movepanel_btnarea { top: 20px; }' +
 '.ig_map_movepanel_btnarea INPUT ~ INPUT { display: none; }' +
 
+'#village_name { width: 400px; }' +
 '#mapSubmenu { z-index: 300; }' +
+
+/* 表示国セレクタ */
+'#imi_country_selecter { position: absolute; top: 12px; left: 390px; height: 20px; color: #fff; background: none; z-index: 201; }' +
+'#imi_country_selecter SELECT { margin: 0px 5px; }' +
 
 /* 部隊状況 */
 '#imi_unitstatus { position: absolute; top: 110px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }' +
@@ -9655,12 +9743,15 @@ main: function() {
 
 //. layouter
 layouter: function() {
-	var html;
+	var html, $TR;
 
 	//情報表示欄を削除
-	$('#act_battle_data, #map_youpoint, #map_statusbox, #map_textarea, #map_situation, #map_navi, #map_view_text').hide();
+	$('#act_battle_data, #map_youpoint, #map_statusbox, #map_textarea, #map_situation, #map_view_text').remove();
+	$('.ig_mappanel_dataarea > IMG').remove();
 	//新合戦場ラベル削除
 	$('#ig_new_map_country').remove();
+
+	$('#map_navi, .ig_map_panel_img').hide();
 
 	//移動ボタン
 	$('#ig_cur01, #ig_cur02, #ig_cur03, #ig_cur04, #ig_cur01_w, #ig_cur02_w, #ig_cur03_w, #ig_cur04_w')
@@ -9713,11 +9804,10 @@ layouter: function() {
 		$inputarea.find('INPUT').val('');
 	});
 
-	//情報表示エリア微調整
-	$('DIV.ig_mappanel_dataarea TR').eq( 0 ).find('TD')
-	.eq( 0 ).width( 45 ).end()
-	.eq( 5 ).width( 130 ).end()
-	.eq( 6 ).width( 55 ).end();
+	//情報表示エリア調整
+	$TR = $('.ig_mappanel_dataarea TR');
+	$TR.eq( 0 ).find('TD').eq( 0 ).width( 40 ).text('城主名');
+	$TR.eq( 1 ).find('TD').eq( 0 ).text('同盟名');
 
 	//NPC空き地必要攻撃力表示エリア
 	html = '<tr>' +
@@ -10041,21 +10131,21 @@ layouterSituation: function() {
 			var { sx, sy, sc } = $(this).data();
 			Map.move( sx, sy, sc );
 		};
-		menu['着弾地点を中心に表示'] = function() {
-			var { ex, ey, ec } = $(this).data();
-			Map.move( ex, ey, ec );
-		};
 		menu['合戦報告書'] = function() {
 			var { user } = $(this).data();
 			Map.warList( user );
 		};
 
 		menu['セパレーター1'] = $.contextMenu.separator;
+		menu['この拠点を中心に表示'] = function() {
+			var { ex, ey, ec } = $(this).data();
+			Map.move( ex, ey, ec );
+		};
 		menu['この拠点に部隊作成'] = function() {
 			var { ebase } = $(this).data(),
 				village = Util.getVillageByName( ebase );
 
-			if ( village.id ) {
+			if ( village ) {
 				Deck.dialog( village );
 			}
 			else{
@@ -10248,7 +10338,7 @@ countrySelecter: function() {
 		.appendTo( $selecter );
 	}
 
-	$('#ig_map_country').empty().append('現在').append( $selecter ).append('を表示中');
+	$('<div/>').attr('id', 'imi_country_selecter').append( '現在', $selecter, 'を表示中' ).appendTo('#ig_mapbox');
 },
 
 //. fortressLink
