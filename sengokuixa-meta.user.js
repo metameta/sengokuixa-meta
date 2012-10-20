@@ -936,16 +936,20 @@ tb_init: unsafeWindow.tb_init = function( a ) {
 
 //. tb_show
 tb_show: function( j, b, h ) {
+	var $tb, margintop;
+
 	unsafeWindow.tb_show( j, b, h );
 
 	//カードウィンドウチェック
 	if ( b.indexOf('cardWindow') == -1 ) { return; }
 
-	var $tb = $('#TB_ajaxContent');
+	$tb = $('#TB_ajaxContent');
 
 	//微調整
-	$tb.css({ height: 'auto' })
-	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 - 20 ) });
+	$tb.css({ height: 'auto' });
+	margintop = -Math.floor( $('#TB_window').height() / 2 - 20 );
+	if ( margintop < -350 ) { margintop = -350; }
+	$('#TB_window').css({ marginTop: margintop });
 
 	if ( $tb.find('.imc_table').length > 0 ) { return; }
 
@@ -1029,7 +1033,11 @@ tb_show: function( j, b, h ) {
 
 	$table = $( html ).appendTo( $tb );
 	$table.find('TR').filter(':even').css({ backgroundColor: '#eee' });
-	$('#TB_window').css({ marginTop: -Math.floor( $('#TB_window').height() / 2 - 20 ) });
+
+	margintop = -Math.floor( $('#TB_window').height() / 2 - 20 );
+	if ( margintop < -350 ) { margintop = -350; }
+	$('#TB_window').css({ marginTop: margintop });
+
 	$tb.find('IMG[src$="nouryoku_title_white.png"]').parent().remove();
 	$tb.find('#trade_btn').css('padding-bottom', '10px');
 	$tb.find('#table_posi').css('background-color', '#000');
@@ -1408,6 +1416,10 @@ style: '' +
 '#ig_boxInner_japanmap { padding: 0px !important; width: 936px !important; }' +
 '#ig_battle_mainmenu { position: relative; top: 5px; margin-bottom: 15px; }' +
 
+/* ポップアップ用 */
+'#TB_title { height: auto; }' +
+'#TB_closeAjaxWindow { padding-top: 10px; }' +
+
 /* サイドバー微調整用 */
 '#ig_boxInner_battle { margin-bottom: 5px; padding: 0px !important; width: 936px !important; }' +
 
@@ -1441,7 +1453,7 @@ style: '' +
 '.imc_countdown .imc_countdown_display { font-weight: bold; padding: 0px 1px; }' +
 '.imc_countdown.imc_countdown_alert .imc_countdown_display { color: #c03; }' +
 /* タイムアウト */
-( ( Env.chapter >= 5 ) ? 
+( ( Env.chapter >= 5 ) ?
 '#header #lordNameBox #lordSiteArea { height: 19px; width: 240px; margin: 4px 2px 0px 0px; padding: 0px 0px 0px 3px; line-height: 19px; }' :
 '#header #lordNameBox #lordSiteArea { height: 19px; margin-top: 5px; padding-top: 0px; line-height: 19px; }' ) +
 '#lordSiteArea.imc_countdown { background-color: #15b; }' +
@@ -1502,13 +1514,25 @@ compass: [
 ],
 
 //. fortresses
-fortresses: [[0, 0],
-	[ 12, 28], [ 28, 12], [ 12, 52], [ 36, 36], [ 52, 12], [ 12, 76], [ 36, 60], [ 60, 36], [ 76, 12], [ 12,100],
-	[ 36, 84], [ 60, 60], [ 84, 36], [100, 12], [ 12,124], [ 36,108], [ 60, 84], [ 84, 60], [108, 36], [124, 12],
-	[ 12,148], [ 36,132], [ 60,108], [ 84, 84], [108, 60], [132, 36], [148, 12], [ 36,156], [ 60,132], [ 84,108],
-	[108, 84], [132, 60], [156, 36], [ 60,156], [ 84,132], [108,108], [132, 84], [156, 60], [ 84,156], [108,132],
-	[132,108], [156, 84], [108,156], [132,132], [156,108], [132,156], [156,132], [156,156]
-],
+fortresses: (function() {
+	var data = [[
+		[0, 0],
+		[ 12, 28], [ 28, 12], [ 12, 52], [ 36, 36], [ 52, 12], [ 12, 76], [ 36, 60], [ 60, 36], [ 76, 12], [ 12,100],
+		[ 36, 84], [ 60, 60], [ 84, 36], [100, 12], [ 12,124], [ 36,108], [ 60, 84], [ 84, 60], [108, 36], [124, 12],
+		[ 12,148], [ 36,132], [ 60,108], [ 84, 84], [108, 60], [132, 36], [148, 12], [ 36,156], [ 60,132], [ 84,108],
+		[108, 84], [132, 60], [156, 36], [ 60,156], [ 84,132], [108,108], [132, 84], [156, 60], [ 84,156], [108,132],
+		[132,108], [156, 84], [108,156], [132,132], [156,108], [132,156], [156,132], [156,156]
+	],
+	[
+		[0, 0],
+		[ 12, 28], [ 28, 12], [ 12, 52], [ 36, 36], [ 52, 12], [ 12, 76], [ 36, 60], [ 60, 36], [ 76, 12], [ 12,100],
+		[ 36, 84], [ 60, 60], [ 84, 36], [100, 12], [ 12,124], [ 36,108], [ 60, 84], [ 84, 60], [108, 36], [124, 12],
+		[ 36,132], [ 60,108], [ 84, 84], [108, 60], [132, 36], [ 60,132], [ 84,108], [108, 84], [132, 60], [ 84,132],
+		[108,108], [132, 84], [108,132], [132,108], [132,132]
+	]];
+
+	return [ [], data[0], data[0], data[0], data[0], data[1] ][ Env.chapter ] || [];
+})(),
 
 //. countries
 countries: (function() {
@@ -2130,14 +2154,21 @@ function analyzeArea( $area_list, img_list ) {
 			ary[ idx ] = value.replace(/'/g, '');
 		});
 
+		//通常マップと新合戦場でパラメータ数が違う
 		//0:城名 1:城主名 2:人口 3:座標 4:同盟名 5:価値 6:距離 7:木 8:綿 9:鉄 10:糧 11:池 12:NPCフラグ 13:画像
+		//0:城名 1:城主名 2:座標 3:同盟名 4:価値 5:距離 6:槍補正 7:弓補正 8:馬補正 9:器補正 10:木 11:綿 12:鉄 13:糧 14:池 15:NPCフラグ 16:画像
+		if ( Map.info.country == 20 || Map.info.country == 21 ) {
+			array.splice( 6, 4 );
+			array.splice( 2, 0, '-');
+		}
+
 		data.castle     = ( array[0] != '　' ) ? array[0] : '';
 		data.user       = ( array[1] != '　' ) ? array[1].replace(/\([\d-]+\)$/, '') : '';
 		data.population = ( array[2] != '　' ) ? array[2] : '-';
 		data.point      = array[3].replace(/[\(\)]/g, '');
 		data.alliance   = ( array[4] != '　' ) ? array[4].replace(/\([\d-]+\)$/, '') : '';
 		data.distance   = array[6];
-		data.npc        = array[ array.length - 2 ]; //通常マップと新合戦場でパラメータ数が違う為
+		data.npc        = array[ array.length - 2 ];
 
 		if ( img_data.type == '空き地' ) {
 			//ソートさせる為、同盟に価値、ユーザーに資源をセット
@@ -2290,8 +2321,8 @@ function contextmenu() {
 			'部隊作成【第三組】': function() { contextmenu.createUnitNearby( data, 3 ); },
 			'部隊作成【第四組】': function() { contextmenu.createUnitNearby( data, 4 ); },
 			'部隊作成【全武将】': function() { contextmenu.createUnitNearby( data, 0 ); },
-			'ここへ部隊出陣': contextmenu.send2,
 			'セパレーター': $.contextMenu.separator,
+			'ここへ部隊出陣': contextmenu.send2,
 			'拠点選択': contextmenu.nearbyVillage
 		};
 	}
@@ -2404,18 +2435,21 @@ fightHistoryAround: function() {
 //.. fightHistoryAlliance
 fightHistoryAlliance: function() {
 	var $this  = $(this),
-		href   = $this.attr('href'),
+		source = $this.attr('onClick') || '',
 		areaid = $this.attr('areaid');
 
-	if ( !href ) {
-		href = $('#' + areaid).attr('href');
+	if ( !source ) {
+		source = $('#' + areaid).attr('onClick') || '';
 	}
+
+	href = source.match(/\/land\.php\?[^']+/)[ 0 ];
+	if ( !href ) { return; }
 
 	Page.get( href )
 	.pipe(function( html ) {
 		var href = $(html).find('.ig_mappanel_dataarea').find('A[href^="/alliance"]').attr('href');
 
-		if ( !href ) { return $.Deferred.reject(); }
+		if ( !href ) { return $.Deferred().reject(); }
 
 		return $.get( href );
 	})
@@ -3239,6 +3273,7 @@ return {
 var CounteryMap = (function() {
 
 var options = {
+		size: ( Env.chapter >= 5 ) ? 150 : 180,
 		pxsize: 1,
 		pointsize: 3,
 		fortresssize: 1,
@@ -3253,7 +3288,7 @@ function create( country, _options ) {
 	if ( $map ) { return $map; }
 
 	options = $.extend( options, _options );
-	options.mapsize = Math.ceil( 361 * options.pxsize );
+	options.mapsize = Math.ceil( ( options.size * 2 + 1 ) * options.pxsize );
 
 	$map = $('<div id="imi_mapcontainer"><div id="imi_mousemap" /></div>');
 	$map.css({ width: options.mapsize, height: options.mapsize, backgroundColor: '#000', zIndex: 201 });
@@ -3272,20 +3307,20 @@ function showLabel() {
 	appendLabel( -12, ( center - 3 ), '0' );
 	appendLabel( ( options.mapsize + 2 ), ( center - 3 ), '0' );
 	//東西-上
-	appendLabel( -12, 0, '-180' );
-	appendLabel( -12, ( options.mapsize - 18 ), '180' );
+	appendLabel( -12, 0, -options.size );
+	appendLabel( -12, ( options.mapsize - 18 ), options.size );
 	//東西-下
-	appendLabel( ( options.mapsize + 2 ), 0, '-180' );
-	appendLabel( ( options.mapsize + 2 ), ( options.mapsize - 18 ), '180' );
+	appendLabel( ( options.mapsize + 2 ), 0, -options.size );
+	appendLabel( ( options.mapsize + 2 ), ( options.mapsize - 18 ), options.size );
 	//南北-中央
 	appendLabel( ( center - 4 ), -7, '0' );
 	appendLabel( ( center - 4 ), ( options.mapsize + 2 ), '0' );
 	//南北-左
-	appendLabel( 0, -19, '180' );
-	appendLabel( ( options.mapsize - 10 ), -25, '-180' );
+	appendLabel( 0, -19, options.size );
+	appendLabel( ( options.mapsize - 10 ), -25, -options.size );
 	//南北-右
-	appendLabel( 0, ( options.mapsize + 2 ), '180' );
-	appendLabel( ( options.mapsize - 10 ), ( options.mapsize + 2 ), '-180' );
+	appendLabel( 0, ( options.mapsize + 2 ), options.size );
+	appendLabel( ( options.mapsize - 10 ), ( options.mapsize + 2 ), -options.size );
 
 	//座標表示用
 	$map.append('<div id="imi_label"/>');
@@ -3300,12 +3335,12 @@ function showLabel() {
 
 //. getCanvasX
 function getCanvasX( x ) {
-	return ( 180 + x ) * options.pxsize;
+	return ( options.size + x ) * options.pxsize;
 }
 
 //. getCanvasY
 function getCanvasY( y ) {
-	return ( 180 - y ) * options.pxsize;
+	return ( options.size - y ) * options.pxsize;
 }
 
 //. getCanvasPointX
@@ -3511,9 +3546,9 @@ function mapMouseMove( e ) {
 		x = Math.floor( x / options.pxsize );
 		y = Math.floor( y / options.pxsize );
 
-		if ( 360 >= x && x >= 0 && 360 >= y && y >= 0 ) {
-			x = x - 180;
-			y = 180 - y;
+		if ( ( options.size * 2 ) >= x && x >= 0 && ( options.size * 2 ) >= y && y >= 0 ) {
+			x = x - options.size;
+			y = options.size - y;
 			$('#imi_label').text( x + ', ' + y ).show();
 		}
 	}, 300);
@@ -3527,9 +3562,9 @@ function mapClick( e ) {
 		x = Math.floor( ( e.pageX - offset.left ) / options.pxsize ),
 		y = Math.floor( ( e.pageY - offset.top ) / options.pxsize );
 
-	if ( 360 >= x && x >= 0 && 360 >= y && y >= 0 ) {
-		x = x - 180;
-		y = 180 - y;
+	if ( ( options.size * 2 ) >= x && x >= 0 && ( options.size * 2 ) >= y && y >= 0 ) {
+		x = x - options.size;
+		y = options.size - y;
 
 		Map.move( x, y, country );
 	}
@@ -4742,10 +4777,11 @@ delete: function( array ) {
 $.extend( Card.prototype, {
 
 //.. status
-name: '', rarity: '',
+name: '', rarity: '', secret: '',
 cost: 0, rank: 0, lv: 0, hp: 100, maxHp: 100, solNum: 0, maxSolNum: 0,
 solName: '', solType: null, atk: 0, def: 0, int: 0, commands: {}, skillList: [], skillCount: 0,
 command: '', totalAtk: 0, totalDef: 0, totalDes: 0,
+job: '', exp: 0,
 
 //.. power
 power: function() {
@@ -5132,6 +5168,9 @@ analyze: function( $elem ) {
 	this.commands['馬'] = $param.find('SPAN[class^="kiba"]').attr('class').match(/lv_(\w+)/)[1].toUpperCase();
 	this.commands['器'] = $param.find('SPAN[class^="heiki"]').attr('class').match(/lv_(\w+)/)[1].toUpperCase();
 
+	//職業
+	text = $elem.find('SPAN[class^="jobtype"], SPAN[class^="grayjobtype"]').attr('class').match(/jobtype_(\d)/)[1];
+	this.job = [ '', '将', '剣', '忍', '文' ][ text.toInt() ] || '';
 	//経験値
 	this.exp = $elem.find('.ig_card_exp').text().toInt();
 
@@ -6121,7 +6160,7 @@ changeChatLink: function() {
 
 //.. createCoordLink
 createCoordLink: function() {
-	var coordReg = /-?\d{1,3}[,.]\s*-?\d{1,3}/g,
+	var coordReg = /-?\d{1,3}[，,.]\s*-?\d{1,3}/g,
 		pointReg = /-?\d{1,3}/g,
 		point, html;
 
@@ -6535,7 +6574,7 @@ checkFall: function() {
 		$.get( map )
 		.pipe(function( html ) {
 			var $html = $( html ),
-				idx = $html.find('#mapOverlayMap > AREA[href="' + land + '"]').index(),
+				idx = $html.find('#mapOverlayMap > AREA[onclick*="' + land + '"]').index(),
 				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
 
 			if ( $img.attr('src').indexOf('fall') != -1 ) {
@@ -7122,7 +7161,7 @@ training: function( name ) {
 		var $input = $this.find('INPUT[type="text"]');
 		if ( $input.length == 0 ) { return; }
 
-		html = '分割回数：<select id="create_count_' + data.type + '">' +
+		html = '（分割回数：<select id="create_count_' + data.type + '">' +
 			'<option value="1">1回</option>' +
 			'<option value="2">2回</option>' +
 			'<option value="3">3回</option>' +
@@ -7133,9 +7172,9 @@ training: function( name ) {
 			'<option value="8">8回</option>' +
 			'<option value="9">9回</option>' +
 			'<option value="10">10回</option>' +
-		'</select>';
+		'</select>' +
+		'　<button>複数拠点で訓練する</button>）';
 
-		$tr.find('FORM').append('<button>複数拠点で訓練する</button>');
 		$tr.find('FORM').append( html );
 		$table
 		.append('<tr><th>拠点</th><th width="70">LV</th>' +
@@ -7875,11 +7914,11 @@ style: '' +
 main: function() {
 	var dmo = (location.search.match(/dmo=(.+)/) || [,''])[1];
 
-	if ( dmo == 'all' ) {
+	if ( dmo == '' || dmo == 'all' ) {
 		this.showModeCamp();
 		Util.getUnitStatus( $('.ig_fight_statusarea') );
 	}
-	else if ( dmo == '' || dmo == 'sortie' ) {
+	else if ( dmo == 'sortie' ) {
 		this.showModeCamp();
 	}
 	else if ( dmo == 'enemy' ) {
@@ -7989,9 +8028,21 @@ analyzeRaid: function() {
 			delete data.newenemy;
 			newlist.push( data );
 		}
+
+		baselist[ ebase ] = true;
 	});
 
 	storage.set('敵襲', newlist);
+
+	//敵襲が来ている拠点の色を変更する
+	$('#sideboxBottom .basename LI *:first-child').each(function() {
+		var $this = $(this),
+			name = $this.text().trim();
+
+		if ( baselist[ name ] ) {
+			$this.parent().addClass('imc_enemy');
+		}
+	});
 
 	if ( alermFlg && Data.sounds.enemy_raid ) {
 		//アラーム
@@ -8144,40 +8195,44 @@ style: '' +
 '#imi_bottom_container .ig_solder_commentarea { position: relative; float: left; height: 34px; padding: 2px; margin: 7px 15px; }' +
 '#imi_bottom_container TABLE.imc_soldier_total { position: relative; font-size: 10px; background-color: #eed; margin: 7px 0px; }' +
 '#imi_bottom_container TABLE.imc_soldier_total TH { width: 45px; padding: 3px 3px; line-height: 1.2; }' +
-'.imc_set_value { color: #060; text-decoration: underline; cursor: pointer; }' +
+'.imc_set_value { color: #060; font-size: 12px; text-decoration: underline; cursor: pointer; }' +
 
+'#imi_command_selecter { margin-top: 10px; }' +
 '#imi_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }' +
 '#imi_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }' +
 '#imi_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
+'#busho_info SELECT.force_type2 { font-size: 13px; width: auto; }' +
+'#busho_info INPUT.force_size { font-size: 13px; width: 45px; }' +
+'#busho_info .icon_rank DIV { margin: 3px auto; }' +
+'#busho_info .rank { color: #f00; }' +
+
 /* 兵種による色分け */
-'.yari1 { background-color: #bd9; }' +
-'.yari2 { background-color: #bd9; }' +
-'.yari3 { background-color: #9b7; }' +
-'.yari4 { background-color: #bd9; }' +
+'#busho_info .yari1 TD:nth-child(10) { background-color: #bd9; color: #000; font-size: 12px; }' +
+'#busho_info .yari2 TD:nth-child(10) { background-color: #bd9; color: #000; font-size: 12px; }' +
+'#busho_info .yari3 TD:nth-child(10) { background-color: #9b7; color: #000; font-size: 12px; }' +
+'#busho_info .yari4 TD:nth-child(10) { background-color: #bd9; color: #000; font-size: 12px; }' +
 
-'.yumi1 { background-color: #fcb; }' +
-'.yumi2 { background-color: #fcb; }' +
-'.yumi3 { background-color: #da9; }' +
-'.yumi4 { background-color: #fcb; }' +
+'#busho_info .yumi1 TD:nth-child(10) { background-color: #fcb; color: #000; font-size: 12px; }' +
+'#busho_info .yumi2 TD:nth-child(10) { background-color: #fcb; color: #000; font-size: 12px; }' +
+'#busho_info .yumi3 TD:nth-child(10) { background-color: #da9; color: #000; font-size: 12px; }' +
+'#busho_info .yumi4 TD:nth-child(10) { background-color: #fcb; color: #000; font-size: 12px; }' +
 
-'.kiba1 { background-color: #fe8; }' +
-'.kiba2 { background-color: #fe8; }' +
-'.kiba3 { background-color: #dc6; }' +
-'.kiba4 { background-color: #fe8; }' +
+'#busho_info .kiba1 TD:nth-child(10) { background-color: #fe8; color: #000; font-size: 12px; }' +
+'#busho_info .kiba2 TD:nth-child(10) { background-color: #fe8; color: #000; font-size: 12px; }' +
+'#busho_info .kiba3 TD:nth-child(10) { background-color: #dc6; color: #000; font-size: 12px; }' +
+'#busho_info .kiba4 TD:nth-child(10) { background-color: #fe8; color: #000; font-size: 12px; }' +
 
-'.heiki1 { background-color: #c9c; }' +
-'.heiki2 { background-color: #c9c; }' +
-'.heiki3 { background-color: #c9c; }' +
-'.heiki4 { background-color: #dbd; }' +
-'.heiki5 { background-color: #b9b; }' +
-'.heiki6 { background-color: #b9b; }' +
+'#busho_info .heiki1 TD:nth-child(10) { background-color: #c9c; color: #000; font-size: 12px; }' +
+'#busho_info .heiki2 TD:nth-child(10) { background-color: #c9c; color: #000; font-size: 12px; }' +
+'#busho_info .heiki3 TD:nth-child(10) { background-color: #c9c; color: #000; font-size: 12px; }' +
+'#busho_info .heiki4 TD:nth-child(10) { background-color: #dbd; color: #000; font-size: 12px; }' +
+'#busho_info .heiki5 TD:nth-child(10) { background-color: #b9b; color: #000; font-size: 12px; }' +
+'#busho_info .heiki6 TD:nth-child(10) { background-color: #b9b; color: #000; font-size: 12px; }' +
 
-'TABLE.common_table1 TR.imc_selected { border: solid 2px #09c; }' +
-'TABLE.common_table1 TR.imc_selected TD { padding: 3px 8px 4px 8px; background-color: rgba( 0, 153, 204, 0.2 ); }' +
-'TABLE.common_table1 TR.imc_selected TD.left { padding: 3px 8px 4px 7px; }' +
-'TABLE.common_table1 TR.imc_selected.imc_added TD { background-color: rgba( 0, 153, 204, 0.6 ); }' +
-'TABLE.common_table1 TR.imc_selected + TR TD { padding: 3px 8px 4px 8px; }' +
+/* 合成カード選択 */
+'#busho_info TR.imc_selected > TD { background-color: rgba( 0, 153, 204, 0.4 ); }' +
+'#busho_info TR.imc_added > TD { background-color: rgba( 0, 153, 204, 0.8 ); }' +
 
 /* ソート条件選択用 */
 '.ig_decksection_innermid > DIV:first-child { width: 705px; padding: 3px 0px; border: solid 1px #cc9; border-radius: 5px; box-shadow: 3px 3px 3px rgba(0,0,0,0.8); }' +
@@ -8193,6 +8248,11 @@ style: '' +
 '#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
 '#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
 '#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
+
+/* 部隊編成 */
+'#imi_button_container { padding-bottom: 5px; }' +
+'#imi_button_container IMG { margin: 0px 3px 0px 0px; }' +
+'#imi_button_container BUTTON { margin-right: 5px; }' +
 '',
 
 //. main
@@ -8201,9 +8261,15 @@ main: function() {
 
 	$.Deferred().resolve()
 	.pipe(function() {
-		var href = $('UL.pager LI.last A:first').attr('href');
+		var num = $('#deck_file SELECT[name="show_num"]').val();
+		if ( num != '100' ) { return; }
 
+		var href = $('UL.pager LI.last A:first').attr('href');
 		if ( !href ) { return; }
+
+		if ( !/show_num/.test( href ) ) {
+			href += '&show_num=100';
+		}
 
 		//２頁目取得
 		return $.get( href )
@@ -8218,9 +8284,28 @@ main: function() {
 		});
 	})
 	.pipe(function() {
+		var deck = $('#deck_file IMG[src$="btn_deck.png"]').length,
+			edit = $('#deck_file IMG[src$="btn_max.png"]').length,
+			$th = $('#busho_info > TBODY > TR').eq( 0 ).find('TH');
+
 		self.layouter();
-		self.analyze();
+		if ( deck ) {
+			if ( edit ) { self.layouter2(); }
+		}
+		else {
+			self.unionMode();
+		}
+		self.analyze( deck, edit );
 		self.cardOrderSelecter();
+
+		$th.eq( 0 ).width( 135 );
+		$th.eq( 3 ).hide();
+		$th.eq( 4 ).text('槍/弓');
+		$th.eq( 5 ).hide();
+		$th.eq( 6 ).text('馬/器');
+		$th.eq( 7 ).width( 90 );
+		$th.eq( 8 ).width( 155 );
+		$('.icon_rank:even').hide();
 	});
 },
 
@@ -8228,31 +8313,30 @@ main: function() {
 layouter: function() {
 	var self = this,
 		$table = $('#busho_info'),
+		num = $('#deck_file SELECT[name="show_num"]').val(),
 		html;
 
 	$table
 	.on('change', 'SELECT', function() {
 		var $this = $(this),
-			$button = $this.parent().next().next().find('INPUT'),
+			$input = $this.closest('.tr_gradient').find('INPUT[type="text"]'),
+			$button = $this.closest('.tr_gradient').find('INPUT[type="button"]'),
 			type = $this.val(),
-			id = $this.attr('id'),
-			idx = ( id.match(/unit_id_select_(\d+)/) || [] )[1],
-			$unit_cnt = $('#unit_cnt_text_' + idx),
-			val = $unit_cnt.val();
+			value = $input.val();
 
 		if ( type == '' ) {
-			$unit_cnt.val('0');
+			$input.val('0');
 		}
-		else if ( val == '0' ) {
-			$unit_cnt.val('1');
+		else if ( value == '0' ) {
+			$input.val('1');
 		}
 
 		$button.click();
 	})
 	.on('click', '.imc_set_value', function() {
 		var $this = $(this),
-			$input = $this.closest('TABLE').find('INPUT[type="text"]'),
-			$button = $this.closest('TABLE').find('INPUT[type="button"]'),
+			$input = $this.closest('.tr_gradient').find('INPUT[type="text"]'),
+			$button = $this.closest('.tr_gradient').find('INPUT[type="button"]'),
 			value = $this.find('SPAN').text();
 
 		$input.val( value );
@@ -8263,54 +8347,10 @@ layouter: function() {
 
 	$table.find('> TBODY > TR').not('.tr_gradient').remove();
 
-	$table.find('TR.tr_gradient').slice( 1 )
-	.contextMenu( this.contextmenu )
-	.on('click', function( e ) {
-		var $this = $(this),
-			data = $this.data(),
-			$target = $( e.target );
-
-		if ( $target.is('A') ) { return; }
-
-		if ( !$target.is('TD') ) {
-			$target = $target.closest('TD');
-		}
-		
-		var idx = $this.find('TD').index( $target );
-		if ( idx == 0 || idx > 8 ) { return; }
-
-		var len = $('TR.imc_selected').length;
-
-		if ( ( len == 0 && !data.canUnion() ) || ( len >= 1 && !data.useMaterial() ) ) {
-			Display.info('このカードは合成に使用できません。');
-			return;
-		}
-
-		if ( $this.hasClass('imc_selected') ) {
-			$this.removeClass('imc_selected imc_added');
-		}
-		else if ( len < 6 ) {
-			$this.addClass('imc_selected');
-
-			if ( $('.imc_added').length == 0 ) {
-				$this.addClass('imc_added');
-			}
-		}
-		else {
-			Display.info('これ以上選択できません。');
-		}
-	});
-
-	//下部表示用
-	$('<div id="imi_bottom_container"><div class="imc_overlay" /></div>')
-	.appendTo( document.body )
-	.append(
-		$('DIV.ig_solder_commentarea').append( $('#err_msg_area') )
-	);
-
 	//表示件数とページャーを削除
-	$('DIV.ig_decksection_innermid > DIV').eq(1).remove();
-	$('UL.pager').remove();
+	if ( num == 100 ) {
+		$('UL.pager').remove();
+	}
 
 	//コマンド
 	html = '<ul id="imi_command_selecter">' +
@@ -8412,6 +8452,32 @@ layouter: function() {
 			submenu.hide();
 		});
 	}
+},
+
+//. layouter2
+layouter2: function() {
+	$('#deck_file > A').wrapAll('<DIV id="imi_button_container" />').children('IMG').removeClass('mb5');
+
+	$('#imi_button_container')
+	.append('<span style="float: right; margin-right: 30px;"><button>同兵種</button><button>同兵数</button><button>全兵１</button></span>')
+	.on('click', 'BUTTON', function() {
+		var text = $(this).text(),
+			type = $('#busho_info SELECT').first().val(),
+			num = $('#busho_info INPUT[type="text"]').first().val();
+
+		if ( text == '同兵種' ) {
+			$('#busho_info SELECT').val( type );
+		}
+		else if ( text == '同兵数' ) {
+			$('#busho_info INPUT[type="text"]').val( num );
+		}
+		else if ( text == '全兵１' ) {
+			$('#busho_info INPUT[type="text"]').val( 1 );
+		}
+
+		$('#imi_soldier_pool').trigger('update');
+		return false;
+	});
 },
 
 //. cardOrderSelecter
@@ -8615,20 +8681,68 @@ cardOrderSelecter: function() {
 	}
 },
 
+//. unionMode
+unionMode: function() {
+	$('#busho_info .tr_gradient').slice( 1 )
+	.contextMenu( this.contextmenu )
+	.on('click', function( e ) {
+		var $this = $(this),
+			data = $this.data(),
+			$target = $( e.target );
+
+		if ( $target.is('A') ) { return; }
+
+		if ( !$target.is('TD') ) {
+			$target = $target.closest('TD');
+		}
+
+		var idx = $this.children('TD').index( $target );
+		if ( !( 1 <= idx && idx <= 8 ) ) { return; }
+
+		var len = $('TR.imc_selected').length;
+
+		if ( ( len == 0 && !data.canUnion() ) || ( len >= 1 && !data.useMaterial() ) ) {
+			Display.info('このカードは合成に使用できません。');
+			return;
+		}
+
+		if ( $this.hasClass('imc_selected') ) {
+			$this.removeClass('imc_selected imc_added');
+		}
+		else if ( len < 6 ) {
+			$this.addClass('imc_selected');
+
+			if ( $('.imc_added').length == 0 ) {
+				$this.addClass('imc_added');
+			}
+		}
+		else {
+			Display.info('これ以上選択できません。');
+		}
+	});
+},
+
 //. analyze
-analyze: function() {
-	var $table = $('#busho_info > TBODY'),
-		$tr = $table.find('TR.tr_gradient').slice( 1 );
+analyze: function( deck, edit ) {
+	var $tr = $('#busho_info .tr_gradient').slice( 1 );
 
 	$tr.each(function() {
 		var $this  = $(this),
 			$input = $this.find('INPUT'),
+			$td  = $this.children('TD'),
 			idx  = $input.eq( 0 ).val(),
 			id   = $input.eq( 1 ).val(),
 			card = new LargeCard( $( '#cardWindow_' + id ) ),
 			data = Soldier.getByName( card.solName );
 
 		$this.data( card );
+
+		$td.eq( 1 ).find('A DIV DIV').css({ position: 'relative', left: '1px' }).unwrap();
+
+//		$td.eq( 5 ).append( $td.eq( 6 ).children() );
+//		$td.eq( 7 ).append( $td.eq( 8 ).children() );
+		$td.eq( 6 ).prepend( $td.eq( 5 ).children() );
+		$td.eq( 8 ).prepend( $td.eq( 7 ).children() );
 
 		//兵士数
 		if ( card.solNum == card.maxSolNum ) {
@@ -8644,12 +8758,13 @@ analyze: function() {
 		}
 
 		//HP
-		if ( card.hp < 90 ) { $this.find('TD').eq( 0 ).css({ backgroundColor: '#999' }); }
-		else if ( card.hp < 100 ) { $this.find('TD').eq( 0 ).css({ backgroundColor: '#ccc' }); }
+		if ( card.hp < ( card.maxHp - 10 ) ) { $td.slice( 1, 3 ).css({ backgroundColor: '#955' }); }
+		else if ( card.hp < card.maxHp ) { $td.slice( 1, 3 ).css({ backgroundColor: '#644' }); }
 
-		$this.find('TABLE').eq( 1 ).find('TR').eq( 0 ).find('TD').eq( 0 ).append( $( '#btn_change_' + idx ) );
-		$this.find('TABLE').eq( 1 ).find('TR').eq( 1 ).find('TD').eq( 0 ).prepend('<span class="font_purple imc_set_value">( <span>1</span> )</span> / ');
-		$( '#unit_set_link' + idx ).removeAttr('onclick style').addClass('imc_set_value');
+		if ( !( deck && !edit ) ) {
+			$this.find('TABLE').eq( 1 ).find('TR').eq( 1 ).find('TD').eq( 0 ).prepend('<span class="font_purple imc_set_value">( <span>1</span> )</span> / ');
+			$( '#unit_set_link' + idx ).removeAttr('onclick style').addClass('imc_set_value');
+		}
 	});
 },
 
@@ -8666,7 +8781,7 @@ contextmenu: function() {
 
 			return ( $( value ).data() || { cardId: null } ).cardId;
 		}),
-		menu = {}, separator = false;
+		menu = {}, submenu, separator = false;
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -8697,11 +8812,16 @@ contextmenu: function() {
 	}
 
 	if ( separator ) { menu['セパレーター1'] = $.contextMenu.separator; }
-	menu[ '取引で「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+
+	submenu = {};
+	submenu[ '「' + card.name + '」を検索' ] = function() { Util.searchTradeCardNo( card.cardNo ); };
+	submenu['セパレーター1'] = $.contextMenu.separator;
 
 	card.skillList.forEach(function( skill ) {
-			menu[ '取引で「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
+		submenu[ '「' + skill.name + '」を検索' ] = function() { Util.searchTradeSkill( skill.name ); };
 	});
+
+	menu['取引検索'] = submenu;
 
 	return menu;
 }
@@ -9604,11 +9724,11 @@ style: '' +
 '#imi_coord_move { position: absolute; width: 80px; height: 17px; top: 2px; left: 82px; border: solid 1px #ccc; }' +
 
 /* 情報表示エリア */
-'#imi_tab_container { position: absolute; top: 392px; left: 7px; height: 16px; z-index: 1001; }' +
+'#imi_tab_container { position: absolute; top: 392px; left: 7px; height: 16px; z-index: 201; }' +
 '#imi_tab_container LI { float: left; border: solid 1px #888; background-color: #f1f0dc; color: #666; font-size: 12px; line-height: 16px; text-align: center; padding: 0px 15px; margin-top: 1px; cursor: pointer; z-index: 1001; }' +
 '#imi_tab_container LI.imc_selected { color: #000; font-weight: bold; border-width: 2px; border-bottom-color: #f1f0dc; margin-top: 0px; }' +
-'#imi_container { font-size: 11px; }' +
-'#imi_container > DIV { position: absolute; top: 410px; left: 5px; width: 770px; height: 425px; border: solid 2px #888; background-color: #f1f0dc; padding: 3px; overflow: auto; z-index: 1000; }' +
+'#imi_container { position: absolute; font-size: 11px; z-index: 200 }' +
+'#imi_container > DIV { position: absolute; top: 410px; left: 5px; width: 770px; height: 425px; border: solid 2px #888; background-color: #f1f0dc; padding: 3px; overflow: auto; }' +
 '#imi_container A { color: #060; }' +
 '#imi_container INPUT { margin-right: 5px; }' +
 '#imi_container LABEL { margin-right: 10px; cursor: pointer; }' +
@@ -9641,8 +9761,12 @@ style: '' +
 '.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
 '.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }' +
 
+( ( Env.chapter >= 5 ) ?
+'#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
+'#imi_mapcontainer { border-width: 5px; }' :
 '#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
-'#imi_mapcontainer { border-width: 3px; }' +
+'#imi_mapcontainer { border-width: 3px; }' ) +
+
 
 /* 部隊編成 */
 '#imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
@@ -9720,8 +9844,9 @@ style: '' +
 '#material IMG { margin-top: -3px; }' +
 '#map_effect_atc { line-height: 14px; }' +
 '#map_effect_atc IMG { vertical-align: middle; margin-top: -3px; padding-right: 2px; }' +
-'DIV.ig_mappanel_maindataarea { height: auto !important; }' +
-'DIV.ig_mappanel_dataarea{ height: auto !important; }' +
+'.ig_mappanel_maindataarea { height: auto !important; }' +
+'.ig_mappanel_dataarea{ height: auto !important; width: 600px; }' +
+'.ig_mappanel_dataarea > TABLE { width: 616px; }' +
 'P.areaDir { top: 202px; left: 536px; }' +
 '',
 
@@ -9746,12 +9871,12 @@ layouter: function() {
 	var html, $TR;
 
 	//情報表示欄を削除
-	$('#act_battle_data, #map_youpoint, #map_statusbox, #map_textarea, #map_situation, #map_view_text').remove();
+	$('#act_battle_data, #map_youpoint, #map_statusbox, #map_textarea, #map_view_text').remove();
 	$('.ig_mappanel_dataarea > IMG').remove();
 	//新合戦場ラベル削除
 	$('#ig_new_map_country').remove();
 
-	$('#map_navi, .ig_map_panel_img').hide();
+	$('#map_situation, #map_navi, .ig_map_panel_img').hide();
 
 	//移動ボタン
 	$('#ig_cur01, #ig_cur02, #ig_cur03, #ig_cur04, #ig_cur01_w, #ig_cur02_w, #ig_cur03_w, #ig_cur04_w')
@@ -10457,7 +10582,7 @@ style: '' +
 '.ig_battle_pagelist UL { padding: 0px; margin: 0px; }' +
 '#imi_list { width: 668px; height: 210px; margin-bottom: 15px; overflow-y: scroll; }' +
 '#imi_list .imc_selected { background-color: #f9dea1; }' +
-'#imi_war_detail { width: 668px; height: 470px; overflow: auto; }' +
+'#imi_war_detail { width: 668px; height: 480px; overflow: auto; }' +
 'TABLE.ig_battle_table { position: relative; }' +
 'TABLE.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
 'TABLE.ig_battle_table TD A { line-height: 18px; }' +
@@ -10901,10 +11026,6 @@ layouter: function() {
 
 	$('FORM').find('P INPUT').appendTo( $menu )
 	.wrap('<LI style="float: right; border-right: none;" />');
-
-	$('<button key="合成結果">合成結果を選択</button>').appendTo( $menu )
-	.click( this.selectReport )
-	.wrap('<LI style="float: right;" />');
 
 	$('<button key="落札">取引結果を選択</button>').appendTo( $menu )
 	.click( this.selectReport )
