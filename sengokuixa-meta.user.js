@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.1
+// @version        1.1.0.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4294,6 +4294,7 @@ Deck.dialog = function( village, brigade, coord ) {
 		'<div>' +
 			'<ul id="imi_new_deck">' +
 				'<li id="imi_card_assign">選択武将を部隊へ登録</li>' +
+				'<li id="imi_all_assign">全部隊登録</li>' +
 				'<li id="imi_info_change" class="imc_infotype_1"></li>' +
 			'</ul>' +
 			'<ul id="imi_command_selecter" />' +
@@ -4357,6 +4358,61 @@ Deck.dialog = function( village, brigade, coord ) {
 		for ( var i = 0, len = unit.assignList.length; i < len; i++ ) {
 			$('#imi_card_container').append( unit.assignList[ i ].clone() );
 		}
+	})
+	.on( 'click', '#imi_all_assign', function() {
+		if ( !confirm('全部隊登録処理を行います。\nよろしいですか？') ) { return false; }
+
+		var cardlist = Deck.targetList(),
+			assignlist = [],
+			namelist = {},
+			freecost = Deck.freeCost,
+			freecard = ( 5 - Deck.ano ) * 4;
+
+		if ( freecost == 0 || freecard == 0 ) {
+			Display.alert('編成できませんでした。');
+			return;
+		}
+
+		for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
+			let card = cardlist[ i ];
+			if ( !card.canAssign() ) { continue; }
+			if ( card.cost > freecost ) { continue; }
+			if ( namelist[ card.name ] ) { continue; }
+
+			namelist[ card.name ] = true;
+			freecost -= card.cost;
+			freecard--;
+			assignlist.push( card );
+		}
+
+		if ( assignlist.length == 0 ) {
+			Display.alert('編成できませんでした。');
+			return;
+		}
+
+		(function() {
+			if ( assignlist.length == 0 ) {
+				Display.dialog().message('ページを更新します...');
+				location.reload();
+				return;
+			}
+
+			var callee = arguments.callee,
+				unit = new Unit();
+
+			for ( var i = 0; i < 4 && assignlist.length > 0; i++) {
+				unit.assignList.push( assignlist.shift() );
+			}
+
+			unit.assignCard( village.id )
+			.done(function() {
+				Deck.ano++;
+			})
+			.always(function( ol ) {
+				if ( ol && ol.close ) { ol.close(); }
+				callee();
+			});
+		})();
 	})
 	.on( 'click', '#imi_card_assign', function() {
 		Deck.assignCard( village.id )
@@ -4660,6 +4716,9 @@ removeCard: function( card ) {
 
 //.. assignCard
 assignCard: function( village_id, unit_id ) {
+	village_id = village_id || '';
+	unit_id = unit_id || '';
+
 	if ( !village_id && !unit_id ) { return; }
 	if ( this.assignList.length == 0 ) {
 		Display.alert('武将が選択されていません');
@@ -4747,7 +4806,9 @@ assignCard: function( village_id, unit_id ) {
 			btn_change_flg: '',
 			set_village_id: village_id,
 			set_assign_id: unit_id,
-			set_squad_id: card.squadId,
+			set_card_id: card.cardId,
+//			set_squad_id: card.squadId,
+			set_squad_id: '',
 			deck_mode: 'nomal',
 			p: 1,
 			myselect_2: ''
