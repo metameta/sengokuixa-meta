@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.0
+// @version        1.1.0.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -161,7 +161,7 @@ unique: function() {
 //■ MetaStorage
 var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener=new Object(),propNames='expires'.split(' ');function MetaStorage(name){var storageName=storagePrefix+name,storage;if(!MetaStorage.keys[storageName]){throw new Error('「'+storageName+'」このストレージ名は存在しません。');}storage=storageList[storageName];if(storage==undefined){storage=new Storage(storageName);loadData.call(storage);storageList[storageName]=storage}return storage}$.extend(MetaStorage,{keys:{},registerStorageName:function(storageName){storageName=storagePrefix+storageName;MetaStorage.keys[storageName]=storageName},clearAll:function(){$.each(MetaStorage.keys,function(idx,value){localStorage.removeItem(value)});storageList={}},import:function(string){var importData=JSON.parse(string),keys=MetaStorage.keys;this.clearAll();$.each(importData,function(key,value){if(keys[key]){localStorage.setItem(key,importData[key])}})},export:function(){var exportData={};$.each(MetaStorage.keys,function(idx,value){var stringData=localStorage.getItem(value);if(stringData){exportData[value]=stringData}});return JSON.stringify(exportData)},change:function(name,callback){var storageName=storagePrefix+name;$(eventListener).on(storageName,callback)}});function Storage(storageName){this.storageName=storageName;this.data={};return this}$.extend(Storage.prototype,{clear:function(){this.data={};clearData.call(this)},get:function(key){return this.data[key]},set:function(key,value){this.data[key]=value;saveData.call(this)},remove:function(key){delete this.data[key];saveData.call(this)},begin:function(){this.transaction=true;this.tranData=$.extend({},this.data)},commit:function(){var trans=this.transaction;delete this.transaction;delete this.tranData;if(trans){saveData.call(this)}},rollback:function(){delete this.transaction;this.data=this.tranData;delete this.tranData},toJSON:function(){return JSON.stringify(this.data)}});function loadData(){loadInternalData.call(this);this.data=load(this.storageName)}function loadInternalData(){var storageName=this.storageName+'_internal',data=load(storageName),self=this;propNames.forEach(function(propName){if(propName in data){self[propName]=data[propName]}})}function saveData(){if(this.transaction){return}saveInternalData.call(this);save(this.storageName,this.data)}function saveInternalData(){var storageName=this.storageName+'_internal',data={},self=this;propNames.forEach(function(propName){if(propName in self){data[propName]=self[propName]}});save(storageName,data)}function clearData(){if(this.transaction){return}localStorage.removeItem(this.storageName)}function load(storageName){var stringData=localStorage.getItem(storageName),parseData={};if(stringData){try{parseData=JSON.parse(stringData)}catch(e){}}return parseData}function save(storageName,data){var stringData=JSON.stringify(data);if($.isEmptyObject(data)){localStorage.removeItem(storageName)}else{localStorage.setItem(storageName,stringData)}}$(window).on('storage',function(event){var storageName=event.originalEvent.key,storage;if(!MetaStorage.keys[storageName]){return}storage=storageList[storageName];if(storage!==undefined){loadData.call(storage)}$(eventListener).trigger(storageName,event)});return MetaStorage})();
 
-'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS'.split(' ').forEach(function( value ) {
+'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL'.split(' ').forEach(function( value ) {
 	MetaStorage.registerStorageName( value );
 });
 '1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -222,7 +222,7 @@ var Env = (function() {
 
 		if ( newseason !== season ) {
 			//期が変わった場合
-			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS'.split(' ').forEach(function( value ) {
+			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL'.split(' ').forEach(function( value ) {
 				MetaStorage( value ).clear();
 			});
 			'1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -2150,13 +2150,16 @@ function analyzeImg( $img_list ) {
 function analyzeArea( $area_list, img_list ) {
 	var source_reg = /'.*?'/g,
 		search_reg = /map\.php\?x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
+		storage = MetaStorage('USER_FALL'),
 		list = [];
 
 	$area_list.each(function( idx ) {
 		var $this    = $(this),
-			source   = ( $this.attr('onMouseOver') || '' ).split('; overOperation')[0],
+			source   = ( $this.attr('onMouseOver') || '' ).split('; overOperation')[ 0 ],
 			array    = source.match( source_reg ),
-			search   = ( $this.attr('onClick') || '' ).match( search_reg ) || [],
+			source2  = $this.attr('onClick') || '',
+			array2   = source2.match( source_reg ),
+			search   = array2[ 2 ].match( search_reg ) || [],
 			img_data = img_list[ idx ],
 			data     = { idx: idx };
 
@@ -2208,6 +2211,9 @@ function analyzeArea( $area_list, img_list ) {
 		data.scale   = img_data.scale;
 		data.class   = img_data.class;
 
+		data.userId  = ( array2[ 3 ].match(/\d+/) || [] )[ 0 ];
+		data.alliId  = ( array2[ 5 ].match(/\d+/) || [] )[ 0 ];
+
 		$this.attr({ id: data.id, idx: idx });
 
 		data.stronghold_area = false;
@@ -2230,8 +2236,27 @@ function analyzeArea( $area_list, img_list ) {
 			}
 		}
 
+		if ( data.discriminant == '敵' && data.type == '城' ) {
+			storage.set( data.userId, false );
+		}
+
 		list.push( data );
 	});
+
+	for ( var i = 0; i < list.length; i++ ) {
+		let data = list[ i ];
+
+		if ( data.discriminant == '敵' && ( data.type == '村' || data.type == '砦' ) ) {
+			data.fallmain = storage.get( data.userId );
+
+			if ( data.fallmain === true ) {
+				let $img = $( '.' + data.class ).not('.imc_mark');
+
+				$img.attr('defaultsrc', $img.attr('src') )
+				.attr('src', Env.externalFilePath + '/img/panel/fall_capital_r_l.png');
+			}
+		}
+	}
 
 	analyzedData = list;
 }
@@ -2245,7 +2270,7 @@ function analyzeReport() {
 		rank = $table.find('SELECT[name="imn_rank"]').val().toInt(),
 		type = '';
 
-	$table.find('input[name="imn_type"]').filter(':checked').each(function() { type += $(this).val(); });
+	$table.find('INPUT[name="imn_type"]').filter(':checked').each(function() { type += $(this).val(); });
 
 	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance, rank: rank });
 
@@ -2298,7 +2323,7 @@ function analyzeReport() {
 			'<td>' + obj.alliance + '</td>' +
 			'<td>' + obj.user + '</td>' +
 			'<td>' + obj.castle + '</td>' +
-			'<td>' + obj.type + '</td>' +
+			'<td>' + obj.type + ( ( obj.fallmain === true ) ? '×' : ( obj.fallmain === false ) ? '○' : '' ) + '</td>' +
 			'<td>' + obj.scale + '</td>' +
 			'<td style="background-color: ' + color + '">' + obj.discriminant + '</td>' +
 			'<td>' + obj.population + '</td>' +
@@ -2364,12 +2389,17 @@ function contextmenu() {
 		menu['セパレーター1'] = $.contextMenu.separator;
 
 		menu['合戦報告書【城主】'] = function() { contextmenu.warList( data.user ); };
-		menu['城主情報'] = {
-			'格付': function() { contextmenu.ranking( data.user ); },
-			'一戦撃破・防衛': function() { contextmenu.score( data.user ); },
-			'セパレーター': $.contextMenu.separator,
-			'城主プロフィール': contextmenu.userProfile
-		};
+
+		submenu = {};
+		submenu['格付'] = function() { contextmenu.ranking( data.user ); };
+		submenu['一戦撃破・防衛'] = function() { contextmenu.score( data.user ); };
+		if ( data.discriminant == '敵' && ( data.type == '村' || data.type == '砦' ) ) {
+			submenu['本領陥落チェック'] = contextmenu.checkFall;
+		}
+		submenu['セパレーター'] = $.contextMenu.separator;
+		submenu['城主プロフィール'] = contextmenu.userProfile;
+
+		menu['城主情報'] = submenu;
 
 		submenu = {};
 		submenu['合戦報告書 【同盟】'] = function() { contextmenu.warList( '', '', '', data.alliance ); };
@@ -2470,6 +2500,57 @@ fightHistoryAlliance: function() {
 			search = 'type=1&find_name=' + encodeURIComponent( fullname ) + '&find_x=&find_y=&find_length=&btn_exec=true';
 
 		fightHistory( search );
+	});
+},
+
+//.. checkFall
+checkFall: function() {
+	var $this = $(this),
+		idx   = $this.attr('idx').toInt(),
+		data  = analyzedData[ idx ];
+
+	if ( !data.userId ) { return; }
+
+	Page.get( '/user/?user_id=' + data.userId )
+	.pipe(function( html ) {
+		var $tr = $( html ).find('.common_table1').eq( 0 ).find('TR:contains("本領")'),
+			land = $tr.find('A').eq( 1 ).attr('href'),
+			map = land.replace('land', 'map');
+
+		return $.get( map )
+		.pipe(function( html ) {
+			var $html = $( html ),
+				idx = $html.find('#mapOverlayMap > AREA[onclick*="' + land + '"]').index(),
+				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
+
+			return ( $img.attr('src').indexOf('fall') != -1 );
+		});
+	})
+	.pipe(function( fall ) {
+		MetaStorage('USER_FALL').set( data.userId, fall );
+
+		for ( var i = 0, len = analyzedData.length; i < len; i++ ) {
+			let areadata = analyzedData[ i ];
+			if ( areadata.userId != data.userId ) { continue; }
+
+			let $img = $( '.' + areadata.class ).not('.imc_mark'),
+				src = $img.attr('defaultsrc');
+
+			if ( !fall ) {
+				if ( src ) { $img.attr('src', src ); }
+
+				areadata.fallmain = false;
+			}
+			else if ( areadata.type == '村' || areadata.type == '砦' ) {
+				if ( src ) { $img.attr('defaultsrc', src ); }
+
+				$img.attr('src', Env.externalFilePath + '/img/panel/fall_capital_r_l.png');
+
+				areadata.fallmain = true;
+			}
+		}
+
+		Map.analyzeReport();
 	});
 },
 
@@ -9998,7 +10079,7 @@ layouterMapInfo: function() {
 
 	//拠点情報
 	html = '' +
-	'<table id="imi_base_conditions" class="imc_table">' +
+	'<table id="imi_base_conditions" class="imc_table" style="float: left; margin-right: 20px;">' +
 	'<tr/>' +
 		'<th>種別</th>' +
 		'<td style="text-align: left">' +
@@ -10040,7 +10121,10 @@ layouterMapInfo: function() {
 		'</td>' +
 	'</tr>' +
 	'</table>' +
-	'<table class="imc_table" style="margin-bottom: 20px;">' +
+	'<table class="imc_table">' +
+	'<tr><th>本領陥落データ</th><td><button id="imi_cache_delete">削除</button></td></tr>' +
+	'</table>' +
+	'<table class="imc_table" style="margin-bottom: 20px; clear: both;">' +
 	'<thead><tr>' +
 		'<th style="width: 120px">同盟名</th>' +
 		'<th style="width: 120px">城主名</th>' +
@@ -10068,6 +10152,12 @@ layouterMapInfo: function() {
 	.find('SELECT[name="imn_rank"]').val( settings.rank ).end()
 	.find('INPUT[value="' + settings.discriminant + '"]').attr('checked', true).end()
 	.find('INPUT[name="imn_alliance"]').val( settings.alliance ).end();
+
+	$('#imi_cache_delete').click(function() {
+		if ( !confirm( '本領陥落データを全て削除します。\nよろしいですか？') ) { return; }
+
+		MetaStorage('USER_FALL').clear();
+	});
 },
 
 //. layouterCoord
@@ -10076,7 +10166,7 @@ layouterCoord: function() {
 
 	//登録座標リスト
 	html = '<div style="float: left; margin-right: 20px;">' +
-	'<table class="imc_table" style="">' +
+	'<table class="imc_table">' +
 	'<thead><tr>' +
 		'<th width="120">城主名</th>' +
 		'<th width="130">城名</th>' +
@@ -10085,11 +10175,11 @@ layouterCoord: function() {
 	'</tr></thead>' +
 	'<tbody id="imi_coord_list"></tbody>' +
 	'</table>' +
-	'<button style="margin-top: 10px;">全削除</button>' +
+	'<button class="imc_coord_delete" style="margin-top: 10px;">全削除</button>' +
 	'</div>';
 
 	$( html ).appendTo('#imi_coord')
-	.find('button').click(function() {
+	.on('click', '.imc_coord_delete', function() {
 		var country = Map.info.country,
 			name = Data.countries[ country ];
 
