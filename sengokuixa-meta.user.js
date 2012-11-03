@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.4
+// @version        1.1.0.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1680,7 +1680,10 @@ npcPower: (function() {
 })(),
 
 //. hpRecovery
-hpRecovery: [ 30, 32, 34, 36, 38, 40, 44, 48, 52, 56, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120 ],
+hpRecovery: {
+	'天': 900, '極': 780, '特': 720, '上': 660, '序': 600,
+	'剣': [ 30, 32, 34, 36, 38, 40, 44, 48, 52, 56, 60, 66, 72, 78, 84, 90, 96, 102, 108, 114, 120 ]
+},
 
 //. skillTable
 skillTable: {
@@ -5215,9 +5218,16 @@ setUnitMax: function() {
 
 //.. getRecoveryTime
 getRecoveryTime: function() {
-	var time = ( this.rank * Data.hpRecovery[ 20 ] ) + Data.hpRecovery[ this.lv ];
+	var time;
 
-	return Math.ceil( time * 60 * ( this.maxHp - this.hp ) / 100 );
+	if ( this.job == '剣' ) {
+		time = ( this.rank * Data.hpRecovery['剣'][ 20 ] + Data.hpRecovery['剣'][ this.lv ] ) * 60;
+	}
+	else {
+		time = ( 1 + this.lv / 4 + this.rank * 6 ) * Data.hpRecovery[ this.rarity ];
+	}
+
+	return Math.ceil( time * ( this.maxHp - this.hp ) / 100 );
 },
 
 //.. canAssign
