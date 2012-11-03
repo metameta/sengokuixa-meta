@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.3
+// @version        1.1.0.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2211,8 +2211,14 @@ function analyzeArea( $area_list, img_list ) {
 		data.scale   = img_data.scale;
 		data.class   = img_data.class;
 
-		data.userId  = ( array2[ 3 ].match(/\d+/) || [] )[ 0 ];
-		data.alliId  = ( array2[ 5 ].match(/\d+/) || [] )[ 0 ];
+		if ( data.discriminant == '自分' ) {
+			data.userId = undefined;
+			data.alliId = ( $('.gMenu07 > A').attr('href').match(/\d+/) || [] )[ 0 ];
+		}
+		else {
+			data.userId = ( array2[ 3 ].match(/\d+/) || [] )[ 0 ];
+			data.alliId = ( array2[ 5 ].match(/\d+/) || [] )[ 0 ];
+		}
 
 		$this.attr({ id: data.id, idx: idx });
 
@@ -2476,25 +2482,15 @@ fightHistoryAround: function() {
 
 //.. fightHistoryAlliance
 fightHistoryAlliance: function() {
-	var $this  = $(this),
-		source = $this.attr('onClick') || '',
-		areaid = $this.attr('areaid');
+	var idx  = $(this).attr('idx').toInt(),
+		data = analyzedData[ idx ],
+		href;
 
-	if ( !source ) {
-		source = $('#' + areaid).attr('onClick') || '';
-	}
+	if ( !data.alliId ) { return; }
 
-	href = source.match(/\/land\.php\?[^']+/)[ 0 ];
-	if ( !href ) { return; }
+	href = '/alliance/info.php?id=' + data.alliId;
 
 	Page.get( href )
-	.pipe(function( html ) {
-		var href = $(html).find('.ig_mappanel_dataarea').find('A[href^="/alliance"]').attr('href');
-
-		if ( !href ) { return $.Deferred().reject(); }
-
-		return $.get( href );
-	})
 	.pipe(function( html ) {
 		var fullname = $(html).find('.alli_box_left > .alli_inputtext').first().text().trim(),
 			search = 'type=1&find_name=' + encodeURIComponent( fullname ) + '&find_x=&find_y=&find_length=&btn_exec=true';
@@ -2557,6 +2553,19 @@ checkFall: function() {
 
 //.. userProfile
 userProfile: function() {
+	var idx  = $(this).attr('idx').toInt(),
+		data = analyzedData[ idx ],
+		href;
+
+	href = '/user/';
+	if ( data.userId ) {
+		href += '?user_id=' + data.userId;
+	}
+
+	location.href = href;
+},
+
+userProfile2: function() {
 	var $this  = $(this),
 		source = $this.attr('onClick') || '',
 		areaid = $this.attr('areaid'),
@@ -8434,8 +8443,9 @@ main: function() {
 
 			//カード情報
 			$html.find('#ig_boxInner > DIV[id^="cardWindow"]').appendTo( '#ig_boxInner' );
-
 			$('#busho_info').append( $tr );
+
+			unsafeWindow.unit_brigade_btn_func();
 		});
 	})
 	.pipe(function() {
@@ -8514,11 +8524,11 @@ layouter: function() {
 		'<li id="imi_batch_1"><span>兵１</span></li>' +
 	'</ul>' +
 	'<ul id="imi_command_selecter" class="imc_command_selecter">' +
-		'<li class="imc_all imc_selected" selecter=".imc_all"><span>全て</span></li>' +
-		'<li class="imc_yari" selecter=".yari1, .yari2, .yari3, .yari4"><span>槍</span></li>' +
-		'<li class="imc_yumi" selecter=".yumi1, .yumi2, .yumi3, .yumi4"><span>弓</span></li>' +
-		'<li class="imc_kiba" selecter=".kiba1, .kiba2, .kiba3, .kiba4"><span>馬</span></li>' +
-		'<li class="imc_heiki" selecter=".heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6"><span>兵器</span></li>' +
+		'<li class="imc_all imc_selected" selecter=".imc_all" batch="0"><span>全て</span></li>' +
+		'<li class="imc_yari" selecter=".yari1, .yari2, .yari3, .yari4" batch="0"><span>槍</span></li>' +
+		'<li class="imc_yumi" selecter=".yumi1, .yumi2, .yumi3, .yumi4" batch="0"><span>弓</span></li>' +
+		'<li class="imc_kiba" selecter=".kiba1, .kiba2, .kiba3, .kiba4" batch="0"><span>馬</span></li>' +
+		'<li class="imc_heiki" selecter=".heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6" batch="0"><span>兵器</span></li>' +
 	'</ul>';
 
 	$('#bar_card').first().before( html );
