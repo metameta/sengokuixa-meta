@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.7
+// @version        1.1.0.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2562,45 +2562,43 @@ userProfile: function() {
 		data = analyzedData[ idx ],
 		href;
 
-	href = '/user/';
-	if ( data.userId ) {
-		href += '?user_id=' + data.userId;
+	if ( data.discriminant == '自分' ) {
+		href = '/user/';
+	}
+	else if ( data.userId ) {
+		href = '/user/?user_id=' + data.userId;
+	}
+	else {
+		//合戦中以外の他国
+		var url = '/land.php?x=' + data.x + '&y=' + data.y + '&c=' + data.country;
+		$.ajax({ type: 'get', url: url, async: false })
+		.pipe(function( html ) {
+			href = $(html).find('.ig_mappanel_dataarea').find('A[href^="/user"]').attr('href');
+		});
 	}
 
-	location.href = href;
-},
-
-userProfile2: function() {
-	var $this  = $(this),
-		source = $this.attr('onClick') || '',
-		areaid = $this.attr('areaid'),
-		href;
-
-	if ( !source ) {
-		source = $('#' + areaid).attr('onClick') || '';
-	}
-
-	href = source.match(/\/user\/\?user_id=\d+/)[ 0 ];
-	if ( !href ) { return; }
-
-	location.href = href;
+	if ( href ) { location.href = href; }
 },
 
 //.. alliancInfo
 alliancInfo: function() {
-	var $this  = $(this),
-		source = $this.attr('onClick') || '',
-		areaid = $this.attr('areaid'),
+	var idx  = $(this).attr('idx').toInt(),
+		data = analyzedData[ idx ],
 		href;
 
-	if ( !source ) {
-		source = $('#' + areaid).attr('onClick') || '';
+	if ( data.alliId ) {
+		href = '/alliance/info.php?id=' + data.alliId;
+	}
+	else {
+		//合戦中以外の他国
+		var url = '/land.php?x=' + data.x + '&y=' + data.y + '&c=' + data.country;
+		$.ajax({ type: 'get', url: url, async: false })
+		.pipe(function( html ) {
+			href = $(html).find('.ig_mappanel_dataarea').find('A[href^="/alliance"]').attr('href');
+		});
 	}
 
-	href = source.match(/\/alliance\/info\.php\?id=\d+/)[ 0 ];
-	if ( !href ) { return; }
-
-	location.href = href;
+	if ( href ) { location.href = href; }
 },
 
 //.. warList - 合戦報告書
