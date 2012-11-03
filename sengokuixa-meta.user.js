@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.5
+// @version        1.1.0.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6422,7 +6422,7 @@ escapeSpecialCharacters: function() {
 		var $this = $(this),
 			text = $this.text();
 
-		if ( $this.has('IMG').length == 1 ) { return; }
+		if ( $this.has('IMG, .img_face').length > 0 ) { return; }
 
 		for (var i = 0; i < sclist.length; i++) {
 			text = text.replace( sclist[i], sc[i], 'g' );
@@ -9971,6 +9971,13 @@ style: '' +
 '.imc_gage TD { padding: 0px; width: 5px; height: 7px; font-size: 10px; background-color: #fe0; }' +
 '.imc_gage TD.imc_lose { background-color: #b00; }' +
 
+/* 影武者 */
+'#kagemusha_list { position: static; width: 755px; }' +
+'#kagemusha_list .frame_top { width: 740px; height: 25px; margin: 10px 0px 0px 15px; background-position: -15px -8px; }' +
+'#kagemusha_list .frame_spacer { width: auto; background: none; }' +
+'#kagemusha_list .frame_bottom { width: auto; background: none; }' +
+'#kagemusha_list .imc_current * { color: #000 !important; }' +
+
 /* 合戦報告書・周辺の敵襲 */
 'TABLE.ig_battle_table { width: 650px; }' +
 '.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
@@ -10080,6 +10087,9 @@ main: function() {
 	this.layouterScore();
 	this.layouterUnitStatus();
 	this.countrySelecter();
+	if ( $('#kagemusha_list').length > 0 ) {
+		this.layouterKagemusha();
+	}
 	Map.setup();
 	Util.keyBindMap();
 },
@@ -10183,7 +10193,7 @@ layouter: function() {
 	'</ul>';
 
 	$( html ).appendTo('#ig_mapbox')
-	.find('LI').click(function() {
+	.on( 'click', 'LI', function() {
 		var $this = $(this);
 
 		$this.parent().find('LI').removeClass('imc_selected');
@@ -10656,6 +10666,44 @@ layouterUnitStatus: function() {
 	});
 
 	Util.getUnitStatus();
+},
+
+//. layouterKagemusha
+layouterKagemusha: function() {
+	var $div = $('<div id="imi_kagemusha" style="display: none;"></div>');
+
+	$div.append( $('#kagemusha_list') )
+	.on( 'click', '.tr_gradient', function() {
+		var { x, y, c } = $(this).data();
+
+		Map.move( x, y, c );
+		return false;
+	});
+
+	$div.find('.tr_gradient')
+	.each(function() {
+		var $this = $(this),
+			match = $this.find('.zahyou').attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
+
+		if ( !match ) { return; }
+
+		$this.data({ x: match[ 1 ].toInt(), y: match[ 2 ].toInt(), c: match[ 3 ].toInt() });
+	})
+	.hover(
+		function() {
+			var { x, y } = $(this).data();
+
+			CounteryMap.showPointer( x, y );
+			Util.enter.call( this );
+		},
+		function() {
+			CounteryMap.showPointer();
+			Util.leave.call( this );
+		}
+	);
+
+	$('#imi_tab_container').append('<li target="imi_kagemusha">影武者</li>');
+	$('#imi_container').append( $div );
 },
 
 //. countrySelecter
