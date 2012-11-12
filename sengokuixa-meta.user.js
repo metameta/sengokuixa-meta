@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.8
+// @version        1.1.0.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5522,13 +5522,13 @@ layouter: function() {
 
 	//指揮兵・兵種・総攻撃力・総防御力を表示
 	html= '' +
-	'<tr ' + cssClass + '>' +
+	'<tr id="deck_unit_cnt_tr_' + this.cardId + '" ' + cssClass + '>' +
 		'<th>指揮兵</th>' +
-		'<td>' + this.solNum + '/' + this.maxSolNum + '</td>' +
+		'<td><span id="deck_unit_cnt_' + this.cardId + '">' + this.solNum + '</span>/' + this.maxSolNum + '</td>' +
 	'</tr>' +
-	'<tr ' + cssClass + '>' +
+	'<tr id="deck_unit_type_tr_' + this.cardId + '" ' + cssClass + '>' +
 		'<th>兵種</th>' +
-		'<td>' + ( this.solName || '' ) + '</td>' +
+		'<td id="deck_unit_type_' + this.cardId + '">' + ( this.solName || '' ) + '</td>' +
 	'</tr>' +
 	'<tr class="imc_power">' +
 		'<th>総攻撃力</th>' +
@@ -5563,7 +5563,7 @@ layouter: function() {
 	//ボタンがない場合は出品中とみなす
 	$a = $div2.addClass('imc_button_container').find('A');
 	if ( $a.length > 0 ) {
-		$div2.empty().append( $a.get().reverse() );
+		$div2.remove('A').append( $a.get().reverse() );
 	}
 
 	//HP回復時間を表示
@@ -5608,8 +5608,8 @@ update: function() {
 		$tr.slice( 0, 2 ).removeAttr('class');
 	}
 
-	$tr.eq( 0 ).find('TD').text( this.solNum + '/' + this.maxSolNum );
-	$tr.eq( 1 ).find('TD').text( this.solName || '' );
+	$tr.find('#deck_unit_cnt_' + this.cardId).text( this.solNum );
+	$tr.find('#deck_unit_type_' + this.cardId).text( this.solName || '' );
 	$tr.eq( 2 ).find('TD').text( Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) );
 	$tr.eq( 3 ).find('TD').text( Math.floor( this.totalDef ).toFormatNumber( '', '-' ) );
 
