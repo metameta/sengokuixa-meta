@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.10
+// @version        1.1.0.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1128,7 +1128,7 @@ $(EventListener)
 
 	html += '</ul></li></ul>';
 
-	Display.info( html );
+	Display.info( html, true );
 })
 .on('breakfinish', function() {
 	var list = Array.prototype.slice.call( arguments, 1 ),
@@ -1140,7 +1140,7 @@ $(EventListener)
 
 	html += '</ul></li></ul>';
 
-	Display.info( html );
+	Display.info( html, true );
 })
 .on('trainingfinish', function() {
 	var list = Array.prototype.slice.call( arguments, 1 ),
@@ -1152,7 +1152,7 @@ $(EventListener)
 
 	html += '</ul></li></ul>';
 
-	Display.info( html );
+	Display.info( html, true );
 })
 .on('actionfinish', function() {
 	var list = Array.prototype.slice.call( arguments, 1 ),
@@ -1164,7 +1164,7 @@ $(EventListener)
 
 	html += '</ul></li></ul>';
 
-	Display.info( html );
+	Display.info( html, true );
 
 	//部隊情報更新
 	Util.getUnitStatus();
@@ -1183,7 +1183,7 @@ $(EventListener)
 
 	html += '</ul></li></ul>';
 
-	Display.info( html );
+	Display.info( html, true );
 })
 .on('raidlistupdate', function() {
 	setTimeout( function() { $('#imi_raid_list').trigger('update'); }, 1000 );
@@ -1281,7 +1281,7 @@ function Dialog( options ) {
 	return this;
 }
 
-function show( msg, timeout, cssClass ) {
+function show( msg, sound, timeout, cssClass ) {
 	if ( !$sysmessage ) {
 		$sysmessage = $('<div class="imc_dialog" />').appendTo( document.body );
 	}
@@ -1292,7 +1292,7 @@ function show( msg, timeout, cssClass ) {
 	timeout = timeout || 3000;
 	setTimeout(function() { remove( $span ); }, timeout);
 
-	if ( Data.sounds.info ) {
+	if ( sound && Data.sounds.info ) {
 		var audio = new Audio( Data.sounds.info );
 		audio.volume = 0.6;
 		audio.play();
@@ -1310,11 +1310,12 @@ function remove( $span ) {
 
 //. return
 return {
-	info: function( msg, timeout ) {
-		show( msg, timeout, 'imc_infomation' );
+	info: function( msg, sound, timeout ) {
+		show( msg, sound, timeout, 'imc_infomation' );
 	},
-	alert: function( msg, timeout ) {
-		show( msg, timeout, 'imc_alert' );
+	alert: function( msg, sound, timeout ) {
+		sound = ( sound === undefined ) ? true : sound;
+		show( msg, sound, timeout, 'imc_alert' );
 	},
 	dialog: function( options ) {
 		return new Dialog( options );
