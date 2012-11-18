@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.9
+// @version        1.1.0.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5480,7 +5480,7 @@ layouter: function() {
 		$div1 = $div.eq( 1 ),
 		$div2 = $div.eq( 2 ),
 		$tables = $elem.find('.ig_deck_smallcarddata'),
-		$table, html, cssClass, lvClass, next20, coverRate, endtime, $a;
+		$table, html, cssClass, lvClass, next20, coverRate, endtime, $a, $input;
 
 	//いらないものを削除してしまう
 	$elem.find('.smallcard_bg, .smallcard_waku, .battlegage2, .ig_deck_smallcarddelete').remove();
@@ -5560,11 +5560,15 @@ layouter: function() {
 
 	//フッタ部
 	//配置ボタンと編成ボタンを入れ替える
-	//ボタンがない場合は出品中とみなす
 	$a = $div2.addClass('imc_button_container').find('A');
-	if ( $a.length > 0 ) {
-		$div2.remove('A').append( $a.get().reverse() );
+	$input = $div2.find('INPUT');
+	if ( this.isExhibited ) {
+		$div2.empty().append('出品中は兵編成できません');
 	}
+	else {
+		$div2.empty().append( $a.get().reverse() );
+	}
+	$div2.append( $input );
 
 	//HP回復時間を表示
 	if ( this.hp < this.maxHp ) {
@@ -5695,13 +5699,13 @@ layouter: function() {
 	//指揮兵・兵種・総攻撃力・総防御力を表示
 	html= '' +
 	'<table class="imc_card_status">' +
-	'<tr ' + cssClass + '>' +
+	'<tr id="deck_unit_cnt_tr_' + this.cardId + '" ' + cssClass + '>' +
 		'<th>指揮兵</th>' +
-		'<td>' + this.solNum + '/' + this.maxSolNum + '</td>' +
+		'<td><span id="deck_unit_cnt_' + this.cardId + '">' + this.solNum + '</span>/' + this.maxSolNum + '</td>' +
 	'</tr>' +
-	'<tr ' + cssClass + '>' +
+	'<tr id="deck_unit_type_tr_' + this.cardId + '" ' + cssClass + '>' +
 		'<th>兵種</th>' +
-		'<td>' + ( this.solName || '' ) + '</td>' +
+		'<td id="deck_unit_type_' + this.cardId + '">' + ( this.solName || '' ) + '</td>' +
 	'</tr>' +
 	'<tr class="imc_power">' +
 		'<th>総攻撃力</th>' +
@@ -5712,6 +5716,7 @@ layouter: function() {
 		'<td>' + Math.floor( this.totalDef ).toFormatNumber( '', '-' ) + '</td>' +
 	'</tr>' +
 	'</table>';
+
 	$div.append( html );
 
 	//スキル背景色変更
