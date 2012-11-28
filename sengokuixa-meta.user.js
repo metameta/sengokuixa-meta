@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.12
+// @version        1.1.0.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2701,16 +2701,17 @@ score: function( user ) {
 
 //.. toCamp - この領地を陣にする
 toCamp: function() {
-	var $this = $(this),
-		href = $this.attr('href'),
-		search = href.split('?')[1],
+	var idx  = $(this).attr('idx').toInt(),
+		data = analyzedData[ idx ],
+		search = 'x=' + data.x + '&y=' + data.y + '&c=' + data.country,
+		href = '/facility/to_camp.php?' + search + '&mode=build&type=223',
 		result;
 
 	result = confirm('この領地を陣に変更します。\nよろしいですか？');
 	if ( !result ) { return; }
 
 	//陣建設
-	$.get( '/facility/to_camp.php?' + search + '&mode=build&type=223' )
+	$.get( href )
 	.pipe(function(html) {
 		Page.move( '/map.php?' + search );
 	});
