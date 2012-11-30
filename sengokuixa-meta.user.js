@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.0.13
+// @version        1.1.0.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1324,6 +1324,116 @@ return {
 
 })();
 
+//■ Soldier
+var Soldier = (function() {
+
+var data = {
+	//槍
+	'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
+	'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
+	'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
+	'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
+	//弓
+	'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
+	'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
+	'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
+	'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
+	//馬
+	'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
+	'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
+	'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
+	'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
+	//器
+	'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+	'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+	'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
+	'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
+	'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
+	'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
+	//NPC用
+	'浪人':     { defend:  12, command: '槍' },
+	'抜け忍':   { defend:  12, command: '弓' },
+	'野盗':     { defend:  12, command: '馬' },
+	'農民':     { defend:   5, command: '他' },
+	'鬼':       { defend:  88, command: '他' },
+	'天狗':     { defend: 112, command: '他' }
+};
+
+var rankRate = {
+	'SSS': 120,
+	'SS': 115,
+	'S': 110,
+	'A': 105,
+	'B': 100,
+	'C': 95,
+	'D': 90,
+	'E': 85,
+	'F': 80
+};
+
+function Soldier() { return $.extend( {}, data ); }
+
+$.extend( Soldier, {
+
+nameKeys: {},
+typeKeys: {},
+classKeys: {},
+
+//. getByName
+getByName: function( name ) {
+	name = ( name == '鉄砲騎馬') ? '騎馬鉄砲' : name;
+	return data[ name ];
+},
+//. getByType
+getByType: function( type ) {
+	var name = Soldier.typeKeys[ type ];
+
+	return this.getByName( name );
+},
+//. getByClass
+getByClass: function( className ) {
+	var name = this.getNameByClass( className );
+
+	return this.getByName( name );
+},
+//. getNameByType
+getNameByType: function( type ) {
+	return Soldier.typeKeys[ type ] || '';
+},
+//. getNameByClass
+getNameByClass: function( className ) {
+	className = (className.split('_') || [])[1];
+	return Soldier.classKeys[ className ] || '';
+},
+//. getType
+getType: function( name ) {
+	return Soldier.nameKeys[ name ] || null;
+},
+//. modify
+modify: function( name, commands ) {
+	var data = Soldier.getByName( name ),
+		modRate = 0;
+
+	if ( !data ) return 0;
+
+	modRate += rankRate[ commands[ data.require[0] ] ];
+	modRate += rankRate[ commands[ data.require[1] ] ];
+
+	return modRate / 2;
+}
+
+});
+
+$.each( data, function( key, value ) {
+	Soldier.nameKeys[ key ] = value.type;
+	Soldier.typeKeys[ value.type ] = key;
+	Soldier.classKeys[ value.class ] = key;
+});
+
+return Soldier;
+
+})();
+
 //■ Data
 var Data = {
 
@@ -1557,129 +1667,173 @@ npcPower: (function() {
 	var data = [{
 		//１章、２章
 		//★１
-		'10000': [245, 185, 155, 203],
-		'01000': [185, 155, 245, 173],
+		'1-10000': [245, 185, 155, 203],
+		'1-01000': [185, 155, 245, 173],
 		//★２
-		'00200': [520, 520, 520, 448],
-		'00010': [370, 550, 430, 370],
+		'2-00200': [520, 520, 520, 448],
+		'2-00010': [370, 550, 430, 370],
 		//★３
-		'20100': [2170, 1210,  730, 1498],
-		'02100': [1210,  730, 2170, 1018],
-		'00120': [ 730, 2170, 1210, 1018],
+		'3-20100': [2170, 1210,  730, 1498],
+		'3-02100': [1210,  730, 2170, 1018],
+		'3-00120': [ 730, 2170, 1210, 1018],
 		//★４
-		'30100': [4890, 3170, 2310, 3686],
-		'03001': [3220, 2210, 5240, 2816],
-		'00310': [3200, 3200, 3200, 3200],
-		'00031': [2320, 5080, 3240, 2872],
+		'4-30100': [4890, 3170, 2310, 3686],
+		'4-03001': [3220, 2210, 5240, 2816],
+		'4-00310': [3200, 3200, 3200, 3200],
+		'4-00031': [2320, 5080, 3240, 2872],
 		//★５
-		'40110': [17360, 11390,  6445, 12341],
-		'04110': [11470,  5985, 17680,  8868],
-		'00402': [11800, 11800, 11800, 10360],
-		'00052': [ 6370, 17785, 11540,  8536],
-		'32230': [15250,  8050, 12850, 10930],
+		'5-40110': [17360, 11390,  6445, 12341],
+		'5-04110': [11470,  5985, 17680,  8868],
+		'5-00402': [11800, 11800, 11800, 10360],
+		'5-00052': [ 6370, 17785, 11540,  8536],
+		'5-32230': [15250,  8050, 12850, 10930],
 		//★６
-		'50111': [62250, 31550, 16200, 40760],
-		'05111': [31960, 17510, 60860, 26180],
-		'10511': [61600, 61600, 61600, 61600],
-		'22280': [16900, 62500, 32100, 26020],
+		'6-50111': [62250, 31550, 16200, 40760],
+		'6-05111': [31960, 17510, 60860, 26180],
+		'6-10511': [61600, 61600, 61600, 61600],
+		'6-22280': [16900, 62500, 32100, 26020],
 		//★７
-		'55552': [186700,  94200,  47950, 121950],
-		'12110': [103700,  57800, 195500,  85340],
-		'44503': [104800, 104800, 104800, 104800],
-		'22230': [ 46950, 187800,  93900,  75120]
+		'7-55552': [186700,  94200,  47950, 121950],
+		'7-12110': [103700,  57800, 195500,  85340],
+		'7-44503': [104800, 104800, 104800, 104800],
+		'7-22230': [ 46950, 187800,  93900,  75120]
 	},
 	{
 		//３章、４章
 		//★１
-		'10000': [245, 185, 155, 203],
-		'01000': [185, 155, 245, 173],
+		'1-10000': [245, 185, 155, 203],
+		'1-01000': [185, 155, 245, 173],
 		//★２
-		'10010': [370, 550, 430, 370],
-		'00200': [520, 520, 520, 448],
+		'2-10010': [370, 550, 430, 370],
+		'2-00200': [520, 520, 520, 448],
 		//★３
-		'11100': [1210,  730, 2170, 1018],
-		'11110': [2170, 1210,  730, 1498],
-		'01101': [ 730, 2170, 1210, 1018],
+		'3-11100': [1210,  730, 2170, 1018],
+		'3-11110': [2170, 1210,  730, 1498],
+		'3-01101': [ 730, 2170, 1210, 1018],
 		//★４
-		'20001': [5930, 3835, 2788, 4464],
-		'12000': [3840, 2640, 6240, 3360],
-		'00210': [2790, 6120, 3900, 3456],
-		'11021': [3840, 3840, 3840, 3840],
+		'4-20001': [5930, 3835, 2788, 4464],
+		'4-12000': [3840, 2640, 6240, 3360],
+		'4-00210': [2790, 6120, 3900, 3456],
+		'4-11021': [3840, 3840, 3840, 3840],
 		//★５
-		'50002': [19910, 10550, 16790, 14292],
-		'30021': [ 8320, 23140, 15080, 11128],
-		'13020': [15340, 15340, 15340, 13468],
-		'02300': [ 8385, 15763, 15470,  9464],
-		'01520': [23200, 15400,  8700, 16540],
-		'30140': [14970,  7810, 23340, 11596],
+		'5-50002': [19910, 10550, 16790, 14292],
+		'5-30021': [ 8320, 23140, 15080, 11128],
+		'5-13020': [15340, 15340, 15340, 13468],
+		'5-02300': [ 8385, 15763, 15470,  9464],
+		'5-01520': [23200, 15400,  8700, 16540],
+		'5-30140': [14970,  7810, 23340, 11596],
 		//★６
-		'30210': [39178, 21578, 74378, 32138],
-		'14321': [56900, 28450, 50800, 40120],
-		'23122': [86960, 44160, 22760, 57000],
-		'13432': [63200, 61100, 32750, 50030],
-		'22242': [51400, 25700, 56600, 37160],
-		'03340': [22010, 81410, 41810, 33890],
+		'6-30210': [39178, 21578, 74378, 32138],
+		'6-14321': [56900, 28450, 50800, 40120],
+		'6-23122': [86960, 44160, 22760, 57000],
+		'6-13432': [63200, 61100, 32750, 50030],
+		'6-22242': [51400, 25700, 56600, 37160],
+		'6-03340': [22010, 81410, 41810, 33890],
 		//★７
-		'42402': [210200, 114200,  66200, 143000],
-		'89331': [225000, 112500,  56250, 146250],
-		'13221': [112020,  64020, 208020,  92820],
-		'41151': [111000,  55500, 222000,  88800],
-		'52630': [ 58000, 232000, 116000,  92800],
-		'43510': [ 67800, 202800, 112800,  94800],
+		'7-42402': [210200, 114200,  66200, 143000],
+		'7-89331': [225000, 112500,  56250, 146250],
+		'7-13221': [112020,  64020, 208020,  92820],
+		'7-41151': [111000,  55500, 222000,  88800],
+		'7-52630': [ 58000, 232000, 116000,  92800],
+		'7-43510': [ 67800, 202800, 112800,  94800],
 		//★８
-		'62211': [243220, 132670,  93320, 167200],
-		'15112': [ 98560, 181360, 126160, 115120],
-		'21601': [125620,  95820, 230020, 109860],
-		'33310': [124800, 124800, 124800, 124800]
+		'8-62211': [243220, 132670,  93320, 167200],
+		'8-15112': [ 98560, 181360, 126160, 115120],
+		'8-21601': [125620,  95820, 230020, 109860],
+		'8-33310': [124800, 124800, 124800, 124800]
 	},
 	{
 		//５章
 		//★１
-		'10000': [245, 185, 430, 370],
-		'01000': [155, 245, 185, 173],
+		'1-10000': [245, 185, 430, 370],
+		'1-01000': [155, 245, 185, 173],
 		//★２
-		'00201': [370, 550, 155, 203],
-		'11020': [520, 520, 520, 448],
+		'2-00201': [370, 550, 155, 203],
+		'2-11020': [520, 520, 520, 448],
 		//★３
-		'11101': [ 735, 2265, 1245, 1041],
+		'3-11101': [ 735, 2265, 1245, 1041],
 //同じ資源数なので、それぞれの兵科で高い方を採用
-//		'11110': [1245,  735, 2265, 1041],
-//		'11110': [2265, 1245,  735, 1551],
-		'11110': [2265, 1245, 2265, 1551],
+//		'3-11110': [1245,  735, 2265, 1041],
+//		'3-11110': [2265, 1245,  735, 1551],
+		'3-11110': [2265, 1245, 2265, 1551],
 		//★４
-		'11101': [5145, 5145, 5145, 5145],
-		'12100': [8255, 5265, 3770, 6162],
-		'11210': [5260, 3780, 8220, 4668],
-		'21131': [3645, 8005, 5165, 4597],
+		'4-11101': { '雑賀衆': 125, '農民': 375 },
+		'4-12100': { '海賊衆': 100, '農民': 350, '抜け忍': 50 },
+		'4-11210': { '国人衆': 110, '農民': 355, '浪人': 75 },
+		'4-21131': { '母衣衆': 120, '農民': 360, '野盗': 25 },
 		//★５
-		'50201': [10435, 28673, 19320, 13842],
-		'32010': [21680, 12200, 24050, 16466],
-		'23010': [18965, 10383, 28990, 14920],
-		'10501': [18535, 18535, 18535, 16771],
-		'01520': [28950, 19065, 10483, 20471],
-		'04150': [12630, 22090, 24160, 13804],
+		'5-50201': { '国人衆': 145, '母衣衆': 625, '農民': 240 },
+		'5-32010': { '雑賀衆': 125, '浪人': 610, '抜け忍': 305 },
+		'5-23010': { '国人衆': 560, '海賊衆': 95, '農民': 280, '浪人': 235 },
+		'5-10501': { '雑賀衆': 375, '浪人': 190, '抜け忍': 190, '野盗': 190 },
+		'5-01520': { '海賊衆': 590, '母衣衆': 100, '農民': 295 },
+		'5-04150': { '国人衆': 170, '農民': 170, '浪人': 280, '野盗': 560 },
 		//★６
-		'22210': [ 69090,  34545, 78960, 50196],
-		'43311': [ 51985,  28288, 99380, 42506],
-		'45232': [ 76025,  38013, 67840, 53602],
-		'25132': [ 27140, 101930, 52070, 42098],
-		'32431': [ 72345,  69920, 37523, 57283],
-		'11450': [102015,  51985, 26970, 66994],
+		'6-22210': { '国人衆': 1085, '浪人': 1085, '抜け忍': 1085 },
+		'6-43311': { '国人衆': 1660, '雑賀衆': 210, '浪人': 1245 },
+		'6-45232': { '武士': 825, '国人衆': 515, '抜け忍': 1545 },
+		'6-25132': { '母衣衆': 1455, '雑賀衆': 100, '野盗': 1260 },
+		'6-32431': { '海賊衆': 1320, '農民': 790, '野盗': 1145 },
+		'6-11450': { '海賊衆': 1440, '雑賀衆': 90, '抜け忍': 1170 },
 		//★７
-		'15152':  [ 77070, 308280, 154140, 123312],
-		'22230':  [ 88105, 286555, 154255, 127795],
-		'12630':  [154050,  77025, 308100, 123240],
-		'910651': [169650, 169650, 169650, 150930],
-		'52222':  [291770, 164890,  82445, 194809],
-		'33341':  [240945, 154185, 110805, 180213],
+		'7-15152':  { '赤備え': 1200, '野盗': 7175 },
+		'7-22230':  { '農民': 1125, '野盗': 7875, '鬼': 115 },
+		'7-12630':  { '武士': 1225, '浪人': 7335 },
+		'7-910651': { '農民': 465, '浪人': 1860, '抜け忍': 1860, '野盗': 1860, '鬼': 465 },
+		'7-52222':  { '弓騎馬': 1295, '抜け忍': 6475, '野盗': 650 },
+		'7-33341':  { '農民': 520, '抜け忍': 5165, '鬼': 520 },
 		//★８
-		'72221': [172340, 141805, 302010, 154246],
-		'27213': [257500, 178508, 150728, 203210],
-		'22702': [140220, 267480, 182640, 165672],
-		'33342': [182440, 182440, 182440, 182440]
+		'8-72221': { '国人衆': 1750, '母衣衆': 875, '雑賀衆': 1310, '浪人': 5240, '鬼': 90, '天狗': 5 },
+		'8-27213': { '国人衆': 370, '海賊衆': 1105, '雑賀衆': 370, '抜け忍': 2940, '鬼': 735, '天狗': 5 },
+		'8-22702': { '母衣衆': 1575, '野盗': 2950, '鬼': 790, '天狗': 5 },
+		'8-33342': { '鬼': 905, '天狗': 455 }
 	}];
 
-	return [ {}, data[0], data[0], data[1], data[1], data[2] ][ Env.chapter ] || {};
+	data = [ {}, data[0], data[0], data[1], data[1], data[2] ][ Env.chapter ] || {};
+
+	if ( Env.chapter <= 4 ) {
+		return data;
+	}
+
+	var soldata = Soldier();
+	var paneldata = {};
+
+	for ( var key in data ) {
+		let panel = data[ key ],
+			def = { '槍': 0, '弓': 0, '馬': 0, '器': 0 },
+			[ rank, material ] = key.split('-');
+
+		if ( 1 <= rank && rank <= 3 ) {
+			paneldata[ key ] = panel;
+			continue;
+		}
+
+		for ( var solname in panel ) {
+			let { defend, command } = soldata[ solname ],
+				solnum = panel[ solname ],
+				mod = 1;
+
+			if ( 4 <= rank && rank <= 6 && Env.season >= 3 ) {
+				mod = 1 + ( Env.season - 2 ) / 10;
+			}
+			else if ( 7 <= rank && rank <= 8 ) {
+				mod = 1 + ( Env.season - 1 ) / 10;
+			}
+
+			solnum = Math.floor( solnum * mod / 5 ) * 5;
+			command = ( command == '他' ) ? '器' : command;
+			def[ command ] += solnum * defend;
+		}
+
+		paneldata[ key ] = [
+			Math.ceil( def['槍'] + def['弓'] * 2 + def['馬'] * 0.5 + def['器'] ),
+			Math.ceil( def['槍'] * 0.5 + def['弓'] + def['馬'] * 2 + def['器'] ),
+			Math.ceil( def['槍'] * 2 + def['弓'] * 0.5 + def['馬'] + def['器'] ),
+			Math.ceil( def['槍'] * 0.8 + def['弓'] * 1.3 + def['馬'] * 0.8 + def['器'] )
+		];
+	}
+
+	return paneldata;
 })(),
 
 //. hpRecovery
@@ -1981,109 +2135,6 @@ skillTable: {
 }
 
 };
-
-//■ Soldier
-var Soldier = (function() {
-
-var data = {
-	//槍
-	'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
-	'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
-	'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
-	'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
-	//弓
-	'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
-	'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
-	'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
-	'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
-	//馬
-	'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
-	'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
-	'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
-	'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
-	//器
-	'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-	'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-	'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
-	'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
-	'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
-	'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']}
-};
-
-var rankRate = {
-	'SSS': 120,
-	'SS': 115,
-	'S': 110,
-	'A': 105,
-	'B': 100,
-	'C': 95,
-	'D': 90,
-	'E': 85,
-	'F': 80
-};
-
-function Soldier() { return $.extend( {}, data ); }
-
-$.extend( Soldier, {
-
-nameKeys: {},
-typeKeys: {},
-classKeys: {},
-
-//. getByName
-getByName: function( name ) {
-	name = ( name == '鉄砲騎馬') ? '騎馬鉄砲' : name;
-	return data[ name ];
-},
-//. getByType
-getByType: function( type ) {
-	var name = Soldier.typeKeys[ type ];
-
-	return this.getByName( name );
-},
-//. getByClass
-getByClass: function( className ) {
-	var name = this.getNameByClass( className );
-
-	return this.getByName( name );
-},
-//. getNameByType
-getNameByType: function( type ) {
-	return Soldier.typeKeys[ type ] || '';
-},
-//. getNameByClass
-getNameByClass: function( className ) {
-	className = (className.split('_') || [])[1];
-	return Soldier.classKeys[ className ] || '';
-},
-//. getType
-getType: function( name ) {
-	return Soldier.nameKeys[ name ] || null;
-},
-//. modify
-modify: function( name, commands ) {
-	var data = Soldier.getByName( name ),
-		modRate = 0;
-
-	if ( !data ) return 0;
-
-	modRate += rankRate[ commands[ data.require[0] ] ];
-	modRate += rankRate[ commands[ data.require[1] ] ];
-
-	return modRate / 2;
-}
-
-});
-
-$.each( data, function( key, value ) {
-	Soldier.nameKeys[ key ] = value.type;
-	Soldier.typeKeys[ value.type ] = key;
-	Soldier.classKeys[ value.class ] = key;
-});
-
-return Soldier;
-
-})();
 
 //■■■■■■■■■■■■■■■■■■■
 
@@ -3217,7 +3268,7 @@ function enterArea() {
 		materials = data.materials,
 		distance  = data.distance,
 		dist_mod  = Math.floor( 19 / (parseFloat( distance ) + 9) * 100 ),
-		npcPower  = Data.npcPower[ materials ],
+		npcPower  = Data.npcPower[ data.rank + '-' + materials ],
 		min, minidx, str, attack_mod;
 
 	dist_mod = (dist_mod > 100) ? 100 : dist_mod;
