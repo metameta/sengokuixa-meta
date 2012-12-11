@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.0
+// @version        1.1.1.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3994,7 +3994,8 @@ filterMenu: function( container, up ) {
 		],
 		[
 			{ title: 'HP最大',    selecter: [ 'hp', 'max' ] },
-			{ title: 'HP99以下',  selecter: [ 'hp', 99, 'lt' ] }
+			{ title: 'HP99以下',  selecter: [ 'hp', 99, 'lt' ] },
+			{ title: '討伐300',   selecter: [ 'battleGage', 300 ] }
 		],
 	];
 
@@ -4033,7 +4034,9 @@ sortMenu: function( container, up ) {
 			{ title: '兵数：降', selecter: [ 'solNum', 'desc' ] },
 			{ title: '兵数：昇', selecter: [ 'solNum', 'asc' ] },
 			{ title: '指揮力：降', selecter: [ 'maxSolNum', 'desc' ] },
-			{ title: '指揮力：昇', selecter: [ 'maxSolNum', 'asc' ] }
+			{ title: '指揮力：昇', selecter: [ 'maxSolNum', 'asc' ] },
+			{ title: '破壊力：降', selecter: [ 'totalDes', 'desc' ] },
+			{ title: '破壊力：昇', selecter: [ 'totalDes', 'asc' ] }
 		],
 		[
 			{ title: 'コスト：降', selecter: [ 'cost', 'desc' ] },
