@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.1
+// @version        1.1.1.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4498,7 +4498,7 @@ Deck.dialog = function( village, brigade, coord ) {
 				let card = cardlist[ card_id ];
 
 				if ( namelist[ card.name ] ) {
-					delete card.squadId;
+					card.gounit = '0';
 					card.update();
 				}
 			}
@@ -5281,7 +5281,7 @@ getRecoveryTime: function() {
 
 //.. canAssign
 canAssign: function() {
-	return ( this.squadId && this.solNum > 0 );
+	return ( this.gounit == '1' && this.solNum > 0 );
 },
 
 //.. canUnion
@@ -5511,12 +5511,15 @@ analyze: function() {
 
 	//squad_id
 	//「選択中の部隊へ」ボタンがある：部隊配置可
-	$img = $elem.find('IMG[alt="選択中の部隊へ"]').addClass('imc_assign_button');
-	text = $img.parent().attr('onClick') || '';
+	$img = $elem.find('IMG[alt="選択中の部隊へ"]');
+	text = $img.parent().addClass('imc_assign_button').attr('onClick') || '';
 	array = text.match(/confirmRegist2\('\d*', '(\d+)'/);
 	if ( array != null ) {
 		this.squadId = array[ 1 ];
 	}
+
+	//gounit
+	this.gounit = $elem.find('INPUT[id^="btn_gounit_flg_"]').val();
 
 	//battle_gage
 	this.battleGage = $elem.find('.ig_deck_battlepoint2').text().toInt();
@@ -5666,10 +5669,13 @@ update: function() {
 	$tr.eq( 2 ).find('TD').text( Math.floor( this.totalAtk ).toFormatNumber( '', '-' ) );
 	$tr.eq( 3 ).find('TD').text( Math.floor( this.totalDef ).toFormatNumber( '', '-' ) );
 
-	if ( !this.canAssign() ) {
+	if ( this.canAssign() ) {
+		$elem.removeClass('imc_disabled');
+		$elem.find('.imc_assign_button').show();
+	}
+	else {
 		$elem.addClass('imc_disabled');
 		$elem.find('.imc_assign_button').hide();
-		delete this.squadId;
 	}
 }
 
