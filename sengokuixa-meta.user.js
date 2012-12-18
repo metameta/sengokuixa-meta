@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.6
+// @version        1.1.1.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2314,10 +2314,10 @@ analyzeArea: function( $area_list, img_list ) {
 		}
 
 		data.castle     = ( array[0] != '　' ) ? array[0] : '';
-		data.user       = ( array[1] != '　' ) ? array[1].replace(/\([\d-]+\)$/, '') : '';
+		data.user       = ( array[1] != '　' ) ? array[1].replace(/\(Lv\d+\)$/, '') : '';
 		data.population = ( array[2] != '　' ) ? array[2] : '-';
 		data.point      = array[3].replace(/[\(\)]/g, '');
-		data.alliance   = ( array[4] != '　' ) ? array[4].replace(/\([\d-]+\)$/, '') : '';
+		data.alliance   = ( array[4] != '　' ) ? array[4] : '';
 		data.distance   = array[6];
 		data.npc        = array[ array.length - 2 ];
 
@@ -8514,18 +8514,15 @@ main: function() {
 
 	$.Deferred().resolve()
 	.pipe(function() {
-		var num = $('#deck_file SELECT[name="show_num"]').val();
+		var num = $('#deck_file SELECT[name="show_num"]').val(),
+			groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
+			group = groupclass.match(/\d(\d)/)[ 1 ];
+
 		if ( num != '100' ) { return; }
-
-		var href = $('UL.pager LI.last A:first').attr('href');
-		if ( !href ) { return; }
-
-		if ( !/show_num/.test( href ) ) {
-			href += '&show_num=100';
-		}
+		if ( $('UL.pager').length == 0 ) { return; }
 
 		//２頁目取得
-		return $.get( href )
+		return $.post( '/facility/set_unit_list.php', { show_num: num, p: 2, select_card_group: group })
 		.pipe(function( html ) {
 			var $html = $(html),
 				$tr = $html.find('#busho_info > TBODY > TR').slice( 1 );
@@ -10175,7 +10172,7 @@ main: function() {
 
 //. layouter
 layouter: function() {
-	var html, $TR;
+	var html;
 
 	//情報表示欄を削除
 	$('#act_battle_data, #map_youpoint, #map_statusbox, #map_textarea, #map_view_text').remove();
@@ -10237,9 +10234,7 @@ layouter: function() {
 	});
 
 	//情報表示エリア調整
-	$TR = $('.ig_mappanel_dataarea TR');
-	$TR.eq( 0 ).find('TD').eq( 0 ).width( 40 ).text('城主名');
-	$TR.eq( 1 ).find('TD').eq( 0 ).text('同盟名');
+	$('#user_name, #alliance_name').width( 155 );
 
 	//NPC空き地必要攻撃力表示エリア
 	html = '<tr>' +
