@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.2
+// @version        1.1.1.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2527,20 +2527,20 @@ coordList: function( country ) {
 
 		menu[ title ] = $.contextMenu.title;
 
-		menu['ここを中心に表示'] = function() { move( x, y ); };
-		menu['ここへ部隊出陣'] = function() { send( x, y ); };
+		menu['ここを中心に表示'] = function() { Map.move( x, y ); };
+		menu['ここへ部隊出陣'] = function() { Map.send( x, y ); };
 
 		if ( castle != '' ) {
 			menu['セパレーター1'] = $.contextMenu.separator;
-			menu['合戦報告書'] = function() { contextmenu.warList( user ); };
-			menu['格付'] = function() { contextmenu.ranking( user ); };
-			menu['一戦撃破・防衛'] = function() { contextmenu.score( user ); };
+			menu['合戦報告書'] = function() { Map.contextmenu.warList( user ); };
+			menu['格付'] = function() { Map.contextmenu.ranking( user ); };
+			menu['一戦撃破・防衛'] = function() { Map.contextmenu.score( user ); };
 		}
 
 		menu['セパレーター2'] = $.contextMenu.separator;
 		menu['座標削除'] = function() {
-			coordUnregister( x, y, country );
-			coordList( country );
+			Map.coordUnregister( x, y, country );
+			Map.coordList( country );
 		};
 
 		return menu;
