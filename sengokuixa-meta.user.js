@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.4
+// @version        1.1.1.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3804,12 +3804,16 @@ targetList: function() {
 //.. filter
 filter: function( cardlist ) {
 	var conditions = Deck.filter.conditions,
+		exceptions = Deck.filter.exceptions,
 		list = [];
 
 	for ( var card_id in cardlist ) {
 		let card = cardlist[ card_id ];
 
-		if ( card.match( conditions ) ) {
+		if ( exceptions[ card_id ] ) {
+			card.element.hide();
+		}
+		else if ( card.match( conditions ) ) {
 			card.element.show();
 			list.push( card );
 		}
@@ -3899,6 +3903,11 @@ commandMenu: function( container, up ) {
 		}
 		else {
 			$li.addClass('imc_selected');
+		}
+
+		//フィルタ変更の場合
+		if ( $li.hasClass('imc_filter') ) {
+			Deck.filter.exceptions = {};
 		}
 
 		container.trigger('update');
@@ -4002,6 +4011,7 @@ filterMenu: function( container, up ) {
 	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
 	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
 	Deck.filter.conditions = [];
+	Deck.filter.exceptions = {};
 },
 
 //.. sortMenu
@@ -4699,6 +4709,11 @@ contextmenu: function() {
 	}
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
+	menu['セパレーター'] = $.contextMenu.separator;
+	menu['リストから除外する'] = function() {
+		Deck.filter.exceptions[ card_id ] = true;
+		card.element.hide();
+	};
 
 	return menu;
 }
