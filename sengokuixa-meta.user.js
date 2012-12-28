@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.8
+// @version        1.1.1.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -473,6 +473,35 @@ getTrainingStatus: function( $table ) {
 
 		MetaStorage('COUNTDOWN').set('訓練', data);
 	});
+},
+
+//. getPoolSoldiers
+getPoolSoldiers: function() {
+	var data = {};
+
+	$.ajax({ type: 'get', url: '/facility/unit_list.php', async: false })
+	.pipe(function( html ) {
+		var $html = $( html ),
+			$table, $cell, text;
+
+		text = $html.find('.ig_solder_commentarea').text().split('/')[ 1 ].trim();
+		data.capacity = text.toInt();
+		data.soldier = $html.find('#all_pool_unit_cnt').text().toInt();
+		data.pool = {};
+
+		$table = $html.find('.table_fightlist2').first();
+		$cell = $table.find('TH');
+
+		$cell.each(function() {
+			var $this = $(this),
+				type = Soldier.getType( $this.text() ),
+				pool = $this.next().text().toInt();
+
+			data.pool[ type ] = pool;
+		});
+	});
+
+	return data;
 },
 
 //. getUnitStatus
@@ -3746,6 +3775,9 @@ $.extend( Deck, {
 //.. analyzedData
 analyzedData: {},
 
+//.. poolSoldiers
+poolSoldiers: null,
+
 //.. currentUnit
 currentUnit: null,
 
@@ -3760,6 +3792,12 @@ freeCost: 0,
 
 //.. ano
 ano: 0,
+
+//.. getPoolSoldiers
+getPoolSoldiers: function() {
+	Deck.poolSoldiers = Deck.poolSoldiers || Util.getPoolSoldiers();
+	return Deck.poolSoldiers;
+},
 
 //.. setup
 setup: function( free_cost, ano, card_list ) {
@@ -5097,125 +5135,116 @@ editUnit: function() {
 	var card = this,
 		selected = card.element.hasClass('imc_selected'),
 		card_soltype = card.solType || '',
+		data = Deck.getPoolSoldiers(),
 		dfd = $.Deferred(),
-		list = {};
+		list = {}, content = '';
 
-	$.get( '/facility/set_unit.php?card_id=' + card.cardId + '&ano=0&p=1' )
-	.pipe(function( html ) {
-		var $html = $(html),
-			content = '';
+	$.each( Soldier.typeKeys, function( type ) {
+		var num = data.pool[ type ] || 0;
 
-		$.each( Soldier.typeKeys, function( type ) {
-			var $span = $html.find('#pool_unit_now_' + type ),
-				num;
+		//兵種が同じ場合、自身の兵数も加算
+		if ( type == card_soltype ) { num += card.solNum; }
+		if ( num == 0 ) { return; }
 
-			if ( $span.length == 0 ) { return; }
+		list[ type ] = num;
 
-			num = $span.text().toInt();
-			//兵種が同じ場合、自身の兵数も加算
-			if ( type == card_soltype ) { num += card.solNum; }
-			if ( num == 0 ) { return; }
+		content += '<tr data-type="' + type + '" data-num="' + num + '">' +
+			'<th>' + this + '</th><td>1</td>';
 
-			list[ type ] = num;
-
-			content += '<tr data-type="' + type + '" data-num="' + num + '">' +
-				'<th>' + this + '</th><td>1</td>';
-
-			[ 10, 250, 500 ].forEach(function( value ) {
-				if ( num >= value ) {
-					content += '<td>' + value + '</td>';
-				}
-				else {
-					content += '<td class="imc_disabled">' + value + '</td>';
-				}
-			});
-
-			if ( num >= card.maxSolNum ) {
-				content += '<td>' + card.maxSolNum + '</td>';
+		[ 10, 250, 500 ].forEach(function( value ) {
+			if ( num >= value && value <= card.maxSolNum ) {
+				content += '<td>' + value + '</td>';
 			}
 			else {
-				content += '<td>' + num + '</td>';
+				content += '<td class="imc_disabled">' + value + '</td>';
 			}
-
-			content += '</tr>';
 		});
 
-		if ( !selected && card.solNum != 0 ) {
-			content += '<tr data-type=""><th>解散</th><td colspan="5">0</td></tr>';
+		if ( num >= card.maxSolNum ) {
+			content += '<td>' + card.maxSolNum + '</td>';
+		}
+		else {
+			content += '<td>' + num + '</td>';
 		}
 
-		content = '' +
-		'<table id="imi_unitedit" class="imc_table">' +
-			'<tr><th>兵種</th><th colspan="5">兵数</th></tr>' + content +
-		'</table>' +
-		'<table class="imc_table" style="margin: 10px auto 0px auto;">' +
-			'<tr><th id="imi_unitedit_type" style="width: 60px;"></th><td><input id="imi_unitedit_value" style="width: 50px; ime-mode: disabled;" maxlength="5"> / ' + card.maxSolNum + '</td></tr>' +
-		'</table>';
+		content += '</tr>';
+	});
 
-		var $table = $( content );
-		$table.find('#imi_unitedit_type').data({ type: card_soltype }).text( card.solName || '未編成' );
-		$table.find('#imi_unitedit_value').val( card.solNum );
-		$table.eq( 0 ).find('TD').not('.imc_disabled')
-		.hover( Util.enter, Util.leave )
-		.click(function() {
-			var $this = $(this),
-				name = $this.closest('TR').find('TH').text(),
-				type = $this.closest('TR').data('type'),
-				num  = $this.text().toInt();
+	if ( !selected && card.solNum != 0 ) {
+		content += '<tr data-type=""><th>解散</th><td colspan="5">0</td></tr>';
+	}
 
-			$('#imi_unitedit_type').data({ type: type }).text( name );
-			$('#imi_unitedit_value').val( num );
-		});
+	content = '' +
+	'<table id="imi_unitedit" class="imc_table">' +
+		'<tr><th>兵種</th><th colspan="5">兵数</th></tr>' + content +
+	'</table>' +
+	'<table class="imc_table" style="margin: 10px auto 0px auto;">' +
+		'<tr><th id="imi_unitedit_type" style="width: 60px;"></th><td><input id="imi_unitedit_value" style="width: 50px; ime-mode: disabled;" maxlength="5"> / ' + card.maxSolNum + '</td></tr>' +
+	'</table>';
 
-		Display.dialog({
-			title: '兵編成「' + card.name + '」',
-			content: $table,
-			width: 400, height: 'auto',
-			buttons: {
-				'決定': function() {
-					var self = this,
-						type = $('#imi_unitedit_type').data('type'),
-						val = $('#imi_unitedit_value').val(),
-						num;
+	var $table = $( content );
+	$table.find('#imi_unitedit_type').data({ type: card_soltype }).text( card.solName || '未編成' );
+	$table.find('#imi_unitedit_value').val( card.solNum );
+	$table.eq( 0 ).find('TD').not('.imc_disabled')
+	.hover( Util.enter, Util.leave )
+	.click(function() {
+		var $this = $(this),
+			name = $this.closest('TR').find('TH').text(),
+			type = $this.closest('TR').data('type'),
+			num  = $this.text().toInt();
 
-					if ( /\D/.test( val ) ) {
-						Display.alert('数値を入力してください。');
-						return;
-					}
+		$('#imi_unitedit_type').data({ type: type }).text( name );
+		$('#imi_unitedit_value').val( num );
+	});
 
-					num = val.toInt();
+	Display.dialog({
+		title: '兵編成「' + card.name + '」',
+		content: $table,
+		width: 400, height: 'auto',
+		buttons: {
+			'決定': function() {
+				var self = this,
+					type = $('#imi_unitedit_type').data('type'),
+					val = $('#imi_unitedit_value').val(),
+					num;
 
-					if ( type == '' ) {
-						//解除
-						num = 0;
-					}
-					else if ( num == 0 ) {
-						Display.alert('0以上を入力してください。');
-						return;
-					}
-
-					if ( num > card.maxSolNum ) { num = card.maxSolNum; }
-					if ( num > list[ type ] ) { num = list[ type ]; }
-
-					if ( num == card.solNum && type == card_soltype ) {
-						Display.alert('変更はありません。');
-						dfd.reject();
-						self.close();
-						return;
-					}
-
-					card.setUnit( num, type )
-					.always(function() {
-						dfd.resolve();
-						self.close();
-					});
-				},
-				'キャンセル': function() {
-					dfd.reject();
-					this.close();
+				if ( /\D/.test( val ) ) {
+					Display.alert('数値を入力してください。');
+					return;
 				}
+
+				num = val.toInt();
+
+				if ( type == '' ) {
+					//解除
+					num = 0;
+				}
+				else if ( num == 0 ) {
+					Display.alert('0以上を入力してください。');
+					return;
+				}
+
+				if ( num > card.maxSolNum ) { num = card.maxSolNum; }
+				if ( num > list[ type ] ) { num = list[ type ]; }
+
+				if ( num == card.solNum && type == card_soltype ) {
+					Display.info('変更はありません。');
+					dfd.reject();
+					self.close();
+					return;
+				}
+
+				card.setUnit( num, type )
+				.always(function() {
+					dfd.resolve();
+					self.close();
+				});
+			},
+			'キャンセル': function() {
+				dfd.reject();
+				this.close();
 			}
-		});
+		}
 	});
 
 	return dfd;
@@ -5224,8 +5253,11 @@ editUnit: function() {
 //.. setUnit
 setUnit: function( value, type ) {
 	var card = this,
-		card_id = card.cardId,
-		unit_type = ( type !== undefined ) ? type : card.solType;
+		card_id  = card.cardId,
+		old_type = card.solType,
+		old_num  = card.solNum,
+		unit_type = ( type !== undefined ) ? type : card.solType,
+		data = Deck.getPoolSoldiers();
 
 	if ( unit_type === null ) { return $.Deferred().resolve(); }
 
@@ -5242,46 +5274,31 @@ setUnit: function( value, type ) {
 	.pipe(function() {
 		card.solNum = value;
 		card.solName = Soldier.getNameByType( unit_type );
+		card.solType = unit_type;
 		card.power();
 		card.update();
+
+		//プールデータ更新
+		if ( old_type ) { data.pool[ old_type ] += old_num; }
+		if ( unit_type ) { data.pool[ unit_type ] -= value; }
 	});
 },
 
 //.. setUnitMax
 setUnitMax: function() {
 	var card = this,
-		card_id = card.cardId;
+		data = Deck.getPoolSoldiers(),
+		sol_num;
 
-	return $.get('/facility/set_unit.php?card_id=' + card_id + '&ano=0&p=1')
-	.pipe(function( html ) {
-		var $html = $(html),
-			$form = $html.find('#set_unit_form'),
-			post_data;
+	sol_num = data.pool[ card.solType ] || 0;
+	if ( sol_num == 0 ) { $.Deferred().reject(); }
 
-		if ( $form.length == 0 ) {
-			return $.Deferred().reject();
-		}
+	sol_num = card.solNum + sol_num;
+	if ( sol_num > card.maxSolNum ) {
+		sol_num = card.maxSolNum;
+	}
 
-		//「全員を最大補充して完了」ボタンと同等処理
-		post_data = $form.serialize() + '&btn_preview_max=true';
-
-		return $.post( '/facility/set_unit.php', post_data );
-	})
-	.pipe(function( html ) {
-		var $html = $(html),
-			$form = $html.find('#set_unit_confirm_form'),
-			$input = $html.find('INPUT[name="unit_count_arr[0]"]'),
-			sol_num;
-
-		if ( $form.length == 0 || $input.length == 0 ) {
-			return $.Deferred().reject();
-		}
-
-		//最大補充時の人数取得
-		sol_num = $input.val().toInt();
-
-		return card.setUnit( sol_num );
-	});
+	return card.setUnit( sol_num );
 },
 
 //.. getRecoveryTime
