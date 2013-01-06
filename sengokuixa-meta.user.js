@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.9
+// @version        1.1.1.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4474,47 +4474,97 @@ Deck.dialog = function( village, brigade, coord ) {
 		}
 	})
 	.on( 'click', '#imi_all_assign', function() {
-		if ( !confirm('全部隊登録処理を行います。\nよろしいですか？') ) { return false; }
+		var dfd = $.Deferred(),
+			html, $html;
 
-		var cardlist = Deck.targetList(),
-			assignlist = [],
-			namelist = {},
-			freecost = Deck.freeCost,
-			freecard = ( 5 - Deck.ano ) * 4;
+		html = '' +
+		'<div style="padding-left: 1px;">' +
+		'全部隊登録処理を行います。<br/>よろしいですか？' +
+		'</div>' +
+		'<table id="imi_unitnum" class="imc_table" style="margin: 10px auto 0px auto;">' +
+			'<tr><th colspan="4">部隊毎の武将数指定</th></tr>' +
+			'<tr><td class="imc_selected" data-unitnum="4">４武将</td><td data-unitnum="3">３武将</td><td data-unitnum="2">２武将</td><td data-unitnum="1">１武将</td></tr>' +
+		'</table>' +
+		'<div style="margin: 8px 0px 2px 0px;"><label><input id="imi_dungeon" type="checkbox" /> 登録完了後に秘境探索画面へ</label></div>';
 
-		if ( freecost == 0 || freecard == 0 ) {
-			Display.alert('編成できませんでした。');
-			return;
-		}
+		$html = $( html );
+		$html.find('TD')
+		.hover( Util.enter, Util.leave )
+		.click(function() {
+			$('#imi_unitnum .imc_selected').removeClass('imc_selected');
+			$(this).addClass('imc_selected');
+		});
 
-		for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
-			let card = cardlist[ i ];
-			if ( !card.canAssign() ) { continue; }
-			if ( card.cost > freecost ) { continue; }
-			if ( namelist[ card.name ] ) { continue; }
+		Display.dialog({
+			title: '全部隊登録',
+			width: 320, height: 'auto',
+			content: $html,
+			buttons: {
+				'決定': function() {
+					var unitnum = $('#imi_unitnum .imc_selected').data('unitnum').toInt(),
+						dungeon = $('#imi_dungeon').attr('checked');
 
-			namelist[ card.name ] = true;
-			freecost -= card.cost;
-			freecard--;
-			assignlist.push( card );
-		}
+					this.close();
+					dfd.resolve( unitnum, dungeon );
+				},
+				'キャンセル': function() {
+					this.close();
+					dfd.reject();
+				}
+			}
+		});
 
-		if ( assignlist.length == 0 ) {
-			Display.alert('編成できませんでした。');
-			return;
-		}
+		dfd
+		.pipe(function( unitnum, dungeon ) {
+			var cardlist = Deck.targetList(),
+				assignlist = [],
+				namelist = {},
+				freecost = Deck.freeCost,
+				freecard = ( 5 - Deck.ano ) * unitnum;
 
-		(function() {
+			if ( freecost == 0 || freecard == 0 ) {
+				Display.alert('編成できませんでした。');
+				return $.Deferred().reject();
+			}
+
+			for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
+				let card = cardlist[ i ];
+				if ( !card.canAssign() ) { continue; }
+				if ( card.cost > freecost ) { continue; }
+				if ( namelist[ card.name ] ) { continue; }
+
+				namelist[ card.name ] = true;
+				freecost -= card.cost;
+				freecard--;
+				assignlist.push( card );
+			}
+
+			if ( assignlist.length == 0 ) {
+				Display.alert('編成できませんでした。');
+				return $.Deferred().reject();
+			}
+
+			return [ assignlist, unitnum, dungeon ];
+		})
+		.pipe(function( param ) {
+			var self = arguments.callee,
+				[ assignlist, unitnum, dungeon ] = param,
+				unit;
+
 			if ( assignlist.length == 0 ) {
 				Display.dialog().message('ページを更新します...');
-				location.reload();
+
+				if ( dungeon ) {
+					location.href = Util.getVillageChangeUrl( village.id, '/facility/dungeon.php' );
+				}
+				else {
+					location.reload();
+				}
 				return;
 			}
 
-			var callee = arguments.callee,
-				unit = new Unit();
-
-			for ( var i = 0; i < 4 && assignlist.length > 0; i++) {
+			unit = new Unit();
+			for ( var i = 0; i < unitnum && assignlist.length > 0; i++) {
 				unit.assignList.push( assignlist.shift() );
 			}
 
@@ -4524,9 +4574,9 @@ Deck.dialog = function( village, brigade, coord ) {
 			})
 			.always(function( ol ) {
 				if ( ol && ol.close ) { ol.close(); }
-				callee();
+				self( param );
 			});
-		})();
+		});
 	})
 	.on( 'click', '#imi_card_assign', function() {
 		Deck.assignCard( village.id )
@@ -4845,7 +4895,8 @@ assignCard: function( village_id, unit_id ) {
 	}
 
 	var ol = Display.dialog(),
-		list = [].concat( this.assignList );
+		list = [].concat( this.assignList ),
+		retry = 0;
 
 	if ( unit_id ) {
 		ol.message('選択中の部隊に登録します。');
@@ -4871,18 +4922,22 @@ assignCard: function( village_id, unit_id ) {
 				name = ( text.match(/\[(.+)\]/) || [,''] )[ 1 ],
 				href = $html.find('#ig_deck_unititle A').attr('href') || '',
 				unit_id = href.match(/unit_assign_id=(\d+)/),
-				$li = $html.find('#ig_unitchoice LI');
+				$li = $html.find('#ig_unitchoice LI'),
+				idx, newidx;
 
 			if ( name != card.name ) {
-				var idx = $li.index( $li.filter(':contains("' + card.name + '")') );
-
-				if ( idx == -1 || list.length == 0 ) {
+				if ( retry >= 1 || list.length == 0 ) {
 					return $.Deferred().reject( ol );
 				}
 
 				ol.message('部隊IDの取得失敗').message('部隊ID再取得中...');
 
+				idx = $li.index( $li.filter(':contains("' + card.name + '")') );
+				newidx = $li.index( $li.filter(':contains("新規部隊")') );
+				if ( idx == -1 ) { idx = newidx; }
+
 				Deck.ano = idx;
+				retry++;
 
 				return $.get( '/card/deck.php?ano=' + idx ).pipe( arguments.callee );
 			}
@@ -10135,6 +10190,9 @@ style: '' +
 '.imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
 '.imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
 '.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
+/* 全部隊登録 */
+'#imi_unitnum TD { width: 40px; cursor: pointer; }' +
+'#imi_unitnum .imc_selected { background-color: #f9dea1; }' +
 
 /* フィルタ */
 '.imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
