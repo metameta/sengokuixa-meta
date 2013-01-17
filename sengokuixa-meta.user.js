@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.11
+// @version        1.1.1.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4163,7 +4163,11 @@ setUnit: function( cardlist, num, type ) {
 		pooldata[ card.solType ] += card.solNum;
 		pool = pooldata[ newType ];
 
-		if ( pool >= newNum ) {
+		if ( pool == 0 ) {
+			pooldata[ card.solType ] -= card.solNum;
+			continue;
+		}
+		else if ( pool >= newNum ) {
 			editlist.push( [ card, newNum, newType ] );
 			pool -= newNum;
 		}
@@ -4184,9 +4188,8 @@ setUnitMax: function( cardlist ) {
 },
 
 //.. gatherSoldier
-gatherSoldier: function() {
+gatherSoldier: function( cardlist, num ) {
 	var pooldata = $.extend( {}, Deck.getPoolSoldiers().pool ),
-		cardlist = Deck.targetList(),
 		editlist = [];
 
 	for ( var i = 0, len = cardlist.length; i < len; i++ ) {
@@ -4197,12 +4200,14 @@ gatherSoldier: function() {
 	}
 
 	for ( var i = 0, len = editlist.length; i < len; i++ ) {
-		let [ card, num, type ] = editlist[ i ],
-			pool = pooldata[ type ] + num;
+		let [ card, newNum, type ] = editlist[ i ],
+			pool = pooldata[ type ] + newNum;
 
-		if ( pool >= card.maxSolNum ) {
-			editlist[ i ] = [ card, card.maxSolNum, type, ( card.maxSolNum - card.solNum ) ];
-			pool -= card.maxSolNum;
+		newNum = ( num <= card.maxSolNum ) ? num : card.maxSolNum;
+
+		if ( pool >= newNum ) {
+			editlist[ i ] = [ card, newNum, type, ( newNum - card.solNum ) ];
+			pool -= newNum;
 		}
 		else {
 			editlist[ i ] = [ card, pool, type, ( pool - card.solNum ) ];
@@ -4217,6 +4222,11 @@ gatherSoldier: function() {
 	});
 
 	return Deck.editCard( editlist );
+},
+
+//.. gatherSoldierMax
+gatherSoldierMax: function( cardlist ) {
+	return Deck.gatherSoldier( cardlist, 99999 );
 },
 
 //.. editCard
@@ -4933,13 +4943,41 @@ contextmenu: function() {
 		batch = ( condition[ 1 ].length == 1 );
 	}
 
-	if ( list && batch ) {
-		submenu['兵寄せ'] = Deck.gatherSoldier;
+	if ( deck ) {
+		submenu['最大補充'] = function() {
+			var list = Deck.currentUnit.assignList;
+			Deck.setUnitMax( list );
+		};
+		submenu['兵数 1 セット'] = function() {
+			var list = Deck.currentUnit.assignList;
+			Deck.setUnit( list, 1 );
+		};
+		submenu['兵数 10 セット'] = function() {
+			var list = Deck.currentUnit.assignList;
+			Deck.gatherSoldier( list, 10 );
+		};
+		submenu['兵数 100 セット'] = function() {
+			var list = Deck.currentUnit.assignList;
+			Deck.gatherSoldier( list, 100 );
+		};
+		submenu['兵数 300 セット'] = function() {
+			var list = Deck.currentUnit.assignList;
+			Deck.gatherSoldier( list, 300 );
+		};
+
+		menu['セパレーター2'] = $.contextMenu.separator;
+		menu['選択中の武将'] = submenu;
+	}
+	else if ( list && batch ) {
+		submenu['兵寄せ'] = function() {
+			var list = Deck.targetList();
+			Deck.gatherSoldierMax( list );
+		};
 		submenu['最大補充'] = function() {
 			var list = Deck.targetList();
 			Deck.setUnitMax( list );
 		};
-		submenu['兵数１セット'] = function() {
+		submenu['兵数 1 セット'] = function() {
 			var list = Deck.targetList();
 			Deck.setUnit( list, 1 );
 		};
