@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.14
+// @version        1.1.1.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7717,12 +7717,13 @@ training: function( name ) {
 		$div.prepend( $innertop.eq( idx ) );
 	});
 
-	//訓練数の表示、表示幅微調整、テキストボックスをプルダウン化
+	$('.ig_tilesection_mid').eq( 0 ).prepend('<div class="ig_solder_commentarea" />');
+
+	//訓練数の表示、表示幅微調整
 	$innermid.each(function() {
 		var $this = $(this),
-			name  = $this.find('H3').text().slice(1, -1),
+			name  = $this.find('H3 B').text().slice(1, -1),
 			key   = '訓練_' + name,
-			data  = Soldier.getByName( name ),
 			close = storage.get( key ),
 			$close, html, text;
 
@@ -7766,18 +7767,54 @@ training: function( name ) {
 		else {
 			$close.addClass('is_open');
 		}
+	});
 
-		var $table = $this.find('TABLE').eq( 1 ),
-			$tr, materials;
+	this.trainingPulldown( $innermid );
 
-		//必要資源取得（金山効果は込）
-		$tr = $table.find('TR').eq( 0 );
-		materials = [
-			$tr.find('.icon_wood').text().match(/(\d+)/)[ 1 ].toInt(),
-			$tr.find('.icon_cotton').text().match(/(\d+)/)[ 1 ].toInt(),
-			$tr.find('.icon_iron').text().match(/(\d+)/)[ 1 ].toInt(),
-			$tr.find('.icon_food').text().match(/(\d+)/)[ 1 ].toInt()
-		];
+	$('INPUT:submit').click(function() {
+		var $select = $(this).parent().find('SELECT'),
+			unit_value = $select.val();
+
+		storage.set('unit_value', unit_value);
+	});
+
+	$('BUTTON').click(function() {
+		var $select = $(this).parent().find('SELECT'),
+			unit_value = $select.first().val(),
+			create_count = $select.last().val(),
+			facility = $select.data('facility'),
+			name = $('.basename .on SPAN').text(),
+			current = Util.getVillageByName( name ),
+			ol;
+
+		if ( !confirm('訓練を開始してよろしいですか？') ) { return false; }
+
+		ol = Display.dialog();
+		ol.message('訓練登録処理開始...');
+
+		storage.set('unit_value', unit_value);
+		self.trainingExecute( facility, create_count, current, ol );
+
+		return false;
+	});
+},
+
+//. trainingPulldown
+trainingPulldown: function( $div ) {
+	var self = this,
+		unit_value = MetaStorage('SETTINGS').get('unit_value') || 100,
+		pool = Util.getPoolSoldiers(),
+		freecapa = pool.capacity - pool.soldier;
+
+	$('.ig_solder_commentarea').text( pool.soldier + ' / ' + pool.capacity );
+
+	$div.each(function() {
+		var $this = $(this),
+			$table = $this.find('TABLE').eq( 1 ),
+			name = $this.find('H3 B').text().slice(1, -1),
+			data = Soldier.getByName( name ),
+			maxsol = Number.MAX_VALUE, val = 0, step = 100, options = [],
+			$tr, $select, materials, resource;
 
 		//各拠点の施設表示
 		$tr = $table.find('TR.noborder');
@@ -7813,81 +7850,56 @@ training: function( name ) {
 		)
 		.append('<tbody id="imi_training_' + data.type + '"></tbody>');
 
-		self.trainingPulldown.call( self, $input, data, materials );
+		//必要資源取得（金山効果は込）
+		$tr = $table.find('TR').eq( 0 );
+		materials = [
+			$tr.find('.icon_wood').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_cotton').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_iron').text().match(/(\d+)/)[ 1 ].toInt(),
+			$tr.find('.icon_food').text().match(/(\d+)/)[ 1 ].toInt()
+		];
+
+		resource = [
+			$('#wood').text().toInt(),
+			$('#stone').text().toInt(),
+			$('#iron').text().toInt(),
+			$('#rice').text().toInt()
+		];
+
+		//最大訓練数を算出する、ただし陣屋は考慮されない
+		Util.getConsumption( materials, 100 ).forEach(function( value, idx ) {
+			var sol = Math.floor( resource[ idx ] / ( value  / 100 ) );
+			if ( sol < maxsol ) { maxsol = sol; }
+		});
+
+		if ( maxsol < 100 ) {
+			//最適資源値で訓練できない場合、初期最大値の値を使用
+			maxsol = ( $input.parent().next().text().match(/(\d+)/) || [,0] )[ 1 ];
+			maxsol = maxsol.toInt();
+		}
+
+		if ( freecapa < maxsol ) { maxsol = freecapa; }
+
+		options.push('<option value="10">10</option>');
+		while ( val < maxsol ) {
+			val += step;
+			if ( val >= maxsol ) { val = maxsol; }
+			if ( val >= 1000 ) { step = 500; }
+
+			options.push('<option value="' + val + '">' + val + '</option>');
+		}
+
+		$select = $('<select/>');
+		$select.append( options.join('') );
+		$select.attr({ name: $input.attr('name'), value: unit_value });
+
+		//テキストボックスをプルダウンに置き換え
+		$input.parent().next().remove();
+		$input.replaceWith( $select );
+
+		$select.data({ type: data.type, training: data.training, materials: materials })
+		.change( self.trainingDivide ).trigger('change');
 	});
-
-	$('INPUT:submit').click(function() {
-		var $select = $(this).parent().find('SELECT'),
-			unit_value = $select.val();
-
-		storage.set('unit_value', unit_value);
-	});
-
-	$('BUTTON').click(function() {
-		var $select = $(this).parent().find('SELECT'),
-			unit_value = $select.first().val(),
-			create_count = $select.last().val(),
-			facility = $select.data('facility'),
-			name = $('.basename .on SPAN').text(),
-			current = Util.getVillageByName( name ),
-			ol;
-
-		if ( !confirm('訓練を開始してよろしいですか？') ) { return false; }
-
-		ol = Display.dialog();
-		ol.message('訓練登録処理開始...');
-
-		storage.set('unit_value', unit_value);
-		self.trainingExecute( facility, create_count, current, ol );
-
-		return false;
-	});
-},
-
-//. trainingPulldown
-trainingPulldown: function( $input, data, materials ) {
-	var unit_value = MetaStorage('SETTINGS').get('unit_value') || 100,
-		resource, maxsol = Number.MAX_VALUE, val = 0, step = 100, options = [],
-		$select, $span;
-
-	resource = [
-		$('#wood').text().toInt(),
-		$('#stone').text().toInt(),
-		$('#iron').text().toInt(),
-		$('#rice').text().toInt()
-	];
-
-	//最大訓練数を算出する、ただし陣屋は考慮されない
-	Util.getConsumption( materials, 100 ).forEach(function( value, idx ) {
-		var sol = Math.floor( resource[ idx ] / ( value  / 100 ) );
-		if ( sol < maxsol ) { maxsol = sol; }
-	});
-
-	if ( maxsol < 100 ) {
-		//最適資源値で訓練できない場合、初期最大値の値を使用
-		maxsol = ( $input.parent().next().text().match(/(\d+)/) || [,0] )[ 1 ];
-		maxsol = maxsol.toInt();
-	}
-
-	options.push('<option value="10">10</option>');
-	while ( val < maxsol ) {
-		val += step;
-		if ( val >= maxsol ) { val = maxsol; }
-		if ( val >= 1000 ) { step = 500; }
-
-		options.push('<option value="' + val + '">' + val + '</option>');
-	}
-
-	$select = $('<select/>');
-	$select.append( options.join('') );
-	$select.attr({ name: $input.attr('name'), value: unit_value });
-
-	//テキストボックスをプルダウンに置き換え
-	$input.parent().next().remove();
-	$input.replaceWith( $select );
-
-	$select.data({ type: data.type, training: data.training, materials: materials })
-	.change( this.trainingDivide ).trigger('change');
 },
 
 //. trainingDivide
