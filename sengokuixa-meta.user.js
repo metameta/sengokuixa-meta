@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.12
+// @version        1.1.1.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4384,7 +4384,8 @@ contextmenu: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
 		card = Deck.analyzedData[ card_id ],
-		menu = {}, submenu;
+		data = Deck.getPoolSoldiers(),
+		menu = {}, pool = [], submenu, num;
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -4440,19 +4441,76 @@ contextmenu: function() {
 		separator = false;
 	}
 
-	if ( card.solNum > 0 && card.solNum < card.maxSolNum ) {
-		menu['最大補充'] = function() {
-			card.setUnitMax()
-			.done( Deck.update )
-			.fail(function() { Display.alert('編成できませんでした。'); });
-		};
+	if ( card.solType ) {
+		num = data.pool[ card.solType ] || 0;
+		submenu = {};
+
+		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
+			submenu['最大補充'] = function() {
+				card.setUnitMax()
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		}
+
+		[ 1, 10, 250, 500 ].forEach(function( value ) {
+			if ( value >= num + card.solNum ) { return; }
+
+			submenu[ '兵数 ' + value + ' セット' ] = function() {
+				card.setUnit( value )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		});
+
+		if ( card.solNum > 100 ) {
+			submenu['セパレーター'] = $.contextMenu.separator;
+			submenu['兵数 100 減らす'] = function() {
+				card.setUnit( card.solNum - 100 )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		}
+
+		if ( $.isEmptyObject( submenu ) ) {
+			menu['兵数変更'] = $.contextMenu.nothing;
+		}
+		else {
+			menu['兵数変更'] = submenu;
+		}
 	}
-	if ( card.solNum > 1 ) {
-		menu['兵数１セット'] = function() {
-			card.setUnit( 1 )
-			.done( Deck.update )
-			.fail(function() { Display.alert('編成できませんでした。'); });
-		};
+	else {
+		menu['兵数変更'] = $.contextMenu.nothing;
+	}
+
+	$.each( Soldier.typeKeys, function( type ) {
+		var poolnum = data.pool[ type ] || 0;
+
+		if ( type == card.solType ) { return; }
+		if ( poolnum == 0 ) { return; }
+
+		poolnum = Math.min( poolnum, card.solNum );
+		//未編成だった場合
+		if ( poolnum == 0 ) { poolnum = 1; }
+
+		pool.push({ type: type, name: '' + this, num: poolnum });
+	});
+
+	if ( pool.length > 0 ) {
+		submenu = {};
+
+		pool.forEach(function( poolSol ) {
+			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = function() {
+				card.setUnit( poolSol.num, poolSol.type )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			}
+		});
+
+		menu['兵種変更'] = submenu;
+	}
+	else {
+		menu['兵種変更'] = $.contextMenu.nothing;
 	}
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
@@ -4460,33 +4518,40 @@ contextmenu: function() {
 
 	//合成可能な場合のメニュー
 	if ( card.canUnion() && !( union_mode && selected ) ) {
+		submenu = {};
+
 		if ( card.canRankup() ) {
 			//素材カードが指定されている場合、ランクとレベルチェック
 			if ( added_card && ( added_card.lv < 20 || added_card.rank < card.rank ) ) {
 				//条件を満たしていない場合、表示しない
 			}
 			else {
-				menu['ランクアップする'] = function() { Card.rankup( card_id, added_cid, material_cid ); };
-				separator = true;
+				submenu['ランクアップ'] = function() { Card.rankup( card_id, added_cid, material_cid ); };
 			}
 		}
-		if ( card.canSkillLvup() ) {
-			menu['スキルを強化する'] = function() { Card.skillLevelup( card_id, added_cid, material_cid ); };
-			separator = true;
-		}
-		if ( card.canSkillAdd() ) {
-			menu['スキルを追加する'] = function() { Card.skillAdd( card_id, added_cid ); };
-			separator = true;
-		}
-		if ( card.canSkillRemove() ) {
-			menu['スキルを削除する'] = function() { Card.skillRemove( card_id ); };
-			separator = true;
-		}
-	}
 
-	if ( separator ) {
-		menu['セパレーター3'] = $.contextMenu.separator;
-		separator = false;
+		if ( card.canSkillLvup() ) {
+			submenu['スキル強化'] = function() { Card.skillLevelup( card_id, added_cid, material_cid ); };
+		}
+		else {
+			submenu['スキル強化'] = $.contextMenu.nothing;
+		}
+
+		if ( card.canSkillAdd() ) {
+			submenu['スキル追加'] = function() { Card.skillAdd( card_id, added_cid ); };
+		}
+		else {
+			submenu['スキル追加'] = $.contextMenu.nothing;
+		}
+
+		if ( card.canSkillRemove() ) {
+			submenu['スキル削除'] = function() { Card.skillRemove( card_id ); };
+		}
+		else {
+			submenu['スキル削除'] = $.contextMenu.nothing;
+		}
+
+		menu['カード合成'] = submenu;
 	}
 
 	submenu = {};
@@ -4902,7 +4967,8 @@ contextmenu: function() {
 	var $this = $(this),
 		card_id = $this.attr('card_id'),
 		card = Deck.analyzedData[ card_id ],
-		menu = {};
+		data = Deck.getPoolSoldiers(),
+		menu = {}, pool = [], submenu, num;
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -4912,19 +4978,76 @@ contextmenu: function() {
 		return menu;
 	}
 
-	if ( card.solNum > 0 && card.solNum < card.maxSolNum ) {
-		menu['最大補充'] = function() {
-			card.setUnitMax()
-			.done( Deck.update )
-			.fail(function() { Display.alert('編成できませんでした。'); });
-		};
+	if ( card.solType ) {
+		num = data.pool[ card.solType ] || 0;
+		submenu = {};
+
+		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
+			submenu['最大補充'] = function() {
+				card.setUnitMax()
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		}
+
+		[ 1, 10, 250, 500 ].forEach(function( value ) {
+			if ( value >= num + card.solNum ) { return; }
+
+			submenu[ '兵数 ' + value + ' セット' ] = function() {
+				card.setUnit( value )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		});
+
+		if ( card.solNum > 100 ) {
+			submenu['セパレーター'] = $.contextMenu.separator;
+			submenu['兵数 100 減らす'] = function() {
+				card.setUnit( card.solNum - 100 )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			};
+		}
+
+		if ( $.isEmptyObject( submenu ) ) {
+			menu['兵数変更'] = $.contextMenu.nothing;
+		}
+		else {
+			menu['兵数変更'] = submenu;
+		}
 	}
-	if ( card.solNum > 1 ) {
-		menu['兵数１セット'] = function() {
-			card.setUnit( 1 )
-			.done( Deck.update )
-			.fail(function() { Display.alert('編成できませんでした。'); });
-		};
+	else {
+		menu['兵数変更'] = $.contextMenu.nothing;
+	}
+
+	$.each( Soldier.typeKeys, function( type ) {
+		var poolnum = data.pool[ type ] || 0;
+
+		if ( type == card.solType ) { return; }
+		if ( poolnum == 0 ) { return; }
+
+		poolnum = Math.min( poolnum, card.solNum );
+		//未編成だった場合
+		if ( poolnum == 0 ) { poolnum = 1; }
+
+		pool.push({ type: type, name: '' + this, num: poolnum });
+	});
+
+	if ( pool.length > 0 ) {
+		submenu = {};
+
+		pool.forEach(function( poolSol ) {
+			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = function() {
+				card.setUnit( poolSol.num, poolSol.type )
+				.done( Deck.update )
+				.fail(function() { Display.alert('編成できませんでした。'); });
+			}
+		});
+
+		menu['兵種変更'] = submenu;
+	}
+	else {
+		menu['兵種変更'] = $.contextMenu.nothing;
 	}
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
@@ -4935,15 +5058,16 @@ contextmenu: function() {
 	};
 
 	var condition = Deck.filter.conditions[ 0 ] || [,[]],
-		submenu = {}, batch = false,
 		deck = $this.closest('#imi_card_container').length,
-		list = $this.closest('#ig_deck_smallcardarea_out').length;
+		list = $this.closest('#ig_deck_smallcardarea_out').length
+		batch = false;
 
 	if ( condition[ 0 ] == 'soltype' && $.isArray( condition[ 1 ] ) ) {
 		batch = ( condition[ 1 ].length == 1 );
 	}
 
 	if ( deck ) {
+		submenu = {};
 		submenu['最大補充'] = function() {
 			var list = Deck.currentUnit.assignList;
 			Deck.setUnitMax( list );
@@ -4969,6 +5093,7 @@ contextmenu: function() {
 		menu['選択中の武将'] = submenu;
 	}
 	else if ( list && batch ) {
+		submenu = {};
 		submenu['兵寄せ'] = function() {
 			var list = Deck.targetList();
 			Deck.gatherSoldierMax( list );
