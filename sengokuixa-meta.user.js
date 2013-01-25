@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.1.16
+// @version        1.1.1.17
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2356,7 +2356,7 @@ analyzeArea: function( $area_list, img_list ) {
 		}
 
 		data.castle     = ( array[0] != '　' ) ? array[0] : '';
-		data.user       = ( array[1] != '　' ) ? array[1].replace(/\(Lv\d+\)$/, '') : '';
+		data.user       = ( array[1] != '　' ) ? array[1].replace(/\(Lv[\d-]+\)$/, '') : '';
 		data.population = ( array[2] != '　' ) ? array[2] : '-';
 		data.point      = array[3].replace(/[\(\)]/g, '');
 		data.alliance   = ( array[4] != '　' ) ? array[4] : '';
@@ -2977,6 +2977,16 @@ contextmenu: function() {
 		};
 	}
 	else if ( data.type == '領地' ) {
+		menu['最寄りの拠点'] = {
+			'部隊作成【第一組】': function() { Map.contextmenu.createUnitNearby( data, 1 ); },
+			'部隊作成【第二組】': function() { Map.contextmenu.createUnitNearby( data, 2 ); },
+			'部隊作成【第三組】': function() { Map.contextmenu.createUnitNearby( data, 3 ); },
+			'部隊作成【第四組】': function() { Map.contextmenu.createUnitNearby( data, 4 ); },
+			'部隊作成【全武将】': function() { Map.contextmenu.createUnitNearby( data, 0 ); },
+			'セパレーター': $.contextMenu.separator,
+			'ここへ部隊出陣': Map.contextmenu.send2,
+			'拠点選択': Map.contextmenu.nearbyVillage
+		};
 		menu['この領地を陣にする'] = Map.contextmenu.toCamp;
 	}
 	else {
@@ -3310,8 +3320,8 @@ toCamp: function() {
 
 	//陣建設
 	$.get( href )
-	.pipe(function(html) {
-		Page.move( '/map.php?' + search );
+	.pipe(function() {
+		Map.move( Map.info.x, Map.info.y, Map.info.country );
 	});
 },
 
