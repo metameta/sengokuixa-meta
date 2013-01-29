@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.0
+// @version        1.1.2.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -171,6 +171,7 @@ var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener
 MetaStorage.change( 'UNIT_STATUS', function( event, storageEvent ) {
 	$('#imi_unitstatus').trigger('update');
 	$('#imi_raid_list').trigger('update');
+	$('#imi_basename').trigger('update');
 });
 
 //■■■■■■■■■■■■■■■■■■■
@@ -182,7 +183,7 @@ var Env = (function() {
 		$war = $('.situationWorldTable'),
 		world = ( location.hostname.match(/(.\d{3})/) || [] )[1],
 		start = ( document.cookie.match( new RegExp( world + '_st=(\\d+)' ) ) || [] )[1],
-		season, newseason, chapter, war, server_time, local_time, timeDiff, endtime;
+		login = false, season, newseason, chapter, war, server_time, local_time, timeDiff, endtime;
 
 	//storageから取得
 	endtime = storage.get('endtime');
@@ -201,6 +202,8 @@ var Env = (function() {
 	}
 
 	if ( world && start ) {
+		login = true;
+
 		//クッキーから取得
 		newseason = ( document.cookie.match( new RegExp( world + '_s=(\\d+)' ) ) || [] )[1];
 		chapter = ( document.cookie.match( new RegExp( world + '_c=(\\d+)' ) ) || [] )[1];
@@ -244,6 +247,9 @@ var Env = (function() {
 	}
 
 	return {
+		//. loginProcess
+		loginProcess: login,
+
 		//. world - 鯖
 		world: world,
 
@@ -413,6 +419,13 @@ getVillageList: function() {
 	return list;
 },
 
+//. getVillageCurrent
+getVillageCurrent: function() {
+	var name = $('#imi_basename > .basename .on > SPAN').text();
+
+	return Util.getVillageByName( name );
+},
+
 //. getVillageNearby
 getVillageNearby: function( x, y, country ) {
 	var list  = Util.getVillageList(),
@@ -504,9 +517,29 @@ getPoolSoldiers: function() {
 	return data;
 },
 
+//. getUnitStatusCD
+getUnitStatusCD: function() {
+	var build = MetaStorage('SETTINGS').get('build') || 0;
+
+	if ( build & 0x04 || location.pathname == '/map.php' ) {
+		Util.getUnitStatus();
+	}
+},
+
+//. getUnitStatusDelay
+getUnitStatusDelay: function() {
+	var delay = MetaStorage('COUNTDOWN').get('delaytime') || 0,
+		time = Util.getLocalTime();
+
+	if ( delay < time ) {
+		MetaStorage('COUNTDOWN').set('delaytime', delay + 3);
+		setTimeout( Util.getUnitStatus, 3000 );
+	}
+},
+
 //. getUnitStatus
 getUnitStatus: function( $table ) {
-	$.Deferred().resolve()
+	return $.Deferred().resolve()
 	.pipe(function() {
 		if ( $table ) { return $table; }
 
@@ -578,7 +611,7 @@ getUnitStatus: function( $table ) {
 			}
 			else if ( mode.indexOf('_dungeon.png') != -1 ) {
 				mode = '探索';
-				target = $panel.find('TR:eq(1) TD:eq(2) SPAN').text().trim();
+				base1 = target = $panel.find('TR:eq(1) TD:eq(2) SPAN').text().trim();
 			}
 			else if ( mode.indexOf('_move.png') != -1 ) {
 				mode = '国移';
@@ -591,12 +624,13 @@ getUnitStatus: function( $table ) {
 				mode = '加待';
 			}
 
-			list.push({ name: name, mode: mode, target: target, arrival: arrival, sx: startx, sy: starty, ex: endx, ey: endy, ec: country });
+			list.push({ name: name, mode: mode, base: base1, target: target, arrival: arrival, sx: startx, sy: starty, ex: endx, ey: endy, ec: country });
 		});
 
 		MetaStorage('UNIT_STATUS').set('部隊', list);
 
 		$('#imi_unitstatus').trigger('update');
+		$('#imi_basename').trigger('update');
 	});
 },
 
@@ -1196,11 +1230,11 @@ $(EventListener)
 	Display.info( html, true );
 
 	//部隊情報更新
-	Util.getUnitStatus();
+	Util.getUnitStatusDelay();
 })
 .on('actionrefresh', function() {
 	//部隊情報更新
-	Util.getUnitStatus();
+	Util.getUnitStatusDelay();
 })
 .on('recoveryfinish', function() {
 	var list = Array.prototype.slice.call( arguments, 1 ),
@@ -1601,9 +1635,22 @@ style: '' +
 '#lordSiteArea.imc_countdown_alert .imc_countdown_display { color: #fff; }' +
 
 /* サイドバーカウントダウン用 */
-'.imc_side_countdown { line-height: 100% !important; margin-top: -3px; padding: 0px 2px 3px 2px; text-align: right; }' +
-'.imc_side_countdown.last { margin-top: 1px; }' +
-'.imc_break { color: #999; }' +
+'#imi_basename LI:hover { margin-left: 3px !important; border-left: solid 3px #ff8; }' +
+'#imi_basename .imc_side_countdown { line-height: 100% !important; margin: 2px 0px -2px -10px; text-align: right; color: #fff; }' +
+'#imi_basename .imc_coord { font-weight: normal; }' +
+'#imi_basename .imc_break { color: #999; }' +
+'#imi_basename .imc_enemy > :first-child { color: #f66; font-weight: bold; }' +
+
+'#imi_basename .imc_attack  { background-color: #f66; color: #000; padding: 0px 2px; }' +
+'#imi_basename .imc_camp    { background-color: #c33; color: #fff; padding: 0px 2px; }' +
+'#imi_basename .imc_meeting { background-color: #6cf; color: #000; padding: 0px 2px; }' +
+'#imi_basename .imc_backup  { background-color: #09c; color: #fff; padding: 0px 2px; }' +
+'#imi_basename .imc_return  { background-color: #ddd; color: #000; padding: 0px 2px; }' +
+'#imi_basename .imc_dungeon { background-color: #f96; color: #000; padding: 0px 2px; }' +
+'#imi_basename .imc_develop { background-color: #390; color: #fff; padding: 0px 2px; }' +
+'#imi_basename .imc_move    { background-color: #93c; color: #fff; padding: 0px 2px; }' +
+'#imi_basename .imc_wait    { background-color: #9c3; color: #000; padding: 0px 2px; }' +
+'#imi_basename .imc_backup_wait { background-color: #396; color: #fff; padding: 0px 2px; }' +
 
 /* 全体地図用 */
 '#imi_mapcontainer { position: relative; color: #000; background-color: #000; border: solid 30px #e0dcc1; }' +
@@ -4835,9 +4882,11 @@ Deck.dialog = function( village, brigade, coord ) {
 		width: 880, height: 550, top: 20,
 		content: $content,
 		buttons: {
-			'目的地へ出陣': function() { Map.send( target_x, target_y, village.country, village ); },
+			'目的地へ出陣': function() {
+				Map.send( target_x, target_y, village.country, village );
+			},
 			'編成を終了': function() {
-				Util.getUnitStatus();
+				Util.getUnitStatusCD();
 				this.close();
 			}
 		}
@@ -6239,111 +6288,218 @@ clone: function() {
 
 });
 
-//■ CountdownStatus
-var CountdownStatus = (function() {
+//■ SideBar
+var SideBar = {
 
-var baselist = [], idx = 0;
+//. init
+init: function() {
+	$('#sideboxBottom .basename').parent().attr('id', 'imi_basename');
+},
 
 //. setup
-function setup() {
-	var html = '' +
-		'<span style="float: right">非表示</span>' +
-		'<span style="float: right">建設</span>' +
-		'<span style="float: right">訓練</span>';
+setup: function() {
+	var $base = $('#imi_basename');
 
 	$('DIV.basename:eq(0)').prev().css({ cursor: 'pointer' })
-	.find('H4').append( html ).end()
-	.click( next );
+	.find('H4').append('<span style="float: right">設定</span>').end()
+	.on('click', function() {
+		var build = MetaStorage('SETTINGS').get('build') || 0,
+			html;
 
-	baselist = BaseList.home_away()
-	idx = MetaStorage('SETTINGS').get('build') || 0;
+		html = '' +
+		'<div>カウントダウン表示</div>' +
+		'<br/>' +
+		'<ul id="imi_setting_dialog">' +
+		'<li><label><input type="checkbox" value="8" ' + ( ( build & 0x08 ) ? 'checked' : '' ) + '> 敵襲</label></li>' +
+		'<li><label><input type="checkbox" value="4" ' + ( ( build & 0x04 ) ? 'checked' : '' ) + '> 部隊</label></li>' +
+		'<li><label><input type="checkbox" value="1" ' + ( ( build & 0x01 ) ? 'checked' : '' ) + '> 建設／研究</label></li>' +
+		'<li><label><input type="checkbox" value="2" ' + ( ( build & 0x02 ) ? 'checked' : '' ) + '> 訓練</label></li>' +
+		'</ul>';
 
-	show();
-}
+		Display.dialog({
+			title: 'サイドバー設定',
+			width: 200, height: 100,
+			content: html,
+			buttons: {
+				'決定': function() {
+					var result = 0;
 
-//. next
-function next() {
-	idx = (idx + 1) % 3;
-	MetaStorage('SETTINGS').set('build', idx);
-	show();
-}
+					$('#imi_setting_dialog INPUT:checked').each(function() {
+						result += $(this).val().toInt();
+					});
 
-//. show
-function show() {
-	$('DIV.basename:eq(0)').prev().find('H4 SPAN').hide().eq( idx ).show();
-	$('DIV.basename DIV.imc_side_countdown').remove();
+					MetaStorage('SETTINGS').set('build', result);
 
-	switch( idx ) {
-		case 0:
-			break;
+					if ( ( build ^ result ) & result & 0x04 ) {
+						Util.getUnitStatus();
+					}
+					else {
+						$('#imi_basename').trigger('update');
+					}
+					this.close();
+				},
+				'キャンセル': function() { this.close(); }
+			}
+		});
+	});
 
-		case 1:
-			create( '削除' );
-			create( '建設' );
-			break;
+	$base
+	.on('update', function() {
+		var build = MetaStorage('SETTINGS').get('build') || 0;
 
-		case 2:
-			create( '訓練' );
-			break;
+		$('.imc_side_countdown').remove();
+		$('.imc_other').remove();
 
-		default:
-			break;
-	}
+		if ( build & 0x08 ) { SideBar.countDown('敵襲'); }
+		if ( build & 0x04 ) { SideBar.countDown('部隊'); }
+		if ( build & 0x01 ) { SideBar.countDown('建設'); }
+		if ( build & 0x01 ) { SideBar.countDown('削除'); }
+		if ( build & 0x02 ) { SideBar.countDown('訓練'); }
 
-	Util.countDown();
-}
+		Util.countDown();
+	});
 
-//. create
-function create( type ) {
-	var cd_list = load( type );
+	$base.trigger('update');
+},
 
-	$('DIV.basename LI *:first-child').each(function() {
-		var $this = $(this),
-			$parent = $this.parent(),
-			name = $this.text(),
-			list = cd_list[ name ],
-			cd_data, endtime, html, $div, finishevent, message;
+//. countDown
+countDown: function( type ) {
+	var cd_list = SideBar.load( type ),
+		date = Util.getServerTime(),
+		classlist = {
+			'攻撃': 'imc_attack', '陣張': 'imc_camp', '合流': 'imc_meeting',
+			'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon',
+			'開拓': 'imc_develop', '国移': 'imc_move', '待機': 'imc_wait', '加待': 'imc_backup_wait'
+		};
 
-		if ( !list ) { return; }
+	$.each( cd_list, function( key, list ) {
+		var $base = $('#imi_basename LI > *').filter(':contains("' + key + '")'),
+			$other = $('.imc_other');
 
-		for ( var i = list.length - 1; i >= 0; i-- ) {
-			cd_data = list[ i ];
-
-			html = '<div class="imc_countdown imc_side_countdown">' +
-				cd_data[ 1 ] + '(<span class="imc_countdown_display" />)' +
-			'</div>';
-
-			switch ( type ) {
-				case '建設':
-					finishevent = 'buildfinish';
-					message = '・' + name;
-					break;
-				case '削除':
-					finishevent = 'breakfinish';
-					message = '・' + name;
-					break;
-				case '訓練':
-					finishevent = 'trainingfinish';
-					message = '・' + name;
-					break;
+		if ( $base.length == 0 ) {
+			if ( $other.length == 0 ) {
+				$other = $('<div class="imc_other">' +
+					'<div class="sideBoxHead"><h4>その他</h4></div>' +
+					'<div class="sideBoxInner basename"><ul /></div></div>');
+				$('#imi_basename > .basename').first().prev().before( $other );
 			}
 
-			$div = $( html ).data({ endtime: cd_data[ 0 ], alert: 60, finishevent: finishevent, message: message });
+			$base = $('<li><span>' + key + '</span></li>');
+			$other.find('UL').append( $base );
+		}
+		else {
+			$base = $base.parent();
+		}
 
-			if ( i == 0 && $parent.hasClass('last') ) { $div.addClass('last'); }
-			if ( type == '削除' ) { $div.addClass('imc_break'); }
+		for ( var i = 0, len = list.length; i < len; i++ ) {
+			let [ endtime, label, mode, x, y, c ] = list[ i ],
+				html, $div, finishevent, message, cssClass;
 
-			$parent.after( $div );
+			cssClass = classlist[ mode ] || '';
+			html = '<div class="imc_countdown imc_side_countdown"><span class="' + cssClass + '">' +
+				label + '</span>(<span class="imc_countdown_display" />)' +
+			'</div>';
+
+			$div = $( html );
+
+			if ( type == '敵襲' ) {
+				$div.addClass('imc_enemy');
+			}
+			else if ( type == '部隊' && ( mode == '待機' || mode == '加待' ) ) {
+				$div.css({ padding: '2px 0px' }).removeClass('imc_countdown');
+				$div.find('.imc_countdown_display').removeAttr('class').text( ' ' + mode + ' ' );
+
+				if ( mode == '加待' ) {
+					$base.children('SPAN').first().addClass('imc_coord').attr({ x: x, y: y, c: c });
+				}
+			}
+			else if ( type == '部隊' && ( location.pathname != '/map.php' ) ) {
+				$div.css({ padding: '2px 0px' });
+				if ( endtime <= date ) {
+					$div.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
+					endtime += 10;
+					finishevent = 'actionrefresh';
+				}
+				else {
+					finishevent = 'actionfinish';
+				}
+				message = '・[' + label + ']部隊';
+			}
+			else if ( type == '部隊' ) {
+				$div.css({ padding: '2px 0px' });
+				if ( endtime <= date ) {
+					$div.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
+				}
+			}
+			else if ( type == '建設' ) {
+				finishevent = 'buildfinish';
+				message = '・' + key;
+			}
+			else if ( type == '削除' ) {
+				$div.addClass('imc_break');
+				finishevent = 'breakfinish';
+				message = '・' + key;
+			}
+			else if ( type == '訓練' ) {
+				finishevent = 'trainingfinish';
+				message = '・' + key;
+			}
+
+			$div.data({ endtime: endtime, alert: 60, finishevent: finishevent, message: message });
+			$base.append( $div );
 		}
 	});
-}
+},
 
 //. load
-function load( type ) {
-	var date    = Util.getServerTime(),
-		data    = MetaStorage('COUNTDOWN').get( type ) || {},
-		newdata = {},
-		result  = {};
+load: function( type ) {
+	if ( type == '部隊') {
+		return SideBar.loadUnit();
+	}
+	else if ( type == '敵襲' ) {
+		return SideBar.loadEnemy();
+	}
+
+	return SideBar.loadFacility( type );
+},
+
+//. loadUnit
+loadUnit: function() {
+	var list = MetaStorage('UNIT_STATUS').get('部隊') || [],
+		result = {};
+
+	for( var i = 0, len = list.length; i < len; i++ ) {
+		let base = list[ i ],
+			basename = ( base.mode == '加待' ) ? base.target : base.base;
+
+		if ( !result[ basename ] ) { result[ basename ] = []; }
+		result[ basename ].push([ base.arrival, base.name, base.mode, base.ex, base.ey, base.ec ]);
+	}
+
+	return result;
+},
+
+//. loadEnemy
+loadEnemy: function() {
+	var list = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+		result = {};
+
+	for( var i = 0, len = list.length; i < len; i++ ) {
+		let base = list[ i ];
+
+		if ( !result[ base.ebase ] ) { result[ base.ebase ] = []; }
+		result[ base.ebase ].push([ base.arrival, '■ 敵 襲 ■' ]);
+	}
+
+	return result;
+},
+
+//. loadFacility
+loadFacility: function( type ) {
+	var date = Util.getServerTime(),
+		data = MetaStorage('COUNTDOWN').get( type ) || {},
+		baselist = BaseList.home_away(),
+		newdata = {}, result  = {};
 
 	if ( baselist.length == 0 ) {
 		return result;
@@ -6372,12 +6528,7 @@ function load( type ) {
 	return result;
 }
 
-//. return
-return {
-	setup: setup,
 };
-
-})();
 
 //■ BaseList
 var BaseList = (function() {
@@ -6387,7 +6538,7 @@ function base( country ) {
 	var list = [],
 		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff' };
 
-	$('DIV.basename LI *:first-child').each(function() {
+	$('#imi_basename > .basename LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -6406,7 +6557,7 @@ function base( country ) {
 function home() {
 	var list = [];
 
-	$('DIV.basename:eq(0) LI *:first-child').each(function() {
+	$('#imi_basename > .basename:eq(0) LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -6422,7 +6573,7 @@ function home() {
 function away() {
 	var list = [];
 
-	$('DIV.basename:eq(1) LI *:first-child').each(function() {
+	$('#imi_basename > .basename:eq(1) LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -6668,6 +6819,8 @@ execute: function() {
 	this.switchCardParameter();
 	this.showTimeoutTimer();
 
+	SideBar.init();
+
 	this.main();
 	if ( this.callbacks ) {
 		this.callbacks.fire();
@@ -6677,7 +6830,7 @@ execute: function() {
 	this.createPulldownMenu();
 
 	Util.keyBindCommon();
-	CountdownStatus.setup();
+	SideBar.setup();
 },
 
 //.. addStyle
@@ -7437,6 +7590,8 @@ main: function() {
 	this.layouter();
 	this.getBuildStatus();
 	this.getFacilityList();
+
+	if ( Env.loginProcess ) { Util.getUnitStatusCD(); }
 },
 
 //. layouter
@@ -7806,8 +7961,7 @@ training: function( name ) {
 			unit_value = $select.first().val(),
 			create_count = $select.last().val(),
 			facility = $select.data('facility'),
-			name = $('.basename .on SPAN').text(),
-			current = Util.getVillageByName( name ),
+			current = Util.getVillageCurrent(),
 			ol;
 
 		if ( !confirm('訓練を開始してよろしいですか？') ) { return false; }
@@ -8130,6 +8284,10 @@ style: '' +
 main: function() {
 	this.layouter();
 	this.showSoldier();
+
+	if ( $('.table_waigintunit').length > 0 ) {
+		Util.getUnitStatusCD();
+	}
 },
 
 //. layouter
@@ -8269,8 +8427,7 @@ layouter: function() {
 
 //. showSpeed
 showSpeed: function() {
-	var name = $('.basename .on SPAN').text(),
-		village = Util.getVillageByName( name ),
+	var village = Util.getVillageCurrent(),
 		x = $('INPUT[name="village_x_value"]').val(),
 		y = $('INPUT[name="village_y_value"]').val(),
 		dist = Util.getDistance( village, { x: x, y: y } );
@@ -8390,7 +8547,7 @@ sendAll: function() {
 		ol.message('全出陣処理失敗').message('処理を中断します。');
 	})
 	.always(function() {
-		Page.move( '/facility/unit_status.php?dmo=sortie' );
+		Page.move( '/facility/unit_status.php?dmo=all' );
 	});
 
 	function sendData() {
@@ -8418,8 +8575,7 @@ sendAll: function() {
 
 //. unitSpeed
 unitSpeed: function() {
-	var name = $('.basename .on SPAN').text(),
-		village = Util.getVillageByName( name ),
+	var village = Util.getVillageCurrent(),
 		x = $('INPUT[name="village_x_value"]').val(),
 		y = $('INPUT[name="village_y_value"]').val(),
 		cards = [], dist, html;
@@ -8570,7 +8726,7 @@ Page.registerAction( 'facility', 'unit_status', {
 //. style
 style: '' +
 /* 敵襲 */
-'LI.imc_enemy * { color: #f33 !important; }' +
+'LI.imc_enemy > :first-child { color: #f33 !important; }' +
 '.imc_new_enemy { border: solid 4px #f66; }' +
 '',
 
@@ -9698,6 +9854,13 @@ main: function() {
 
 	SmallCard.setup( $card_list );
 	Deck.updateDeckInfo();
+
+	var unit_num = 5 - unit_list.filter('.unset').length,
+		cache_num = MetaStorage('UNIT_STATUS').get('部隊').length;
+
+	if ( unit_num != cache_num ) {
+		Util.getUnitStatusCD();
+	}
 },
 
 //. autoPager
@@ -9893,6 +10056,7 @@ unregistAll: function() {
 			return $.Deferred().reject();
 		}
 	})
+	.pipe( Util.getUnitStatus )
 	.done(function() {
 		ol.message('全解散処理終了');
 	})
@@ -9976,7 +10140,7 @@ deckSelecter: function() {
 //. villageSelecter
 villageSelecter: function() {
 	if ( $('#select_village').val() == '' ) {
-		var base = $('#sideboxBottom DIV.basename LI.on SPAN').text();
+		var base = $('#imi_basename > .basename .on > SPAN').text();
 
 		$('#select_village > OPTION[label="' + base + '"]').attr('selected', true);
 	}
@@ -11150,7 +11314,7 @@ layouterUnitStatus: function() {
 			else {
 				//行動中
 				$tr.addClass('imc_countdown');
-				$tr.data({ endtime: arrival + 1, alert: 60, finishevent: 'actionfinish', message: '・[' + name + ']部隊' });
+				$tr.data({ endtime: arrival, alert: 60, finishevent: 'actionfinish', message: '・[' + name + ']部隊' });
 			}
 
 			$table.append( $tr );
