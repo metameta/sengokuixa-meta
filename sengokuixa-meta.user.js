@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.1
+// @version        1.1.2.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6391,6 +6391,10 @@ countDown: function( type ) {
 			$base = $base.parent();
 		}
 
+		list.sort(function( a, b ) {
+			return ( a[ 0 ] > b[ 0 ] );
+		});
+
 		for ( var i = 0, len = list.length; i < len; i++ ) {
 			let [ endtime, label, mode, x, y, c ] = list[ i ],
 				html, $div, finishevent, message, cssClass;
@@ -7663,7 +7667,8 @@ getBuildStatus: function() {
 
 	//削除中
 	data = storage.get('削除') || {};
-	list = [];
+	list = data[ village.id ] || [];
+	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' ) ? [ ary ] : null; });
 
 	$('#actionLog UL LI:contains("削除")').each(function() {
 		var $this = $(this),
@@ -7787,6 +7792,33 @@ getBuildStatus: function() {
 	else { data[ village.id ] = list; }
 
 	storage.set( '削除', data );
+}
+
+});
+
+//■ /facility/castle
+Page.registerAction( 'facility', 'castle', {
+
+//. main
+main: function() {
+	var name = $('DIV.ig_tilesection_detailarea > H3:eq(0) > A').text(),
+		village = Util.getVillageCurrent(),
+		data = MetaStorage('COUNTDOWN').get('削除') || {},
+		text, list;
+
+	list = data[ village.id ] || [];
+	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' ) ? null : [ ary ]; });
+
+	text = $('.ig_tilesection_btnarea_left:contains("削除中")').text();
+	text = ( text.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/) || [] )[ 0 ];
+	if ( text ) {
+		list.push([ text.getTime(), name ]);
+	}
+
+	if ( list.length == 0 ) { delete data[ village.id ] }
+	else { data[ village.id ] = list; }
+
+	MetaStorage('COUNTDOWN').set( '削除', data );
 }
 
 });
