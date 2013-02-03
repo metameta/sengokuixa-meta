@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.3
+// @version        1.1.2.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4559,10 +4559,6 @@ contextmenu: function() {
 		if ( type == card.solType ) { return; }
 		if ( poolnum == 0 ) { return; }
 
-		poolnum = Math.min( poolnum, card.solNum );
-		//未編成だった場合
-		if ( poolnum == 0 ) { poolnum = 1; }
-
 		pool.push({ type: type, name: '' + this, num: poolnum });
 	});
 
@@ -4570,11 +4566,32 @@ contextmenu: function() {
 		submenu = {};
 
 		pool.forEach(function( poolSol ) {
-			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = function() {
-				card.setUnit( poolSol.num, poolSol.type )
+			var menu = {}, base, max;
+
+			base = Math.min( poolSol.num, card.solNum );
+			max = Math.min( poolSol.num, card.maxSolNum );
+
+			if ( max >= base ) {
+				menu['兵数最大 ( ' + max + ' )'] = function() {
+					card.setUnit( max, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				}
+			}
+			if ( base != max && base >= 2 ) {
+				menu['現状維持 ( ' + base + ' )'] = function() {
+					card.setUnit( base, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				}
+			}
+			menu['兵数 1'] = function() {
+				card.setUnit( 1, poolSol.type )
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
 			}
+
+			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = menu;
 		});
 
 		menu['兵種変更'] = submenu;
@@ -5098,10 +5115,6 @@ contextmenu: function() {
 		if ( type == card.solType ) { return; }
 		if ( poolnum == 0 ) { return; }
 
-		poolnum = Math.min( poolnum, card.solNum );
-		//未編成だった場合
-		if ( poolnum == 0 ) { poolnum = 1; }
-
 		pool.push({ type: type, name: '' + this, num: poolnum });
 	});
 
@@ -5109,11 +5122,32 @@ contextmenu: function() {
 		submenu = {};
 
 		pool.forEach(function( poolSol ) {
-			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = function() {
-				card.setUnit( poolSol.num, poolSol.type )
+			var menu = {}, base, max;
+
+			base = Math.min( poolSol.num, card.solNum );
+			max = Math.min( poolSol.num, card.maxSolNum );
+
+			if ( max >= base ) {
+				menu['兵数最大 ( ' + max + ' )'] = function() {
+					card.setUnit( max, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				}
+			}
+			if ( base != max && base >= 2 ) {
+				menu['現状維持 ( ' + base + ' )'] = function() {
+					card.setUnit( base, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				}
+			}
+			menu['兵数 1'] = function() {
+				card.setUnit( 1, poolSol.type )
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
 			}
+
+			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = menu;
 		});
 
 		menu['兵種変更'] = submenu;
