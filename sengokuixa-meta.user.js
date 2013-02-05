@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.5
+// @version        1.1.2.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -775,6 +775,13 @@ getSpeed: function( cards, unitskill ) {
 	}
 
 	return min_speed;
+},
+
+//. getNpcPower
+getNpcPower: function( rank, materials ) {
+	var npc = Data.npcPower || Data.getNpcPower();
+
+	return npc[ rank + '-' + materials ];
 },
 
 //. getNext20Exp
@@ -1740,7 +1747,10 @@ countries: (function() {
 })(),
 
 //. npcPower
-npcPower: (function() {
+npcPower: null,
+
+//. getNpcPower
+getNpcPower: function() {
 	var data = [{
 		//１章、２章
 		//★１
@@ -1869,6 +1879,7 @@ npcPower: (function() {
 	data = [ {}, data[0], data[0], data[1], data[1], data[2] ][ Env.chapter ] || {};
 
 	if ( Env.chapter <= 4 ) {
+		Data.npcPower = data;
 		return data;
 	}
 
@@ -1910,8 +1921,9 @@ npcPower: (function() {
 		];
 	}
 
+	Data.npcPower = paneldata;
 	return paneldata;
-})(),
+},
 
 //. hpRecovery
 hpRecovery: {
@@ -2912,15 +2924,14 @@ enterArea: function() {
 	var $this     = $(this),
 		idx       = $this.attr('idx').toInt(),
 		data      = Map.analyzedData[ idx ],
-		materials = data.materials,
 		distance  = data.distance,
 		dist_mod  = Math.floor( 19 / (parseFloat( distance ) + 9) * 100 ),
-		npcPower  = Data.npcPower[ data.rank + '-' + materials ],
+		npcPower  = Util.getNpcPower( data.rank, data.materials ),
 		min, minidx, str, attack_mod;
 
 	dist_mod = (dist_mod > 100) ? 100 : dist_mod;
 
-	if ( !materials || !npcPower ) { return; }
+	if ( !npcPower ) { return; }
 
 	min = Number.MAX_VALUE;
 	minidx = 0;
@@ -6497,11 +6508,11 @@ countDown: function( type ) {
 					$base.children('SPAN').first().addClass('imc_coord').attr({ x: x, y: y, c: c });
 				}
 			}
-			else if ( type == '部隊' && ( location.pathname != '/map.php' ) ) {
+			else if ( type == '部隊' && location.pathname != '/map.php' ) {
 				$div.css({ padding: '2px 0px' });
 				if ( endtime <= date ) {
 					$div.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
-					endtime += 10;
+					endtime = date + 7;
 					finishevent = 'actionrefresh';
 				}
 				else {
@@ -7042,6 +7053,8 @@ changeSideBar: function() {
 	$('.situationWorldTable').has('A[href="/country/all.php"]').remove();
 	//占いボタン削除
 	$('.situationBtnTable').has('A[href="/user/uranai/uranai.php"]').remove();
+
+	$joutai_div.children('.sideBoxHead').css({ height: '25px' }).empty().append( $('.stateTable') );
 },
 
 //.. changeChatLink
@@ -7823,9 +7836,6 @@ Page.registerAction( 'land', {
 
 //. main
 main: function() {
-	//実行中の作業がない場合は処理しない
-	if ( $('#actionLog').length == 0 ) { return; }
-
 	this.getBuildStatus();
 },
 
@@ -7835,6 +7845,9 @@ getBuildStatus: function() {
 		name = $('.ig_mappanel_maindataarea H3').text().trim(),
 		village = Util.getVillageByName( name ),
 		data, list;
+
+	//本領・所領の場合は処理しない
+	if ( village.type == '本領' || village.type == '所領' ) { return; }
 
 	data = storage.get('建設') || {};
 	list = [];
@@ -11420,9 +11433,9 @@ layouterUnitStatus: function() {
 				//待機中、カウントダウンしない
 			}
 			else if ( arrival <= date ) {
-				//着弾時間が過去の場合、「--:--:--」の表示、10秒後に再取得
+				//着弾時間が過去の場合、「--:--:--」の表示、10秒後(7 + delay3)に再取得
 				$tr.addClass('imc_countdown');
-				$tr.data({ endtime: date + 10, finishevent: 'actionrefresh' });
+				$tr.data({ endtime: date + 7, finishevent: 'actionrefresh' });
 				$tr.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
 			}
 			else {
