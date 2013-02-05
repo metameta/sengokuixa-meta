@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.4
+// @version        1.1.2.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1531,7 +1531,8 @@ style: '' +
 
 /* コンテキストメニュー用 z-index: 9999 */
 '.imc_menulist { position: absolute; padding: 2px; min-width: 120px; font-size: 12px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }' +
-'.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: -2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }' +
+'.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: 2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }' +
+'.imc_menulist > .imc_menutitle:first-child { margin: -2px -2px 2px -2px; }' +
 '.imc_menuitem { margin: 0px; padding: 4px 20px 4px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }' +
 '.imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }' +
 '.imc_nothing { margin: 0px; padding: 3px 8px; color: #666; cursor: default; }' +
@@ -4253,8 +4254,8 @@ setUnit: function( cardlist, num, type ) {
 },
 
 //.. setUnitMax
-setUnitMax: function( cardlist ) {
-	return Deck.setUnit( cardlist, 99999 );
+setUnitMax: function( cardlist, type ) {
+	return Deck.setUnit( cardlist, 99999, type );
 },
 
 //.. gatherSoldier
@@ -4315,7 +4316,7 @@ editCard: function( editlist ) {
 		var self = arguments.callee,
 			[ card, num, type ] = editlist[ idx ];
 
-		if ( card.solNum == num ) {
+		if ( card.solNum == num && card.solType == type ) {
 			self.call( self, ++idx );
 		}
 		else {
@@ -5165,15 +5166,21 @@ contextmenu: function() {
 
 	var condition = Deck.filter.conditions[ 0 ] || [,[]],
 		deck = $this.closest('#imi_card_container').length,
-		list = $this.closest('#ig_deck_smallcardarea_out').length
-		batch = false;
+		list = $this.closest('#ig_deck_smallcardarea_out').length,
+		batch = 0;
 
-	if ( condition[ 0 ] == 'soltype' && $.isArray( condition[ 1 ] ) ) {
-		batch = ( condition[ 1 ].length == 1 );
+	if ( condition[ 0 ] == 'soltype' ) {
+		if ( $.isArray( condition[ 1 ] ) ) {
+			batch = ( condition[ 1 ].length == 1 ) ? 2 : 0;
+		}
+		else if ( condition[ 1 ] == 'none' ) {
+			batch = 1;
+		}
 	}
 
 	if ( deck ) {
 		submenu = {};
+		submenu['兵数変更'] = $.contextMenu.title;
 		submenu['最大補充'] = function() {
 			var list = Deck.currentUnit.assignList;
 			Deck.setUnitMax( list );
@@ -5182,39 +5189,78 @@ contextmenu: function() {
 			var list = Deck.currentUnit.assignList;
 			Deck.setUnit( list, 1 );
 		};
-		submenu['兵数 10 セット'] = function() {
-			var list = Deck.currentUnit.assignList;
-			Deck.gatherSoldier( list, 10 );
-		};
-		submenu['兵数 100 セット'] = function() {
-			var list = Deck.currentUnit.assignList;
-			Deck.gatherSoldier( list, 100 );
-		};
-		submenu['兵数 300 セット'] = function() {
-			var list = Deck.currentUnit.assignList;
-			Deck.gatherSoldier( list, 300 );
-		};
+
+		[ 10, 100, 300 ].forEach(function( value ) {
+			submenu['兵数 ' + value + ' セット'] = function() {
+				var list = Deck.currentUnit.assignList;
+				Deck.gatherSoldier( list, value );
+			};
+		});
+
+		if ( pool.length > 0 ) {
+			submenu['兵種変更'] = $.contextMenu.title;
+
+			pool.forEach(function( poolSol ) {
+				submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = {
+					'兵数最大': function() {
+						var list = Deck.currentUnit.assignList;
+						Deck.setUnitMax( list, poolSol.type );
+					},
+					'兵数 1': function() {
+						var list = Deck.currentUnit.assignList;
+						Deck.setUnit( list, 1, poolSol.type );
+					}
+				};
+			});
+		}
 
 		menu['セパレーター2'] = $.contextMenu.separator;
 		menu['選択中の武将'] = submenu;
 	}
-	else if ( list && batch ) {
+	else if ( list && batch >= 1 ) {
 		submenu = {};
-		submenu['兵寄せ'] = function() {
-			var list = Deck.targetList();
-			Deck.gatherSoldierMax( list );
-		};
-		submenu['最大補充'] = function() {
-			var list = Deck.targetList();
-			Deck.setUnitMax( list );
-		};
-		submenu['兵数 1 セット'] = function() {
-			var list = Deck.targetList();
-			Deck.setUnit( list, 1 );
-		};
+
+		if ( batch == 2 ) {
+			submenu['兵数変更'] = $.contextMenu.title;
+			submenu['兵寄せ'] = function() {
+				var list = Deck.targetList();
+				Deck.gatherSoldierMax( list );
+			};
+			submenu['最大補充'] = function() {
+				var list = Deck.targetList();
+				Deck.setUnitMax( list );
+			};
+			submenu['兵数 1 セット'] = function() {
+				var list = Deck.targetList();
+				Deck.setUnit( list, 1 );
+			};
+		}
+
+		if ( pool.length > 0 ) {
+			submenu['兵種変更'] = $.contextMenu.title;
+
+			pool.forEach(function( poolSol ) {
+				submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = {
+					'兵数最大': function() {
+						var list = Deck.targetList();
+						Deck.setUnitMax( list, poolSol.type );
+					},
+					'兵数 1': function() {
+						var list = Deck.targetList();
+						Deck.setUnit( list, 1, poolSol.type );
+					}
+				};
+			});
+		}
 
 		menu['セパレーター2'] = $.contextMenu.separator;
-		menu['表示中の武将'] = submenu;
+
+		if ( $.isEmptyObject( submenu ) ) {
+			menu['表示中の武将'] = $.contextMenu.nothing;
+		}
+		else {
+			menu['表示中の武将'] = submenu;
+		}
 	}
 
 	return menu;
