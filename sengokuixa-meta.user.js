@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.8
+// @version        1.1.2.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6512,8 +6512,7 @@ setup: function() {
 	.on('update', function() {
 		var build = MetaStorage('SETTINGS').get('build') || 0;
 
-		$('.imc_side_countdown').remove();
-		$('.imc_other').remove();
+		$('.imc_side_countdown, .imc_other, .imc_enemy').remove();
 
 		if ( build & 0x08 ) { SideBar.countDown('敵襲'); }
 		if ( build & 0x04 ) { SideBar.countDown('部隊'); }
@@ -6573,6 +6572,8 @@ countDown: function( type ) {
 
 			if ( type == '敵襲' ) {
 				$div.addClass('imc_enemy');
+				$base.addClass('imc_enemy');
+				finishevent = 'actionrefresh';
 			}
 			else if ( type == '部隊' && ( mode == '待機' || mode == '加待' ) ) {
 				$div.css({ padding: '2px 0px' }).removeClass('imc_countdown');
@@ -8927,7 +8928,6 @@ Page.registerAction( 'facility', 'unit_status', {
 //. style
 style: '' +
 /* 敵襲 */
-'LI.imc_enemy > :first-child { color: #f33 !important; }' +
 '.imc_new_enemy { border: solid 4px #f66; }' +
 '',
 
