@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.7
+// @version        1.1.2.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3951,7 +3951,8 @@ filter: function( cardlist ) {
 
 //.. sort
 sort: function( cardlist ) {
-	var order = Deck.sort.conditions;
+	var order = [].concat( Deck.sort.conditions );
+	order.push( [ 'cardNo', 'asc' ] );
 
 	return cardlist.sort(function( a, b ) {
 		for ( var i = 0, len = order.length; i < len; i++ ) {
@@ -4704,8 +4705,8 @@ Deck.dialog = function( village, brigade, coord ) {
 			'</ul>' +
 			'<ul id="imi_command_selecter" class="imc_command_selecter" />' +
 		'</div>' +
+		'<div id="imi_info" style="border: solid 1px #b8860b; height: 343px; padding-top: 20px; background-color: #000; color: #fff; font-size: 18px; text-align: center;">武将カード情報取得中...</div>' +
 		'<div id="ig_deck_smallcardarea_out" style="border: solid 1px #b8860b; height: 355px; padding: 4px; background-color: #000; overflow: auto;">' +
-		'<div id="imi_info" style="color: #fff; font-size: 18px; padding-top: 20px; text-align: center;">武将カード情報取得中...</div>' +
 		'</div>' +
 	'</div>';
 
@@ -4925,6 +4926,8 @@ Deck.dialog = function( village, brigade, coord ) {
 	dialog.buttons.attr('disabled', true);
 
 	$('.ig_deck_smallcardarea').contextMenu( Deck.dialog.contextmenu, true );
+	$('#ig_deck_smallcardarea_out').contextMenu( Deck.dialog.contextmenu2, true );
+
 	$('.imc_village').text( village.name );
 	if ( coord ) {
 		$('.imc_info8').val( coord );
@@ -4958,14 +4961,21 @@ Deck.dialog = function( village, brigade, coord ) {
 $.extend( Deck.dialog, {
 
 //.. loaded
-loaded: null,
+loaded: 0x00,
 
 //.. loadCard
 loadCard: function( brigade ) {
-	var pageData = [], cardlist;
+	var pageData = [], cardlist, cache;
 
-	if ( Deck.dialog.loaded === brigade ) {
-		$('#imi_info').remove();
+	if ( brigade == 0 ) {
+		cache = ( Deck.dialog.loaded == 0x3E );
+	}
+	else {
+		cache = Deck.dialog.loaded & ( 0x01 << brigade );
+	}
+
+	if ( cache ) {
+		$('#imi_info').hide();
 		Deck.setup( Deck.freeCost, Deck.ano );
 
 		cardlist = Deck.targetList();
@@ -4977,8 +4987,9 @@ loadCard: function( brigade ) {
 		return $.Deferred().resolve();
 	}
 
-	Deck.dialog.loaded = null;
-	Deck.analyzedData = {};
+	$('#imi_info').show();
+	$('#ig_deck_smallcardarea_out').hide();
+	$('<div id="imi_temporary" style="display: none;" />').appendTo('BODY');
 
 	return $.post( '/card/deck.php', {
 		target_card: '',
@@ -4992,8 +5003,8 @@ loadCard: function( brigade ) {
 		p: 1,
 		myselect2: '',
 		select_card_group: brigade,
-		'sort_order[]': [ 1, 0, 0 ],
-		'sort_order_type[]': [ 0, 0, 0 ],
+//		'sort_order[]': [ 1, 0, 0 ],
+//		'sort_order_type[]': [ 0, 0, 0 ],
 		show_deck_card_count: 15
 	})
 	.pipe(function( html ) {
@@ -5009,9 +5020,11 @@ loadCard: function( brigade ) {
 		free_cost = deck_cost[2].toFloat() - deck_cost[1].toFloat();
 		ano = 5 - $html.find('#ig_unitchoice LI:contains("[---新規部隊を作成---]")').length;
 
-		Deck.setup( free_cost, ano );
+		if ( Deck.dialog.loaded == 0x00 ) {
+			Deck.setup( free_cost, ano );
+		}
 
-		$('#imi_info').append( $html.find('#ig_boxInner > DIV[id^=cardWindow_]') );
+		$('#imi_temporary').append( $html.find('#ig_boxInner > DIV[id^=cardWindow_]') );
 		pageData.push( $card_list );
 
 		if ( match ) {
@@ -5043,7 +5056,7 @@ loadCard: function( brigade ) {
 					$html = $( jqXHR.responseText.replace(/"http:\/\/[^"]*(png|gif|jpg)"/g, '""') ),
 					$card_list = $html.find('#ig_deck_smallcardarea_out').find('.ig_deck_smallcardarea');
 
-				$('#imi_info').append( $html.find('#ig_boxInner > DIV[id^=cardWindow_]') );
+				$('#imi_temporary').append( $html.find('#ig_boxInner > DIV[id^=cardWindow_]') );
 				pageData.push( $card_list );
 			}
 
@@ -5058,8 +5071,18 @@ loadCard: function( brigade ) {
 			pageData[ i ].appendTo('#ig_deck_smallcardarea_out');
 		}
 
-		$('#imi_info').remove();
-		Deck.dialog.loaded = brigade;
+		$('#imi_info').hide();
+		$('#ig_deck_smallcardarea_out').show();
+
+		if ( brigade == 0 ) {
+			Deck.dialog.loaded = 0x3E;
+		}
+		else {
+			Deck.dialog.loaded |= 0x01 << brigade;
+		}
+	})
+	.always(function() {
+		$('#imi_temporary').remove();
 	});
 },
 
@@ -5174,6 +5197,7 @@ contextmenu: function() {
 		Deck.filter.exceptions[ card_id ] = true;
 		card.element.hide();
 	};
+	menu['セパレーター2'] = $.contextMenu.separator;
 
 	var condition = Deck.filter.conditions[ 0 ] || [,[]],
 		deck = $this.closest('#imi_card_container').length,
@@ -5225,7 +5249,6 @@ contextmenu: function() {
 			});
 		}
 
-		menu['セパレーター2'] = $.contextMenu.separator;
 		menu['選択中の武将'] = submenu;
 	}
 	else if ( list && batch >= 1 ) {
@@ -5264,14 +5287,65 @@ contextmenu: function() {
 			});
 		}
 
-		menu['セパレーター2'] = $.contextMenu.separator;
-
 		if ( $.isEmptyObject( submenu ) ) {
 			menu['表示中の武将'] = $.contextMenu.nothing;
 		}
 		else {
 			menu['表示中の武将'] = submenu;
 		}
+	}
+
+	if ( Deck.dialog.loaded ^ 0x3F ) {
+		var labellist = [ '', '【第一組】', '【第二組】', '【第三組】', '【第四組】', '【未設定】' ];
+
+		submenu = {};
+		for ( var i = 1; i <= 5; i++ ) {
+			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
+				submenu[ labellist[ i ] ] = $.contextMenu.nothing;
+			}
+			else {
+				let brigade = i;
+				submenu[ labellist[ i ] ] = function() {
+					Deck.dialog.loadCard( brigade ).done( Deck.update );
+				};
+			}
+		}
+
+		menu['組データ追加読込'] = submenu;
+	}
+	else {
+		menu['組データ追加読込'] = $.contextMenu.nothing;
+	}
+
+	return menu;
+},
+
+//.. contextmenu2
+contextmenu2: function() {
+	var menu = {};
+
+	menu['デッキメニュー'] = $.contextMenu.title;
+
+	if ( Deck.dialog.loaded ^ 0x3F ) {
+		var labellist = [ '', '【第一組】', '【第二組】', '【第三組】', '【第四組】', '【未設定】' ];
+
+		submenu = {};
+		for ( var i = 1; i <= 5; i++ ) {
+			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
+				submenu[ labellist[ i ] ] = $.contextMenu.nothing;
+			}
+			else {
+				let brigade = i;
+				submenu[ labellist[ i ] ] = function() {
+					Deck.dialog.loadCard( brigade ).done( Deck.update );
+				};
+			}
+		}
+
+		menu['組データ追加読込'] = submenu;
+	}
+	else {
+		menu['組データ追加読込'] = $.contextMenu.nothing;
 	}
 
 	return menu;
