@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.2.10
+// @version        1.1.2.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -312,18 +312,12 @@ getServerTime: function() {
 
 //. getTargetDate
 getTargetDate: function( time, clock ) {
-	time  = time.split(':');
 	clock = clock.split(':');
 
 	var date = new Date(),
-		msec = ( ( clock[0].toInt() * 3600 ) + ( clock[1].toInt() * 60 ) + clock[2].toInt() ) * 1000;
+		sec = ( clock[0].toInt() * 3600 ) + ( clock[1].toInt() * 60 ) + clock[2].toInt();
 
-	date.setTime( date.getTime() + msec );
-
-	date.setHours( time[0].toInt() );
-	date.setMinutes( time[1].toInt() );
-	date.setSeconds( time[2].toInt() );
-	date.setMilliseconds( 0 );
+	date.setTime( ( Util.getServerTime() + sec ) * 1000 );
 
 	return ~~( date.getTime() / 1000 );
 },
