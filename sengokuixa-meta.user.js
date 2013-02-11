@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.0
+// @version        1.1.3.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -862,6 +862,136 @@ getConsumption: function( materials, number ) {
 	});
 },
 
+//. getFacility
+getFacility: function( name ) {
+	var data = MetaStorage('FACILITY').data,
+		list = [];
+
+	for ( var baseid in data ) {
+		let facility_list = data[ baseid ],
+			facility;
+
+		if ( facility_list[ name ] ) {
+			facility = $.extend( { id: baseid }, facility_list[ name ] );
+			list.push( facility );
+		}
+	}
+
+	return list;
+},
+
+//. getMarket
+getMarket: function() {
+	var rates = [ 0, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.60 ],
+		list = Util.getFacility('市'),
+		market;
+
+	if ( list.length == 0 ) { return null; }
+
+	list.sort(function( a, b ) {
+		return ( b.lv > a.lv );
+	});
+
+	list[ 0 ].rate = rates[ list[ 0 ].lv ];
+
+	return list[ 0 ];
+},
+
+//. getResource
+getResource: function() {
+	return [
+		$('#wood').text().toInt(),
+		$('#stone').text().toInt(),
+		$('#iron').text().toInt(),
+		$('#rice').text().toInt()
+	];
+},
+
+//. checkExchange
+checkExchange: function( resource, requirements, rate ) {
+	var shortage = 0, surplus = 0;
+
+	if ( !rate ) { rate = ( Util.getMarket() || { rate: 0 } ).rate; }
+
+	for ( var i = 0, len = resource.length; i < len; i++ ) {
+		if ( resource[ i ] >= requirements[ i ] ) {
+			surplus += resource[ i ] - requirements[ i ];
+		}
+		else {
+			shortage += requirements[ i ] - resource[ i ];
+		}
+	}
+
+	return ( shortage == 0 ) ? 2 : ( surplus * rate >= shortage ) ? 1 : 0;
+},
+
+//. getExchangePlan
+getExchangePlan: function( resource, requirements, rate, type ) {
+	var surplus = [], shortage = [], totalSurplus, totalShortage;
+
+	'木 綿 鉄 糧'.split(' ').forEach(function( type, idx ) {
+		var value = resource[ idx ] - requirements[ idx ];
+
+		if ( value > 0 ) { surplus.push({ type: type, value: value }); }
+		else if ( value < 0 ) { shortage.push({ type: type, value: -value }); }
+	});
+
+	totalSurplus  = surplus.reduce(function( prev, curr ) { return prev += curr.value; }, 0 );
+	totalShortage = shortage.reduce(function( prev, curr ) { return prev += curr.value; }, 0 );
+	totalShortage = Math.ceil( totalShortage / rate );
+
+	if ( totalSurplus < totalShortage ) {
+		return [];
+	}
+
+	if ( type == 'A' ) {
+		var modify = surplus.sort(function( a, b ) {
+			return ( b.value > a.value );
+		})
+		.reduce(function( prev, curr, idx ) {
+			if ( curr.value > prev.avg ) {
+				prev.value = prev.value + curr.value;
+				prev.avg = Math.floor( ( prev.value - totalShortage ) / ( idx + 1 ) );
+			}
+
+			return prev;
+		}, { value: 0, avg: 0 });
+
+		totalSurplus = 0;
+		surplus = surplus.map(function( elem ) {
+			elem.value -= modify.avg;
+			if ( elem.value < 0 ) { elem.value = 0; }
+			totalSurplus += elem.value;
+
+			return elem;
+		});
+	}
+
+	surplus = surplus.map(function( elem ) {
+		elem.ratio = elem.value / totalSurplus;
+		return elem;
+	});
+
+	var plans = [];
+	shortage.forEach(function( short ) {
+		surplus.forEach(function( plus ) {
+			var value = Math.ceil( short.value * plus.ratio ),
+				fixed;
+
+			if ( value == 0 ) { return; }
+
+			fixed = Math.floor( ( value - 1 ) / rate ) + 1;
+			value = Math.floor( value / rate );
+			if ( Math.ceil( value * rate ) == Math.ceil( fixed * rate ) ) { value = fixed; }
+			if ( value < 10 ) { value = 10; }
+
+			plans.push({ from: plus.type, to: short.type, value: value, receive: Math.ceil( value * rate ) });
+		});
+	});
+
+	return plans;
+},
+
 //. searchTradeCardNo
 searchTradeCardNo: function( card_no ) {
 	location.href = '/card/trade.php?t=no&k=' + card_no + '&s=price&o=a';
@@ -1388,6 +1518,206 @@ return {
 
 })();
 
+$.extend( Display, {
+
+//. dialogExchange
+dialogExchange: function( resource, requirements, currentVillage ) {
+	var market = Util.getMarket(),
+		dfd = $.Deferred(),
+		check, village, html, $html, dialog, plans;
+
+	if ( !market ) { return dfd.reject(); }
+
+	village = Util.getVillageById( market.id );
+	check = Util.checkExchange( resource, requirements, market.rate );
+
+	html = '' +
+	'<div id="imi_exchange_dialog">' +
+	'<table class="imc_table">' +
+		'<tr>' +
+			'<th width="50">市拠点</th><td width="150">' + village.name + '</td>' +
+			'<th width="50">LV</th><td width="30">' + market.lv + '</td>' +
+			'<th width="50">相場</th><td width="30">' + ( market.rate * 100 ).toRound( 0 ) + '%</td>' +
+		'</tr>' +
+	'</table>' +
+	'<br />' +
+	'<table id="imi_ex_table" class="imc_table">' +
+		'<tr><th></th>' +
+			'<th><img src="' + Env.externalFilePath + '/img/common/ico_wood.gif' + '"></th>' +
+			'<th><img src="' + Env.externalFilePath + '/img/common/ico_wool.gif' + '"></th>' +
+			'<th><img src="' + Env.externalFilePath + '/img/common/ico_ingot.gif' + '"></th>' +
+			'<th><img src="' + Env.externalFilePath + '/img/common/ico_grain.gif' + '"></th>' +
+		'</tr>' +
+		'<tr><th>現在資源量</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr><th>必要資源量</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr class="imc_sign"><th>過不足</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr class="imc_sign"><th>取引資源量</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr><th colspan="5" style="padding: 1px;"></th></tr>' +
+		'<tr><th>取引後資源量</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr><th>必要資源量</th><td></td><td></td><td></td><td></td></tr>' +
+		'<tr><th colspan="5" style="padding: 1px;"></th></tr>' +
+		'<tr><th>消費後資源量</th><td></td><td></td><td></td><td></td></tr>' +
+	'</table>' +
+	'<br />' +
+	'<table id="imi_ex_type" class="imc_table">' +
+		'<tr><th rowspan="2">変換タイプ</th><td class="imc_selected" data-type="A">タイプＡ</td><td>消費後資源量が平均的になるように取引資源量を決定</td></tr>' +
+		'<tr><td data-type="B">タイプＢ</td><td>余剰資源量の割合に応じて取引資源量を決定</td></tr>' +
+	'</table>' +
+	'<br />' +
+	'<div id="imi_exchange_message" />' +
+	'</div>';
+
+	$html = $( html )
+	.on('update', function() {
+		var $tr = $('#imi_ex_table').find('TR'),
+			type = $(this).find('#imi_ex_type .imc_selected').data('type'),
+			warehouse = $('#wood_max').text().toInt(),
+			ex = [ 0, 0, 0, 0 ],
+			button = true;
+
+		plans = Util.getExchangePlan( resource, requirements, market.rate, type );
+		plans.forEach(function( elem ) {
+			var idxTable = { '木': 0, '綿': 1, '鉄': 2, '糧': 3 };
+			ex[ idxTable[ elem.from ] ] -= elem.value;
+			ex[ idxTable[ elem.to ] ] += elem.receive;
+		});
+
+		if ( plans.length == 0 && check == 2 ) {
+			$('#imi_exchange_message').text( '取引の必要はありません' )
+			dialog.buttons.eq( 0 ).text('処理続行');
+		}
+		else if ( plans.length == 0 && check == 0 ) {
+			$('#imi_exchange_message').text( '資源が不足しています' )
+			button = false;
+		}
+
+		// 現在資源量
+		$tr.eq( 1 ).find('TD').each(function( idx ) { $(this).text( resource[ idx ] ); });
+		// 必要資源量
+		$tr.eq( 2 ).find('TD').each(function( idx ) { $(this).text( requirements[ idx ] ); });
+		// 過不足
+		$tr.eq( 3 ).find('TD').each(function( idx ) {
+			var $this = $(this),
+				result = resource[ idx ] - requirements[ idx ];
+
+			$this.text( result ).removeClass('imc_surplus imc_shortage');
+			if ( result > 0 ) { $this.addClass('imc_surplus'); }
+			if ( result < 0 ) { $this.addClass('imc_shortage'); }
+		});
+		// 取引資源量
+		$tr.eq( 4 ).find('TD').each(function( idx ) {
+			var $this = $(this),
+				result = ex[ idx ];
+
+			$this.text( result ).removeClass('imc_surplus imc_shortage');
+			if ( result > 0 ) { $this.addClass('imc_surplus'); }
+			if ( result < 0 ) { $this.addClass('imc_shortage'); }
+		});
+		// 取引後資源量
+		$tr.eq( 6 ).find('TD').each(function( idx ) {
+			var $this = $(this),
+				result = resource[ idx ] + ex[ idx ];
+
+			$this.text( result ).removeClass('imc_over')
+			if ( result > warehouse ) {
+				$this.addClass('imc_over');
+				$('#imi_exchange_message').text( '取引後の資源量が蔵容量を超えています' )
+				button = false;
+			}
+		});
+		// 必要資源量
+		$tr.eq( 7 ).find('TD').each(function( idx ) { $(this).text( requirements[ idx ] ); });
+		// 消費後資源量
+		$tr.eq( 9 ).find('TD').each(function( idx ) {
+			var $this = $(this),
+				result = resource[ idx ] + ex[ idx ] - requirements[ idx ];
+
+			$this.text( result ).removeClass('imc_surplus imc_shortage');
+			if ( result >= 0 ) { $this.addClass('imc_surplus'); }
+			else { $this.addClass('imc_shortage'); }
+		});
+
+		dialog.buttons.eq( 0 ).attr('disabled', !button);
+	})
+	.on('click', '#imi_ex_type TD', function() {
+		$('#imi_ex_type').find('.imc_selected').removeClass('imc_selected');
+		$(this).closest('TR').find('TD').first().addClass('imc_selected');
+		$html.trigger('update');
+	});
+
+	dialog = Display.dialog({
+		title: '市取引',
+		width: 500, height: 340, top: 50,
+		content: $html,
+		buttons: {
+			'取引を実行し処理続行': function() {
+				var self = this,
+					materialid = { '木': 101, '綿': 102, '鉄': 103, '糧': 104 },
+					ol = Display.dialog();
+
+				$.Deferred().resolve()
+				.pipe(function() {
+					ol.message('取引開始...');
+
+					var href = Util.getVillageChangeUrl( market.id, '/facility/facility.php?x=' + market.x + '&y=' + market.y );
+					return $.get( href );
+				})
+				.pipe(function( html ) {
+					if ( $(html).find('#market_form').length == 0 ) {
+						Display.alert('市情報が見つかりませんでした。');
+						return $.Deferred().reject();
+					}
+				})
+				.pipe(function() {
+					if ( plans.length == 0 ) { return; }
+
+					var self = arguments.callee,
+						plan = plans.shift();
+
+					ol.message( '【' + plan.from + '】 ' + plan.value + ' を【' + plan.to + '】と取引中' );
+
+					return $.post( '/facility/facility.php', {
+						x: market.x,
+						y: market.y,
+						village_id: market.id,
+						tf_id: materialid[ plan.from ],
+						tc: plan.value,
+						tt_id: materialid[ plan.to ],
+						st: 1,
+						change_btn: true
+					})
+					.pipe(function() { return Util.wait( 100 ); })
+					.pipe( self );
+				})
+				.pipe(function() {
+					ol.message('取引終了');
+
+					if ( !currentVillage ) { return; }
+					if ( market.id == currentVillage.id ) { return; }
+
+					var href = Util.getVillageChangeUrl( currentVillage.id, '/user/' );
+					return $.get( href );
+				})
+				.pipe(function() { return Util.wait( 1000 ); })
+				.done( dfd.resolve )
+				.fail( dfd.reject )
+				.always( ol.close )
+				.always( self.close );
+			},
+			'キャンセル': function() {
+				this.close();
+				dfd.reject();
+			}
+		}
+	});
+
+	$html.trigger('update');
+
+	return dfd;
+}
+
+});
+
 //■ Soldier
 var Soldier = (function() {
 
@@ -1660,6 +1990,19 @@ style: '' +
 '#imi_mousemap { position: absolute; width: 100%; height: 100%; z-index: 2; }' +
 /* 全体地図座標表示用 */
 '#imi_label { position: absolute; width: 60px; height: 12px; padding-left: 3px; color: #fff; background-color: #666; border: solid 1px #fff; display: none; z-index: 3; }' +
+
+/* 資源過不足 */
+'.imc_surplus { color: #3c0; }' +
+'.imc_shortage { color: #c30; }' +
+'.imc_over { color: #c30; }' +
+
+/* 市取引ダイアログ用 */
+'#imi_ex_table TD { width: 60px; }' +
+'#imi_ex_table TD.imc_surplus { color: #090; }' +
+'#imi_ex_table .imc_sign TD.imc_surplus:before { content: "+"; }' +
+'#imi_ex_type TD { text-align: left; cursor: pointer; }' +
+'#imi_ex_type .imc_selected { background-color: #f9dea1; }' +
+'#imi_exchange_message { text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #c00; }' +
 '',
 
 //. images
