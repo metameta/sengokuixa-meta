@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.1
+// @version        1.1.3.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -495,16 +495,29 @@ getPoolSoldiers: function() {
 		data.capacity = text.toInt();
 		data.soldier = $html.find('#all_pool_unit_cnt').text().toInt();
 		data.pool = {};
+		data.training = [];
 
-		$table = $html.find('.table_fightlist2').first();
-		$cell = $table.find('TH');
-
-		$cell.each(function() {
+		$table = $html.find('.ig_fight_dotbox');
+		$table.first().find('TH').each(function() {
 			var $this = $(this),
 				type = Soldier.getType( $this.text() ),
 				pool = $this.next().text().toInt();
 
 			data.pool[ type ] = pool;
+		});
+
+		$table.eq( 1 ).find('.table_fightlist2').each(function() {
+			var $tr = $(this).find('TR'),
+				name = $tr.first().find('A').text(),
+				village = Util.getVillageByName( name );
+
+			$tr.slice( 1 ).each(function() {
+				var $td = $(this).find('TD');
+					type = Soldier.getType( $td.eq( 0 ).find('IMG').attr('alt') ),
+					num = $td.eq( 1 ).text().toInt();
+
+				data.training.push({ id: village.id, type: type, num: num });
+			});
 		});
 	});
 
@@ -911,7 +924,7 @@ getResource: function() {
 checkExchange: function( resource, requirements, rate ) {
 	var shortage = 0, surplus = 0;
 
-	if ( !rate ) { rate = ( Util.getMarket() || { rate: 0 } ).rate; }
+	if ( isNaN( rate ) ) { rate = ( Util.getMarket() || { rate: 0 } ).rate; }
 
 	for ( var i = 0, len = resource.length; i < len; i++ ) {
 		if ( resource[ i ] >= requirements[ i ] ) {
@@ -990,6 +1003,97 @@ getExchangePlan: function( resource, requirements, rate, type ) {
 	});
 
 	return plans;
+},
+
+//. getValidSoldiers
+getValidSoldiers: function( facility ) {
+	var url = Util.getVillageChangeUrl( facility.id, '/facility/facility.php?x=' + facility.x + '&y=' + facility.y ),
+		soldiers = [];
+
+	$.ajax({ type: 'get', url: url, async: false })
+	.pipe(function( html ) {
+		$(html).find('.ig_tilesection_innermid, .ig_tilesection_innermid2').each(function() {
+			var $this = $(this),
+				name, materials, soldata;
+
+			if ( $this.find('H3').length == 0 ) { return; }
+			if ( $this.find('H3 A').length > 0 ) { return; }
+
+			name = $this.find('H3').text().match(/\[(.*)\]/)[ 1 ];
+			materials = [
+				$this.find('.icon_wood').text().match(/(\d+)/)[ 1 ].toInt(),
+				$this.find('.icon_cotton').text().match(/(\d+)/)[ 1 ].toInt(),
+				$this.find('.icon_iron').text().match(/(\d+)/)[ 1 ].toInt(),
+				$this.find('.icon_food').text().match(/(\d+)/)[ 1 ].toInt()
+			];
+			soldata = Soldier.getByName( name );
+			image = $this.find('.ig_tilesection_iconarea IMG').attr('src');
+
+			soldiers.push({ type: soldata.type, name: name, materials: materials, training: soldata.training, image: image });
+		});
+	});
+
+	return soldiers.reverse();
+},
+
+//. getMaxTraining
+getMaxTraining: function( resource, requirements, rate, max, min ) {
+	var c, materials, check, result = min;
+
+	while ( min <= max ) {
+		c = Math.floor( ( max + min ) / 2 );
+		materials = Util.getConsumption( requirements, c );
+		check = Util.checkExchange( resource, materials, rate );
+
+		if ( check == 0 ) {
+			max = c - 1;
+		}
+		else {
+			result = c;
+			min = c + 1;
+		}
+	}
+
+	return result;
+},
+
+//. divide
+divide: function( list, type, solnum ) {
+	var facilities = [], maxidx = 0, total = 0, soltotal = 0;
+
+	total = 0;
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		let facility = $.extend( { type: type }, list[ i ] );
+
+		facility.mod  = Math.pow( 0.8, facility.lv - 1 );
+		facility.rate = Math.pow( 1 / 0.8, facility.lv - 1 );
+		total += facility.rate;
+
+		facilities.push( facility );
+	}
+
+	if ( facilities.length == 1 ) {
+		//施設が１つの場合、分配しない
+		facilities[ 0 ].solnum = solnum;
+	}
+	else {
+		for ( var i = 0, len = facilities.length; i < len; i++ ) {
+			let facility = facilities[ i ];
+
+			facility.rate = facility.rate / total;
+			facility.solnum = Math.floor( solnum * facility.rate );
+			soltotal += facility.solnum;
+
+			if ( facility.lv > facilities[ maxidx ].lv ) { maxidx = i; }
+		}
+
+		if ( soltotal != solnum ) {
+			//小数点以下を切り捨てているので、不足分はLVが一番高い施設で調整
+			facilities[ maxidx ].solnum += ( solnum - soltotal );
+		}
+	}
+
+	return facilities;
 },
 
 //. searchTradeCardNo
@@ -1714,6 +1818,400 @@ dialogExchange: function( resource, requirements, currentVillage ) {
 	$html.trigger('update');
 
 	return dfd;
+},
+
+//. dialogTraining
+dialogTraining: function() {
+	var ol = Display.dialog().message('情報取得中...'),
+		current = Util.getVillageCurrent(),
+		data = MetaStorage('FACILITY').data,
+		pooldata = Util.getPoolSoldiers(),
+		facilities = {}, fcount = 0, vcount = 0,
+		dialog, $html, $table, $tr, $button;
+
+	'足軽兵舎 弓兵舎 厩舎 兵器鍛冶'.split(' ').forEach(function( key ) {
+		var facility, flist, slist, tlist, counts;
+
+		flist = Util.getFacility( key );
+		if ( flist.length == 0 ) { return; }
+		slist = Util.getValidSoldiers( flist[ 0 ] );
+		if ( slist.length == 0 ) { return; }
+
+		facility = { list: flist, soldiers: slist, total: 0, count: 0 };
+
+		tlist = pooldata.training.filter(function( elem ) {
+			return slist.some(function( sol ) { return sol.type == elem.type; });
+		});
+		tlist.forEach(function( elem ) {
+			if ( !facility[ elem.type ] ) { facility[ elem.type ] = 0; }
+			facility[ elem.type ] += elem.num;
+			facility.total += elem.num;
+		});
+
+		counts = tlist.reduce(function( prev, curr ) {
+			if ( !prev[ curr.id ] ) { prev[ curr.id ] = 0; }
+			prev[ curr.id ]++;
+			return prev;
+		}, { 0: 0 });
+		facility.count = Math.max.apply( null, $.map( counts, function( value ) { return value; } ) );
+
+		facilities[ key ] = facility;
+		fcount++;
+	});
+
+	if ( fcount == 0 ) {
+		ol.message('訓練可能な施設は見つかりませんでした。');
+		Util.wait( 1000 ).pipe( ol.close );
+		return;
+	}
+
+	$html = $('<div><table class="imc_table" /></div>').attr('id', 'imi_training_dialog');
+	$table = $html.find('TABLE');
+
+	$tr = $('<tr><th width="150">施設</th></tr>');
+	$.each( facilities, function( key, elem ) {
+		$tr.append('<th width="150" colspan="3">' + key + '</th>');
+	});
+	$table.append( $tr );
+
+	$tr = $('<tr><th width="150">訓練数 ／ 登録数</th></tr>');
+	$.each( facilities, function( key, elem ) {
+		$tr.append('<th width="150" colspan="3">' + elem.total + ' ／ ' + elem.count + '</th>');
+	});
+	$table.append( $tr );
+
+	$tr = $('<tr><th>兵種</th></tr>');
+	$.each( facilities, function( key, elem ) {
+		var html = '' +
+		'<td colspan="3">' +
+			'<img style="width: 100px; height: 100px;" /><br/>' +
+			'<select style="width: 100px;" class="imc_soltype" fname="' + key + '">' +
+				elem.soldiers.map(function( soldier ) {
+					var soldata = Soldier.getByName( soldier.name );
+					return '<option value="' + soldata.type + '" src="' + soldier.image + '">' + soldier.name + '</option>';
+				}).join('') +
+			'</select>' +
+		'</td>';
+
+		$tr.append( html );
+	});
+	$table.append( $tr );
+
+	$tr = $('<tr><th>人数 ／ 分割</th></tr>');
+	$.each( facilities, function( key, elem ) {
+		var html = '' +
+		'<td colspan="3">' +
+			'<select style="width: 60px;" class="imc_solnum" fname="' + key + '"><option value="0">0</option></select>' +
+			' ／ ' +
+			'<select style="width: 40px;" class="imc_create_count" fname="' + key + '">';
+
+		if ( elem.count == 10 ) { html += '<option value="0">0</option>'; }
+		for ( var i = 1, len = 10 - elem.count; i <= len; i++ ) {
+			html += '<option value="'+ i +'">' + i + '</option>';
+		}
+
+		html +=
+			'</select>'
+		'</td>';
+
+		$tr.append( html );
+	});
+	$table.append( $tr );
+
+	$table.append( '<tr><th>施設</th>' + '<th>Lv</th><th>人数</th><th>時間</th>'.repeat( fcount ) + '</tr>' );
+
+	//各拠点
+	$.each( data, function( key, elem ) {
+		var village = Util.getVillageById( key );
+
+		$tr = $('<tr />');
+		$tr.append('<th>' + village.name + '</th>');
+
+		$.each( facilities, function( key, elem ) {
+			var facility = elem.list.filter(function( value ) { return value.id == village.id; });
+
+			if ( facility.length == 0 ) {
+				$tr.append('<td colspan="3">-</td>');
+			}
+			else {
+				facility = facility[ 0 ];
+				$tr.append(
+					'<td width="20" />',
+					$('<td width="45" />').addClass('imc_plan').attr({ fname: key, vid: facility.id }),
+					'<td/>'
+				);
+			}
+		});
+
+		$table.append( $tr );
+		vcount++;
+	});
+
+	$html.append(
+	'<br />' +
+	'<table class="imc_table imc_result" style="float: left;">' +
+		'<tr>' +
+			'<th width="100">陣屋</th>' +
+			'<td colspan="2">' + pooldata.soldier + ' / ' + pooldata.capacity + '</td>' +
+			'<th width="70">訓練可能残</th>' +
+			'<td><span class="imc_training_num"></td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th width="100">現在資源</th>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_wood.gif' + '"> <span class="imc_resource" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_wool.gif' + '"> <span class="imc_resource" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_ingot.gif' + '"> <span class="imc_resource" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_grain.gif' + '"> <span class="imc_resource" /></td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th width="100">必要資源</th>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_wood.gif' + '"> <span class="imc_total_material" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_wool.gif' + '"> <span class="imc_total_material" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_ingot.gif' + '"> <span class="imc_total_material" /></td>' +
+			'<td width="70" style="text-align: left;"><img src="' + Env.externalFilePath + '/img/common/ico_grain.gif' + '"> <span class="imc_total_material" /></td>' +
+		'</tr>' +
+	'</table>' +
+	'<div id="imi_training_message"></div>' +
+	'</div>' +
+	'');
+
+	$html
+	.on('change', '.imc_soltype', function() {
+		var $this = $(this),
+			type  = $this.val(),
+			fname = $this.attr('fname'),
+			image = $this.find('OPTION:selected').attr('src'),
+			resource = Util.getResource(),
+			market = Util.getMarket(),
+			rate, materials;
+
+		$this.prevAll('IMG').attr('src', image);
+
+		rate = ( market ) ? market.rate : 0;
+		materials = facilities[ fname ].soldiers.filter(function( elem ) {
+			return ( elem.type == type );
+		})[ 0 ].materials;
+
+		//数値プルダウン変更
+		var freecapa = pooldata.capacity - pooldata.soldier,
+			maxnum = Util.getMaxTraining( resource, materials, 0, freecapa, 0 ),
+			overnum = Util.getMaxTraining( resource, materials, rate, freecapa, maxnum ),
+			val = 0, step = 100, color = '#390',
+			options = [];
+
+		options.push('<option value="0">0</option>');
+		while ( val < overnum ) {
+			val += step;
+			if ( val > maxnum && maxnum != overnum ) {
+				options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
+				maxnum = Number.MAX_VALUE;
+			}
+			if ( val > overnum ) { val = overnum; }
+			if ( val >= 1000 ) { step = 500; }
+
+			let result = Util.checkExchange( resource, Util.getConsumption( materials, val ) );
+			if ( result == 0 ) { break; }
+			if ( result == 1 ) { color = '#c30'; }
+
+			options.push('<option value="' + val + '" style="color: ' + color + '">' + val + '</option>');
+		}
+
+		$html.find('.imc_solnum[fname="' + fname + '"]')
+		.empty().append( options.join('') ).trigger('change');
+
+		if ( overnum == 0 || facilities[ fname ].count == 10 ) {
+			$html.find('.imc_solnum[fname="' + fname + '"]').attr('disabled', true);
+			$html.find('.imc_create_count[fname="' + fname + '"]').attr('disabled', true);
+		}
+	})
+	.on('change', '.imc_solnum', function() {
+		var $this = $(this),
+			num   = $this.val(),
+			fname = $this.attr('fname'),
+			type  = $html.find('.imc_soltype[fname="' + fname + '"]').val(),
+			count = $html.find('.imc_create_count[fname="' + fname + '"]').val(),
+			soldata, list;
+
+		soldata = facilities[ fname ].soldiers.filter(function( elem ) {
+			return ( elem.type == type );
+		})[ 0 ];
+
+		list = Util.divide( facilities[ fname ].list, type, num );
+		list.forEach(function( elem ) {
+			elem.materials = Util.getConsumption( soldata.materials, elem.solnum );
+			elem.trainingtime = Math.ceil( elem.solnum * soldata.training * elem.mod );
+			elem.create_count = count;
+
+			$html.find('TD[fname="' + fname + '"][vid="' + elem.id + '"]').data('plan', elem).trigger('update');
+		});
+
+		$this.parent().removeAttr('style');
+		if ( num > 0 ) { $this.parent().css('background-color', '#9f9'); }
+
+		$html.find('.imc_result').trigger('update');
+	})
+	.on('change', '.imc_create_count', function() {
+		$(this).parent().find('.imc_solnum').trigger('change');
+	})
+	.on('update', '.imc_plan', function() {
+		var $this = $(this),
+			plan = $(this).data('plan');
+
+		$this.prev().text( plan.lv );
+		$this.text( plan.solnum );
+		$this.next().text( plan.trainingtime.toFormatTime() );
+	})
+	.on('update', '.imc_result', function() {
+		var $this = $(this),
+			execute = true,
+			resource, materials, solnum, trainingnum, check;
+
+		resource = Util.getResource();
+
+		materials = $html.find('.imc_plan')
+		.map(function() { return [ ( $(this).data('plan') || { materials: [ 0, 0, 0, 0 ] } ).materials ]; })
+		.get()
+		.reduce(function( prev, curr ) {
+			for ( var i = 0, len = prev.length; i < len; i++ ) { prev[ i ] += curr[ i ]; }
+			return prev;
+		}, [ 0, 0, 0, 0 ]);
+
+		solnum = $html.find('.imc_solnum')
+		.map(function() { return $(this).val().toInt(); })
+		.get()
+		.reduce(function( prev, curr ) { return prev + curr; }, 0);
+
+		trainingnum =  pooldata.capacity - solnum - pooldata.soldier;
+		$this.find('.imc_training_num').text( trainingnum );
+		if ( trainingnum < 0 ) {
+			$this.find('.imc_training_num').parent().css({ backgroundColor: '#f99' });
+		}
+		else {
+			$this.find('.imc_training_num').parent().css({ backgroundColor: '#9f9' });
+		}
+
+		//資源
+		$this.find('.imc_resource').each(function( idx ) { $(this).text( resource[ idx ] ); });
+		$this.find('.imc_total_material').each(function( idx ) {
+			var $this = $(this);
+
+			$this.text( materials[ idx ] ).removeClass('imc_surplus imc_shortage');
+			if ( materials[ idx ] > resource[ idx ] ) {
+				$this.addClass('imc_shortage');
+			}
+			else {
+				$this.addClass('imc_surplus');
+			}
+		});
+
+		check = Util.checkExchange( resource, materials );
+
+		if ( solnum == 0 ) {
+			execute = false;
+			$('#imi_training_message').text('');
+		}
+		else if ( trainingnum < 0 ) {
+			$('#imi_training_message').text('陣屋の容量を超えています');
+			execute = false;
+		}
+		else if ( check == 0 ) {
+			$('#imi_training_message').text('資源が不足しています');
+			execute = false;
+		}
+		else if ( check == 1 ) {
+			$('#imi_training_message').text('取引可能です');
+			$button.text('取引後に訓練開始');
+		}
+		else {
+			$('#imi_training_message').text('取引の必要はありません');
+			$button.text('訓練開始');
+		}
+
+		$button.attr('disabled', !execute)
+	});
+
+	dialog = Display.dialog({
+		title: '一括兵士訓練',
+		width: 840, height: 480, top: 50,
+		content: $html,
+		buttons: {
+			'訓練開始': function() {
+				var self = this,
+					ol, total, plans, workid;
+
+				total = $html.find('.imc_total_material').map(function() {
+					return $(this).text().toInt();
+				}).get();
+
+				$.Deferred().resolve()
+				.pipe(function() {
+					var resource = Util.getResource();
+						result = Util.checkExchange( resource, total );
+
+					if ( result == 0 ) {
+						return $.Deferred().reject();
+					}
+					else if ( result == 1 ) {
+						return Display.dialogExchange( resource, total );
+					}
+					else {
+						if ( !confirm('訓練を開始してよろしいですか？') ) {
+							return $.Deferred().reject();
+						}
+					}
+				})
+				.pipe(function() {
+
+					ol = Display.dialog();
+					ol.message('一括訓練登録処理開始...');
+
+					plans = $html.find('.imc_plan').map(function() {
+						var plan = $(this).data('plan');
+						return ( plan.solnum > 0 ) ? plan : null;
+					}).get();
+				})
+				.pipe(function() {
+					var plan = plans.shift();
+					if ( !plan ) { return; }
+
+					return $.Deferred().resolve()
+					.pipe(function() {
+						if ( workid == plan.id ) { return; }
+
+						workid = plan.id;
+
+						var href = Util.getVillageChangeUrl( plan.id, '/user/' );
+						return $.get( href );
+					})
+					.pipe(function() {
+						var href = '/facility/facility.php?x=' + plan.x + '&y=' + plan.y,
+							data = { unit_id: plan.type, x: plan.x, y: plan.y, count: plan.solnum, create_count: plan.create_count, btnSend: true };
+
+						var village = Util.getVillageById( plan.id );
+						var soldata = Soldier.getByType( plan.type );
+
+						ol.message('「' + village.name + '」にて【' + soldata.name + '】を登録中...');
+
+						return $.post( href, data );
+					})
+					.pipe( arguments.callee );
+				})
+				.pipe(function() {
+					ol.message('一括訓練処理終了').message('ページを更新します...');
+
+					var href = Util.getVillageChangeUrl( current.id, '/facility/unit_list.php' );
+					Page.move( href );
+				});
+			},
+			'閉じる': function() { this.close(); }
+		}
+	});
+
+	$button = dialog.buttons.eq( 0 ).attr('disabled', true);
+	$html.find('.imc_soltype').trigger('change');
+
+	var href = Util.getVillageChangeUrl( current.id, '/user/' );
+	$.get( href ).pipe( ol.close );
 }
 
 });
@@ -1819,6 +2317,7 @@ modify: function( name, commands ) {
 });
 
 $.each( data, function( key, value ) {
+	value.name = key;
 	Soldier.nameKeys[ key ] = value.type;
 	Soldier.typeKeys[ value.type ] = key;
 	Soldier.classKeys[ value.class ] = key;
@@ -2003,6 +2502,10 @@ style: '' +
 '#imi_ex_type TD { text-align: left; cursor: pointer; }' +
 '#imi_ex_type .imc_selected { background-color: #f9dea1; }' +
 '#imi_exchange_message { text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #c00; }' +
+
+/* 一括兵士訓練ダイアログ用 */
+'#imi_training_dialog .imc_surplus { color: #090; }' +
+'#imi_training_message { width: 350px; float: left; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #c00; }' +
 '',
 
 //. images
@@ -7600,6 +8103,7 @@ createPulldownMenu: function() {
 		base_href[base] = href.replace(/page=.*$/, 'page=');
 	});
 
+	menu.push({ title: '【一括兵士訓練】', action: Display.dialogTraining });
 	for ( var baseid in data ) {
 		var facility_list = data[ baseid ],
 			name = Util.getVillageById( baseid ).name,
