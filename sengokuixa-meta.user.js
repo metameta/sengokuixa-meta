@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.2
+// @version        1.1.3.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7500,7 +7500,13 @@ loadUnit: function() {
 //. loadEnemy
 loadEnemy: function() {
 	var list = MetaStorage('UNIT_STATUS').get('敵襲') || [],
+		now = Util.getServerTime(),
 		result = {};
+
+	//着弾時間が過去のものを除く
+	list = list.filter(function( value ) {
+		return !( value.arrival < now );
+	});
 
 	for( var i = 0, len = list.length; i < len; i++ ) {
 		let base = list[ i ];
