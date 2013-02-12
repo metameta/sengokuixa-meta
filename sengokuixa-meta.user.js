@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.4
+// @version        1.1.3.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3901,7 +3901,9 @@ contextmenu: function() {
 			'部隊作成【第三組】': function() { Map.contextmenu.createUnit( data, 3 ); },
 			'部隊作成【第四組】': function() { Map.contextmenu.createUnit( data, 4 ); },
 			'部隊作成【全武将】': function() { Map.contextmenu.createUnit( data, 0 ); },
-			'セパレーター': $.contextMenu.separator,
+			'セパレーター1': $.contextMenu.separator,
+			'拠点部隊解散': function() { Map.contextmenu.breakUp( data ); },
+			'セパレーター2': $.contextMenu.separator,
 			'拠点選択': Map.contextmenu.changeVillage,
 			'拠点名変更': Map.contextmenu.renameVillage
 		};
@@ -4252,6 +4254,20 @@ createUnitNearby: function( data, brigade ) {
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
 	}
+},
+
+//.. breakUp
+breakUp: function( data ) {
+	if ( !confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
+
+	Deck.breakUp( data.castle )
+	.always(function( ol ) {
+		Util.getUnitStatus();
+		Deck.dialog.loaded = 0x00;
+		if ( ol && ol.close ) {
+			setTimeout( ol.close, 500 );
+		}
+	});
 },
 
 //.. changeVillage - この拠点を選択
@@ -5309,6 +5325,81 @@ assignCard: function( village_id, unit_id ) {
 	else { unit_id = ''; }
 
 	return Deck.currentUnit.assignCard( village_id, unit_id );
+},
+
+//.. breakUp
+breakUp: function( village ) {
+	var tasks = new Array(5),
+		ol = Display.dialog();
+
+	ol.message('解散処理開始...').message('デッキ1の情報を取得中...');
+
+	return $.get( '/card/deck.php?ano=0' )
+	.pipe(function( html, status, jqXHR ) {
+		var len = $(html).find('#ig_unitchoice li').not(':contains("[---新規部隊を作成---]")').length;
+
+		tasks[ 0 ] = [,, jqXHR ];
+
+		for ( var i = 1; i < len; i++ ) {
+			ol.message('デッキ' + ( i + 1 ) + 'の情報を取得中...');
+			tasks[ i ] = $.get( '/card/deck.php?ano=' + i );
+		}
+		
+		return $.when.apply( $, tasks );
+	})
+	.pipe(function() {
+		tasks = new Array(5);
+
+		for ( var i = 0, len = arguments.length; i < len; i++ ) {
+			if ( !arguments[ i ] ) { continue; }
+
+			let jqXHR = arguments[ i ][ 2 ],
+				$html = $( jqXHR.responseText ),
+				name  = $html.find('.ig_deck_unitdata_assign').text().trim(),
+				$a    = $html.find('.deck_navi a:first'),
+				source, args, postdata, unitname;
+
+			if ( village && village != name ) { continue; }
+			if ( $a.length == 0 ) { continue; }
+
+			source = $a.attr('onClick') || '';
+			args = source.match(/confirmUnregist\('(\d+)', '(\d+)'/);
+
+			if ( args == null ) { continue; }
+
+			$html.find('#unit_assign_id').val( args[1] );
+			$html.find('#unset_unit_squad_id').val( args[2] );
+			$html.find('#select_assign_no').val('0');
+
+			postdata = $html.find('#assign_form').serialize();
+			unitname = $html.find('#ig_deck_unititle').text();
+
+			ol.message( unitname + 'を解散中...' );
+
+			tasks[ i ] = $.post( '/card/deck.php', postdata );
+		}
+
+		return $.when.apply( $, tasks );
+	})
+	.pipe(function() {
+		var done = 0;
+
+		for ( var i in arguments ) {
+			if ( arguments[ i ] ) { done++; }
+		}
+
+		if ( done == 0 ) {
+			return $.Deferred().reject( ol );
+		}
+
+		return ol;
+	})
+	.done(function() {
+		ol.message('解散処理終了');
+	})
+	.fail(function() {
+		ol.message('待機中の部隊はありませんでした。');
+	});
 },
 
 //.. contextmenu
@@ -11064,71 +11155,14 @@ layouter: function() {
 
 //. unregistAll
 unregistAll: function() {
-	var len = $('#ig_unitchoice li').not(':contains("[---新規部隊を作成---]")').length,
-		tasks = [], ol;
-
 	if ( !confirm('全部隊を解散させます。\nよろしいですか？') ) { return; }
 
-	//オーバーレイ表示
-	ol = Display.dialog();
-	ol.message('全解散処理開始...');
-
-	for ( var i = len - 1; i >= 0; i-- ) {
-		tasks.push( sendData( i ) );
-	}
-
-	$.when.apply( $, tasks )
-	.pipe(function() {
-		var done = 0;
-
-		for ( var i in arguments ) {
-			if ( arguments[i] ) { done++; }
-		}
-
-		if ( done == 0 ) {
-			return $.Deferred().reject();
-		}
-	})
-	.pipe( Util.getUnitStatus )
-	.done(function() {
-		ol.message('全解散処理終了');
-	})
-	.fail(function() {
-		ol.message('待機中の部隊はありませんでした。');
-	})
-	.always(function() {
+	Deck.breakUp()
+	.always(function( ol ) {
+		Util.getUnitStatus();
 		ol.message('ページを更新します...');
 		Page.move( '/card/deck.php' );
 	});
-
-	function sendData( idx ) {
-		ol.message('デッキ' + ( idx + 1 ) + 'の情報を取得中...');
-
-		return $.get( '/card/deck.php?ano=' + idx )
-		.pipe(function( html ) {
-			var $html = $(html),
-				$a = $html.find('.deck_navi a:first'),
-				unit_name, source, arg, post_data;
-
-			if ( $a.length == 0 ) { return null; }
-
-			source = $a.attr('onClick') || '';
-			args = source.match(/confirmUnregist\('(\d+)', '(\d+)'/);
-
-			if ( args == null ) { return null; }
-
-			$html.find('#unit_assign_id').val( args[1] );
-			$html.find('#unset_unit_squad_id').val( args[2] );
-			$html.find('#select_assign_no').val('0');
-
-			post_data = $html.find('#assign_form').serialize();
-			unit_name = $html.find('#ig_deck_unititle').text();
-
-			ol.message( unit_name + 'を解散中...' );
-
-			return $.post( '/card/deck.php', post_data );
-		});
-	}
 },
 
 //. unitPower
