@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.3
+// @version        1.1.3.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -880,12 +880,15 @@ getFacility: function( name ) {
 	var data = MetaStorage('FACILITY').data,
 		list = [];
 
-	for ( var baseid in data ) {
-		let facility_list = data[ baseid ],
+	for ( var vid in data ) {
+		let facility_list = data[ vid ],
+			village = Util.getVillageById( vid ),
 			facility;
 
-		if ( facility_list[ name ] ) {
-			facility = $.extend( { id: baseid }, facility_list[ name ] );
+		if ( !village ) { continue; }
+
+		if ( facility_list[ name ] && facility_list[ name ].lv >= 1 ) {
+			facility = $.extend( { id: vid, name: village.name }, facility_list[ name ] );
 			list.push( facility );
 		}
 	}
@@ -1983,21 +1986,20 @@ dialogTraining: function() {
 			image = $this.find('OPTION:selected').attr('src'),
 			resource = Util.getResource(),
 			market = Util.getMarket(),
-			rate, materials;
+			materials;
 
 		$this.prevAll('IMG').attr('src', image);
 
-		rate = ( market ) ? market.rate : 0;
 		materials = facilities[ fname ].soldiers.filter(function( elem ) {
 			return ( elem.type == type );
 		})[ 0 ].materials;
 
 		//数値プルダウン変更
-		var freecapa = pooldata.capacity - pooldata.soldier,
+		var rate = ( market ) ? market.rate : 0,
+			freecapa = pooldata.capacity - pooldata.soldier,
 			maxnum = Util.getMaxTraining( resource, materials, 0, freecapa, 0 ),
 			overnum = Util.getMaxTraining( resource, materials, rate, freecapa, maxnum ),
-			val = 0, step = 100, color = '#390',
-			options = [];
+			val = 0, step = 100, color = '#390', options = [];
 
 		options.push('<option value="0">0</option>');
 		while ( val < overnum ) {
@@ -8897,22 +8899,12 @@ main: function() {
 training: function( name ) {
 	var self = this,
 		storage = MetaStorage('SETTINGS'),
-		facility = MetaStorage('FACILITY'),
-		baselist = BaseList.home(),
-		facilitylist = [];
+		facilitylist;
 
 	//訓練できるかチェック
 	if ( $('.ig_tilesection_mid').length == 1 ) { return; }
 
-	$.each( baselist, function() {
-		var data = facility.get( this.id );
-
-		if ( !data ) { return; }
-
-		if ( data[ name ] && data[ name ].lv > 0 ) {
-			facilitylist.push( $.extend( { name: this.name, id: this.id }, data[ name ] ) );
-		}
-	});
+	facilitylist = Util.getFacility( name );
 
 	$(document).data( 'facilitylist', facilitylist );
 
@@ -9017,17 +9009,35 @@ training: function( name ) {
 		var $select = $(this).parent().find('SELECT'),
 			unit_value = $select.first().val(),
 			create_count = $select.last().val(),
-			facility = $select.data('facility'),
+			facilities = $select.data('facilities'),
 			current = Util.getVillageCurrent(),
+			total = $select.data('total'),
 			ol;
 
-		if ( !confirm('訓練を開始してよろしいですか？') ) { return false; }
+		$.Deferred().resolve()
+		.pipe(function() {
+			var resource = Util.getResource(),
+				result = Util.checkExchange( resource, total );
 
-		ol = Display.dialog();
-		ol.message('訓練登録処理開始...');
+			if ( result == 0 ) {
+				return $.Deferred().reject();
+			}
+			else if ( result == 1 ) {
+				return Display.dialogExchange( resource, total );
+			}
+			else {
+				if ( !confirm('訓練を開始してよろしいですか？') ) {
+					return $.Deferred().reject();
+				}
+			}
+		})
+		.pipe(function() {
+			ol = Display.dialog();
+			ol.message('訓練登録処理開始...');
 
-		storage.set('unit_value', unit_value);
-		self.trainingExecute( facility, create_count, current, ol );
+			storage.set('unit_value', unit_value);
+			self.trainingExecute( facilities, create_count, current, ol );
+		});
 
 		return false;
 	});
@@ -9037,8 +9047,9 @@ training: function( name ) {
 trainingPulldown: function( $div ) {
 	var self = this,
 		unit_value = MetaStorage('SETTINGS').get('unit_value') || 100,
+		resource = Util.getResource(),
 		pool = Util.getPoolSoldiers(),
-		freecapa = pool.capacity - pool.soldier;
+		market = Util.getMarket();
 
 	$('.ig_solder_commentarea').text( pool.soldier + ' / ' + pool.capacity );
 
@@ -9047,8 +9058,7 @@ trainingPulldown: function( $div ) {
 			$table = $this.find('TABLE').eq( 1 ),
 			name = $this.find('H3 B').text().slice(1, -1),
 			data = Soldier.getByName( name ),
-			maxsol = Number.MAX_VALUE, val = 0, step = 100, options = [],
-			$tr, $select, materials, resource;
+			$tr, $select;
 
 		//各拠点の施設表示
 		$tr = $table.find('TR.noborder');
@@ -9093,34 +9103,31 @@ trainingPulldown: function( $div ) {
 			$tr.find('.icon_food').text().match(/(\d+)/)[ 1 ].toInt()
 		];
 
-		resource = [
-			$('#wood').text().toInt(),
-			$('#stone').text().toInt(),
-			$('#iron').text().toInt(),
-			$('#rice').text().toInt()
-		];
+		var rate = ( market ) ? market.rate : 0,
+			freecapa = pool.capacity - pool.soldier,
+			maxnum = Util.getMaxTraining( resource, materials, 0, freecapa, 0 ),
+			overnum = Util.getMaxTraining( resource, materials, rate, freecapa, maxnum ),
+			val = 0, step = 100, color = '#390', options = [];
 
-		//最大訓練数を算出する、ただし陣屋は考慮されない
-		Util.getConsumption( materials, 100 ).forEach(function( value, idx ) {
-			var sol = Math.floor( resource[ idx ] / ( value  / 100 ) );
-			if ( sol < maxsol ) { maxsol = sol; }
-		});
-
-		if ( maxsol < 100 ) {
-			//最適資源値で訓練できない場合、初期最大値の値を使用
-			maxsol = ( $input.parent().next().text().match(/(\d+)/) || [,0] )[ 1 ];
-			maxsol = maxsol.toInt();
+		if ( overnum > 10 ) {
+			color = ( maxnum >= 10 ) ? '#390' : '#c30';
+			options.push('<option value="10" style="color: ' + color + '">10</option>');
 		}
 
-		if ( freecapa < maxsol ) { maxsol = freecapa; }
-
-		options.push('<option value="10">10</option>');
-		while ( val < maxsol ) {
+		while ( val < overnum ) {
 			val += step;
-			if ( val >= maxsol ) { val = maxsol; }
+			if ( val > maxnum && maxnum != overnum ) {
+				options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
+				maxnum = Number.MAX_VALUE;
+			}
+			if ( val > overnum ) { val = overnum; }
 			if ( val >= 1000 ) { step = 500; }
 
-			options.push('<option value="' + val + '">' + val + '</option>');
+			let result = Util.checkExchange( resource, Util.getConsumption( materials, val ) );
+			if ( result == 0 ) { break; }
+			if ( result == 1 ) { color = '#c30'; }
+
+			options.push('<option value="' + val + '" style="color: ' + color + '">' + val + '</option>');
 		}
 
 		$select = $('<select/>');
@@ -9137,64 +9144,19 @@ trainingPulldown: function( $div ) {
 },
 
 //. trainingDivide
-trainingDivide: function( e, list ) {
+trainingDivide: function( e ) {
 	var $this = $(this),
+		solnum = $this.val(),
 		{ type, training, materials } = $this.data(),
-		unit_value = $this.val(),
-		facility = [], rate = [],
-		total1 = 0, total2 = 0, total3 = 0,
-		len = 0, lv_max = 0, lv_max_idx = -1;
-
-	list = list || $(document).data('facilitylist');
-	len = list.length;
-
-	for ( var i = 0; i < len; i++ ) {
-		facility.push( $.extend( { type: type }, list[ i ] ) );
-	}
-
-	if ( len == 1 ) {
-		//施設が１つの場合、分配しない
-		facility[ 0 ].unit_value = unit_value;
-	}
-	else {
-		//トレーニング時間の補正値から訓練数の割合算出
-		for ( var i = 0; i < len; i++ ) {
-			var value = Math.pow( 0.8, facility[ i ].lv - 1 );
-			rate.push( value );
-			total1 += value;
-		}
-		for ( var i = 0; i < len; i++ ) {
-			rate[ i ] = total1 / rate[ i ];
-			total2 += rate[ i ];
-		}
-		for ( var i = 0; i < len; i++ ) {
-			rate[ i ] = rate[ i ] / total2;
-		}
-
-		//訓練数分配
-		for ( var i = 0, len = facility.length; i < len; i++ ) {
-			var value = Math.floor( unit_value * rate[ i ] );
-			facility[ i ].unit_value = value;
-			total3 += value;
-
-			if ( facility[ i ].lv > lv_max ) {
-				lv_max = facility[ i ].lv;
-				lv_max_idx = i;
-			}
-		}
-
-		if ( unit_value != total3 ) {
-			//小数点以下を切り捨てているので、不足分はLVが一番高い施設で調整
-			facility[ lv_max_idx ].unit_value += ( unit_value - total3 );
-		}
-	}
+		list = $(document).data('facilitylist');
+		facilities = Util.divide( list, type, solnum );
 
 	//表示
 	var html = '',
 		total_wood = total_stone = total_iron = total_rice = 0;
 
-	$.each( facility, function() {
-		var [ wood, stone, iron, rice ] = Util.getConsumption( materials, this.unit_value ),
+	$.each( facilities, function() {
+		var [ wood, stone, iron, rice ] = Util.getConsumption( materials, this.solnum ),
 			time;
 
 		total_wood  += wood;
@@ -9202,32 +9164,46 @@ trainingDivide: function( e, list ) {
 		total_iron  += iron;
 		total_rice  += rice;
 
-		time = this.unit_value * training;
+		time = this.solnum * training;
 		time = Math.ceil( time * Math.pow( 0.8, this.lv - 1 ) );
 
-		html += '<tr class="imc_facility">';
-		html += '<th>' + this.name + '</th>';
-		html += '<td>' + this.lv + '</td>';
-		html += '<td>' + this.unit_value + '</td>';
-		html += '<td>' + time.toFormatTime(); + '</td>';
-		html += '</tr>';
+		html += '<tr class="imc_facility">' +
+			'<th>' + this.name + '</th>' +
+			'<td>' + this.lv + '</td>' +
+			'<td>' + this.solnum + '</td>' +
+			'<td>' + time.toFormatTime(); + '</td>' +
+		'</tr>';
 	});
 
 	//消費資源表示
-	var $tr = $this.closest('TBODY').find('TR').eq( 0 ).clone();
-	$tr.find('.icon_wood').text( '木 ' + total_wood.toFormatNumber() );
-	$tr.find('.icon_cotton').text( '綿 ' + total_stone.toFormatNumber() );
-	$tr.find('.icon_iron').text( '鉄 ' + total_iron.toFormatNumber() );
-	$tr.find('.icon_food').text( '糧 ' + total_rice.toFormatNumber() );
+	var resource = Util.getResource(),
+		$tr = $this.closest('TBODY').find('TR').eq( 0 ).clone(),
+		surplus;
+
+	surplus = ( total_wood <= resource[ 0 ] );
+	$tr.find('.icon_wood').text( '木 ' + total_wood.toFormatNumber() )
+		.toggleClass('imc_surplus', surplus ).toggleClass('imc_shortage', !surplus );
+
+	surplus = ( total_stone <= resource[ 1 ] );
+	$tr.find('.icon_cotton').text( '綿 ' + total_stone.toFormatNumber() )
+		.toggleClass('imc_surplus', surplus ).toggleClass('imc_shortage', !surplus );
+
+	surplus = ( total_iron <= resource[ 2 ] );
+	$tr.find('.icon_iron').text( '鉄 ' + total_iron.toFormatNumber() )
+		.toggleClass('imc_surplus', surplus ).toggleClass('imc_shortage', !surplus );
+
+	surplus = ( total_rice <= resource[ 3 ] );
+	$tr.find('.icon_food').text( '糧 ' + total_rice.toFormatNumber() )
+		.toggleClass('imc_surplus', surplus ).toggleClass('imc_shortage', !surplus );
 
 	$('#imi_training_' + type).html( html ).append( $tr );
 
-	$this.data( 'facility', facility );
+	$this.data({ facilities: facilities, total: [ total_wood, total_stone, total_iron, total_rice ] });
 },
 
 //. trainingExecute
-trainingExecute: function( facility, create_count, current, ol ) {
-	var data = facility.shift(),
+trainingExecute: function( facilities, create_count, current, ol ) {
+	var data = facilities.shift(),
 		self = arguments.callee;
 
 	if ( !data ) { return; }
@@ -9243,10 +9219,10 @@ trainingExecute: function( facility, create_count, current, ol ) {
 
 		var href = '/facility/facility.php?x=' + data.x + '&y=' + data.y;
 
-		return $.post( href, { unit_id: data.type, x: data.x, y: data.y, count: data.unit_value, create_count: create_count, btnSend: true } );
+		return $.post( href, { unit_id: data.type, x: data.x, y: data.y, count: data.solnum, create_count: create_count, btnSend: true } );
 	})
 	.pipe(function() {
-		if ( facility.length == 0 ) {
+		if ( facilities.length == 0 ) {
 			ol.message('訓練登録処理完了').message('ページを更新します...');
 
 			var href = Util.getVillageChangeUrl( current.id, '/facility/unit_list.php' );
@@ -9254,7 +9230,7 @@ trainingExecute: function( facility, create_count, current, ol ) {
 			Page.move( href );
 		}
 		else {
-			self.call( self, facility, create_count, current, ol );
+			self.call( self, facilities, create_count, current, ol );
 		}
 	});
 },
