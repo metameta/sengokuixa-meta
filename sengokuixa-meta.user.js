@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.6
+// @version        1.1.3.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2004,6 +2004,7 @@ dialogTraining: function() {
 		options.push('<option value="0">0</option>');
 		while ( val < overnum ) {
 			val += step;
+			if ( val == maxnum ) { maxnum = Number.MAX_VALUE; }
 			if ( val > maxnum && maxnum != overnum ) {
 				options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
 				maxnum = Number.MAX_VALUE;
@@ -9207,6 +9208,7 @@ trainingPulldown: function( $div ) {
 
 		while ( val < overnum ) {
 			val += step;
+			if ( val == maxnum ) { maxnum = Number.MAX_VALUE; }
 			if ( val > maxnum && maxnum != overnum ) {
 				options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
 				maxnum = Number.MAX_VALUE;
