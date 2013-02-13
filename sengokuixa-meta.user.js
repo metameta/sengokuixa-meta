@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.7
+// @version        1.1.3.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1760,7 +1760,15 @@ dialogExchange: function( resource, requirements, currentVillage ) {
 			'取引を実行し処理続行': function() {
 				var self = this,
 					materialid = { '木': 101, '綿': 102, '鉄': 103, '糧': 104 },
-					ol = Display.dialog();
+					ol;
+
+				if ( plans.length == 0 && check == 2 ) {
+					dfd.resolve();
+					self.close();
+					return;
+				}
+
+				ol = Display.dialog();
 
 				$.Deferred().resolve()
 				.pipe(function() {
@@ -2588,6 +2596,35 @@ countries: (function() {
 		['dummy', '織田家', '足利家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
 	][ Env.chapter ] || [];
 })(),
+
+//. facility
+facility: {
+	'木工所':		[ 1, 1 ],
+	'機織り場':		[ 2, 1 ],
+	'たたら場':		[ 3, 1 ],
+	'水田':			[ 4, 1 ],
+	'伐採所':		[ 5, 1 ],
+	'機織り工房':	[ 6, 1 ],
+	'高殿':			[ 7, 1 ],
+	'棚田':			[ 8, 1 ],
+	'釣り堀':		[ 9, 1 ],
+	'山林奉行所':	[ 10, 2 ],
+	'大舎人座':		[ 11, 2 ],
+	'鉄穴流し':		[ 12, 2 ],
+	'水車':			[ 13, 2 ],
+	'足軽兵舎':		[ 14, 3 ],
+	'弓兵舎':		[ 15, 3 ],
+	'厩舎':			[ 16, 3 ],
+	'兵器鍛冶':		[ 17, 3 ],
+	'寺':			[ 18, 4 ],
+	'教会':			[ 19, 4 ],
+	'蔵':			[ 20, 5 ],
+	'市':			[ 21, 5 ],
+	'学舎':			[ 22, 5 ],
+	'長屋':			[ 23, 5 ],
+	'陣屋':			[ 24, 5 ],
+	'天守':			[ 25, 5 ]
+},
 
 //. npcPower
 npcPower: null,
@@ -8706,6 +8743,12 @@ style: '' +
 '#imi_icon_lv.imc_selected { background-color: #666; border-color: #fff; color: #fff; }' +
 '#imi_icon_lv:hover { background-color: #666; border-color: #fff; color: #fff; }' +
 '#maps.imc_icon_disabled DIV.imc_map_icon { display: none; }' +
+
+'.imc_contextmenu_info { margin: -2px; padding: 5px; }' +
+'.imc_contextmenu_info TABLE { margin-left: 10px; }' +
+'.imc_contextmenu_info TH { width: 30px; height: 18px; line-height: 18px; }' +
+'.imc_contextmenu_info TD { width: 60px; height: 18px; line-height: 18px; text-align: right; vertical-align: middle; }' +
+'.imc_contextmenu_info .imc_icon { margin: 0px 10px; width: 100px; height: 100px; }' +
 '',
 
 //. main
@@ -8733,6 +8776,8 @@ layouter: function() {
 	else {
 		$('#imi_icon_lv').addClass('imc_selected');
 	}
+
+	$('#mapOverlayMap > AREA').contextMenu( this.contextmenu, true );
 },
 
 //. iconLv
@@ -8851,6 +8896,157 @@ getFacilityList: function() {
 
 		list[ name ] = { x: x.toInt(), y: y.toInt(), lv: lv.toInt() };
 	}
+},
+
+//. contextmenu
+contextmenu: function() {
+	var $this = $(this),
+		title = $this.attr('alt'),
+		href  = $this.attr('href');
+
+	if ( !href || href == '#' ) { return; }
+
+	var basename = $('#basepointTop .basename').text(),
+		village = Util.getVillageByName( basename ),
+		lv = ( $('#lordLV').text().match(/LV.(\d+)/) || [,0] )[1].toInt(),
+		count = $('#actionLog UL LI:contains("建設")').length,
+		idx = $('#mapOverlayMap AREA').index( $this ),
+		max = ( $( $('.imc_map_icon').get().reverse()[ idx ] ).attr('class').indexOf('max') != -1 ),
+		resource = Util.getResource(),
+		market = Util.getMarket(),
+		warehouse = $('#wood_max').text().toInt(),
+		list = [], menu = {};
+
+	menu[ title ] = $.contextMenu.title;
+
+	if ( max ) {
+		menu['最大レベルです'] = $.contextMenu.nothing;
+		return menu;
+	}
+
+	if ( count >= 2 ) {
+		menu['建設準備を追加できません'] = $.contextMenu.nothing;
+		return menu;
+	}
+
+	Page.ajax( '/' + href, { type: 'get', async: false } )
+	.pipe(function( html ) {
+		$(html).find('.ig_tilesection_innermid, .ig_tilesection_innermid2').each(function() {
+			var $this = $(this),
+				$useCp = $this.find('.ig_tilesection_pay_text A'),
+				text = $this.find('H3 A').text(),
+				result = {}, facility;
+
+			if ( $useCp.length == 0 ) { return; }
+
+			result.label = text;
+			result.href = '/facility/' + $useCp.attr('href').replace('&mode=cp', '');
+			result.buildid = ( result.href.match(/\?id=(\d+)&/) || [] )[ 1 ];
+
+			if ( result.buildid && lv >= 16 && $.inArray( text, [ '木工所', '機織り場', 'たたら場', '水田' ] ) != -1 ) { return; }
+
+			result.execflg = $this.find('.ig_tilesection_btnarea_left > A').length;
+			result.delflg = $this.find('.ig_tilesection_btnarea_left:contains("削除中")').length;
+			result.maxflg = $this.find('.ig_tilesection_btnarea_left:contains("最大レベル")').length;
+			result.image = $this.find('.ig_tilesection_iconarea IMG').attr('src');
+			result.materials = 'wood cotton iron food'.split(' ').map(function( key ) {
+				return ( $this.find('.paneltable .icon_' + key).text() || '0' ).match(/\d+/)[ 0 ].toInt();
+			});
+			result.time = $this.find('.table_tile TD:last SPAN').text();
+			facility = Data.facility[ text ] || [];
+			result.order = facility[ 0 ];
+			result.group = facility[ 1 ];
+			result.exflg = 0;
+			if ( market ) { result.exflg = Util.checkExchange( resource, result.materials, market.rate ); }
+
+			list.push( result );
+		});
+	});
+
+	list.sort(function( a, b ) {
+		return ( a.order > b.order );
+	});
+
+	var group = list[ 0 ].group;
+	list.forEach(function( elem ) {
+		var submenu = {},
+			mode, html;
+
+		if ( group != elem.group ) {
+			group = elem.group;
+			menu['セパレーター' + group] = $.contextMenu.separator;
+		}
+
+		mode = ( elem.buildid ) ? '建設' : 'LvUP';
+
+		if ( elem.execflg ) {
+			submenu[ mode ] = function() {
+				Display.dialog().message('処理中です...');
+				location.href = elem.href;
+			};
+		}
+		else if ( elem.delflg ) {
+			submenu['削除中です'] = $.contextMenu.nothing;
+		}
+		else if ( elem.maxflg ) {
+			submenu['最大レベルです'] = $.contextMenu.nothing;
+		}
+		else if ( elem.materials.some(function( elem ) { return elem > warehouse; }) ) {
+			submenu['蔵の容量が不足しています'] = $.contextMenu.nothing;
+		}
+		else if ( elem.exflg ) {
+			submenu[ '【取引】 + ' + mode ] = function() {
+				Display.dialogExchange( Util.getResource(), elem.materials )
+				.pipe(function() {
+					Display.dialog().message('処理中です...');
+					location.href = elem.href;
+				});
+			};
+		}
+		else {
+			submenu['資源が不足しています'] = $.contextMenu.nothing;
+		}
+
+		if ( elem.execflg && count == 0 ) {
+			mode = ( elem.buildid ) ? '建設 + LvUP' : 'LvUP × 2';
+			submenu[ mode ] = function() {
+				Display.dialog().message('処理中です...');
+				$.get( elem.href )
+				.pipe(function() {
+					location.href = elem.href.replace(/\?id=\d+/, '?');
+				});
+			};
+		}
+
+		submenu['セパレーター'] = $.contextMenu.separator;
+
+		html = '<div class="imc_contextmenu_info">' +
+		'<table>' +
+			'<tr><th>時間</th><td>' + elem.time + '</td></tr>' +
+			'wood wool ingot grain'.split(' ').map(function( key, idx ) {
+				return '' +
+				'<tr>' +
+					'<th><img src="' + Env.externalFilePath + '/img/common/ico_' + key + '.gif' + '"></th>' +
+					'<td class="' + ( resource[ idx ] > elem.materials[ idx ] ? 'imc_surplus' : 'imc_shortage' ) + '">' +
+						elem.materials[ idx ].toFormatNumber() +
+					'</td>' +
+				'</tr>';
+			}).join('') +
+		'</table>' +
+		( ( list.length > 1 ) ? '<img class="imc_icon" src="' + elem.image + '"/>' : '' ) +
+		'</div>';
+
+		submenu['情報'] = $( html );
+
+		if ( list.length == 1 ) {
+			$.extend( menu, submenu );
+		}
+		else {
+			menu[ elem.label ] = submenu;
+		}
+	});
+
+	return menu;
 }
 
 });
