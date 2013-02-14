@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.9
+// @version        1.1.3.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9136,6 +9136,33 @@ main: function() {
 	else { data[ village.id ] = list; }
 
 	MetaStorage('COUNTDOWN').set( '削除', data );
+
+	this.checkResource();
+},
+
+//. checkResource
+checkResource: function() {
+	var resource = Util.getResource();
+
+	$('.ig_tilesection_innermid, .ig_tilesection_innermid2')
+	.each(function() {
+		var $this = $(this),
+			$useCp = $this.find('.ig_tilesection_pay_text A');
+
+		if ( $useCp.length == 0 ) { return; }
+
+		'wood cotton iron food'.split(' ').forEach(function( key, idx ) {
+				$td = $this.find('.paneltable .icon_' + key),
+				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt();
+
+			if ( resource[ idx ] > value ) {
+				$td.addClass('imc_surplus');
+			}
+			else {
+				$td.addClass('imc_shortage');
+			}
+		});
+	});
 }
 
 });
@@ -9175,6 +9202,8 @@ style: '' +
 main: function() {
 	var name = $('DIV.ig_tilesection_detailarea > H3:eq(0) > A').text();
 
+	this.checkResource();
+
 	switch ( name ) {
 	case '厩舎': case '足軽兵舎': case '弓兵舎': case '兵器鍛冶':
 		this.training( name ); break;
@@ -9184,6 +9213,9 @@ main: function() {
 		this.research(); break;
 	}
 },
+
+//. checkResource
+checkResource: Page.getAction( 'facility', 'castle', 'checkResource' ),
 
 //. training
 training: function( name ) {
@@ -9534,26 +9566,55 @@ dealings: function() {
 
 //. research
 research: function() {
+	var market = Util.getMarket(),
+		resource = Util.getResource();
+
 	//施設情報を下へ移動
 	$('#facilityPartForm').insertBefore('.ig_paneloutbtn:last');
 
-	//必要銅銭追加
-	$('#ig_mainareabox > DIV.ig_tilesection_mid').find('DIV.ig_tilesection_innermid, DIV.ig_tilesection_innermid2')
+	$('.ig_tilesection_innermid, .ig_tilesection_innermid2')
 	.each(function() {
 		var $this = $(this),
 			name = $this.find('H3:last').text().slice(1, -1),
 			data = Soldier.getByName( name ),
-			$tr, $clone;
+			materials, $tr, $clone;
 
 		if ( !data ) { return; }
 
+		materials = 'wood cotton iron food'.split(' ').map(function( key, idx ) {
+				$td = $this.find('.paneltable .icon_' + key),
+				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt();
+
+			if ( resource[ idx ] > value ) {
+				$td.addClass('imc_surplus');
+			}
+			else {
+				$td.addClass('imc_shortage');
+			}
+
+			return value;
+		});
+
 		$tr = $this.find('TABLE TR:first');
 		$clone = $tr.clone().addClass('im_dou');
-
 		$clone.find('TD').empty()
 		.append( '<span class="money_b">' + data.dou + '</span>' );
-
 		$tr.after( $clone );
+
+		if ( $this.find('.ig_tilesection_btnarea A').length == 1 ) { return; }
+		if ( !market ) { return; }
+
+		var $button = $('<button class="imc_market">市で取引をする</button>').data('materials', materials);
+		$this.find('.ig_tilesection_btnarea').append( $button );
+	});
+
+	$('.imc_market').on('click', function() {
+		var materials = $(this).data('materials'),
+			resource = Util.getResource(),
+			village = Util.getVillageCurrent();
+
+		Display.dialogExchange( resource, materials, village )
+		.pipe( location.reload );
 	});
 }
 
