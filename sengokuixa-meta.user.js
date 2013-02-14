@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.11
+// @version        1.1.3.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -359,6 +359,32 @@ getVillageById: function( id ) {
 
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		if ( list[ i ].id != id ) { continue; }
+
+		return list[ i ];
+	}
+
+	return null;
+},
+
+//. getVillageByCoord
+getVillageByCoord: function( x, y, country ) {
+	var list = MetaStorage('VILLAGE').get('list') || [];
+
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		if ( list[ i ].x != x ) { continue; }
+		if ( list[ i ].y != y ) { continue; }
+		if ( list[ i ].country != country ) { continue; }
+
+		return list[ i ];
+	}
+
+	//キャッシュで見つからない場合は最新情報取得
+	list = Util.getVillageList();
+
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		if ( list[ i ].x != x ) { continue; }
+		if ( list[ i ].y != y ) { continue; }
+		if ( list[ i ].country != country ) { continue; }
 
 		return list[ i ];
 	}
@@ -2268,6 +2294,44 @@ dialogRename: function( village ) {
 
 					$form.prepend('<INPUT type="hidden" name="btn_send" value="更新" />');
 					return $.post('/user/change/change.php#ptop', $form.serialize() );
+				})
+				.pipe(function( html ) {
+					var $table = $(html).find('.common_table1'),
+						list = [];
+
+					//本領所領
+					$table.eq( 0 ).find('TR.fs14').each(function() {
+						var $this = $(this),
+							type  = $this.find('TD').eq( 0 ).text(),
+							$a    = $this.find('A'),
+							name  = $a.eq( 0 ).text().trim(),
+							id    = $a.eq( 0 ).attr('href').match(/village_id=(\d+)/)[ 1 ],
+							point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
+							x     = point[ 1 ].toInt(),
+							y     = point[ 2 ].toInt(),
+							country = point[ 3 ].toInt(),
+							fall  = $this.find('TD').eq( 4 ).find('.red').length;
+
+						list.push({ type: type, id: id, name: name, x: x, y: y, country: country, fall: fall });
+					});
+
+					//出城・陣・領地
+					$table.eq( 1 ).find('TR.fs14').each(function() {
+						var $this = $(this),
+							type  = $this.find('TD').eq( 0 ).text(),
+							$a    = $this.find('A'),
+							name  = $a.eq( 0 ).text().trim(),
+							id    = $a.eq( 0 ).attr('href').match(/village_id=(\d+)/)[ 1 ],
+							point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
+							x     = point[ 1 ].toInt(),
+							y     = point[ 2 ].toInt(),
+							country = point[ 3 ].toInt(),
+							fall  = $this.find('TD').eq( 4 ).find('.red').length;
+
+						list.push({ type: type, id: id, name: name, x: x, y: y, country: country, fall: fall });
+					});
+
+					MetaStorage('VILLAGE').set('list', list);
 				})
 				.done( location.reload )
 				.fail(function() {
@@ -4406,11 +4470,16 @@ toCamp: function() {
 
 //.. createUnit - この拠点に部隊作成
 createUnit: function( data, brigade ) {
-	var village = Util.getVillageByName( data.castle );
+	var village = Util.getVillageByCoord( data.x, data.y, data.country );
 
 	brigade |= 0;
 
-	Deck.dialog( village, brigade );
+	if ( village ) {
+		Deck.dialog( village, brigade );
+	}
+	else {
+		Display.alert( '拠点は見つかりませんでした。' );
+	}
 },
 
 //.. createUnitNearby
@@ -4446,7 +4515,7 @@ changeVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = Map.analyzedData[ idx ],
-		village = Util.getVillageByName( data.castle );
+		village = Util.getVillageByCoord( data.x, data.y, data.country );
 
 	if ( village ) {
 		location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
@@ -4476,7 +4545,7 @@ renameVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = Map.analyzedData[ idx ],
-		village = Util.getVillageByName( data.castle );
+		village = Util.getVillageByCoord( data.x, data.y, data.country );
 
 	if ( village ) {
 		Display.dialogRename( village );
@@ -12671,8 +12740,8 @@ layouterSituation: function() {
 			'部隊作成【全武将】': function() { createUnit.call( this, 0 ); },
 			'セパレーター': $.contextMenu.separator,
 			'拠点選択': function() {
-				var { ebase } = $(this).data(),
-					village = Util.getVillageByName( ebase );
+				var { ex, ey, ec } = $(this).data(),
+					village = Util.getVillageByCoord( ex, ey, ec );
 
 				if ( village ) {
 					location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
@@ -12705,8 +12774,8 @@ layouterSituation: function() {
 	}, true);
 
 	function createUnit( brigade ) {
-		var { ebase } = $(this).data(),
-			village = Util.getVillageByName( ebase );
+		var { ex, ey, ec } = $(this).data(),
+			village = Util.getVillageByCoord( ex, ey, ec );
 
 		brigade |= 0;
 
