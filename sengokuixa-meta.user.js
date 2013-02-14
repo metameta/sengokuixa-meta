@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.8
+// @version        1.1.3.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1789,7 +1789,7 @@ dialogExchange: function( resource, requirements, currentVillage ) {
 					var self = arguments.callee,
 						plan = plans.shift();
 
-					ol.message( '【' + plan.from + '】 ' + plan.value + ' を【' + plan.to + '】と取引中' );
+					ol.message( '【' + plan.from + '】' + plan.value + ' を【' + plan.to + '】' + plan.receive + 'と取引中...' );
 
 					return $.post( '/facility/facility.php', {
 						x: market.x,
@@ -8744,11 +8744,11 @@ style: '' +
 '#imi_icon_lv:hover { background-color: #666; border-color: #fff; color: #fff; }' +
 '#maps.imc_icon_disabled DIV.imc_map_icon { display: none; }' +
 
-'.imc_contextmenu_info { margin: -2px; padding: 5px; }' +
-'.imc_contextmenu_info TABLE { margin-left: 10px; }' +
-'.imc_contextmenu_info TH { width: 30px; height: 18px; line-height: 18px; }' +
-'.imc_contextmenu_info TD { width: 60px; height: 18px; line-height: 18px; text-align: right; vertical-align: middle; }' +
-'.imc_contextmenu_info .imc_icon { margin: 0px 10px; width: 100px; height: 100px; }' +
+'.imc_contextmenu_info { margin: -2px; padding: 5px; cursor: default; }' +
+'.imc_contextmenu_info TABLE { margin-left: 5px; width: 80px; }' +
+'.imc_contextmenu_info TH { width: 25px; min-width: 25px; height: 18px; line-height: 18px; }' +
+'.imc_contextmenu_info TD { width: 55px; min-width: 55px; height: 18px; line-height: 18px; text-align: right; vertical-align: middle; }' +
+'.imc_contextmenu_info .imc_icon { width: 100px; min-width: 100px; height: 100px; }' +
 '',
 
 //. main
@@ -8996,7 +8996,7 @@ contextmenu: function() {
 		}
 		else if ( elem.exflg ) {
 			submenu[ '【取引】 + ' + mode ] = function() {
-				Display.dialogExchange( Util.getResource(), elem.materials )
+				Display.dialogExchange( Util.getResource(), elem.materials, village )
 				.pipe(function() {
 					Display.dialog().message('処理中です...');
 					location.href = elem.href;
@@ -9022,7 +9022,9 @@ contextmenu: function() {
 
 		html = '<div class="imc_contextmenu_info">' +
 		'<table>' +
-			'<tr><th>時間</th><td>' + elem.time + '</td></tr>' +
+			'<tr><th>時間</th><td>' + elem.time + '</td>' +
+			( ( list.length > 1 ) ? '<td class="imc_icon" rowspan="5"><img src="' + elem.image + '"/></td>' : '' ) +
+			'</tr>' +
 			'wood wool ingot grain'.split(' ').map(function( key, idx ) {
 				return '' +
 				'<tr>' +
@@ -9033,7 +9035,6 @@ contextmenu: function() {
 				'</tr>';
 			}).join('') +
 		'</table>' +
-		( ( list.length > 1 ) ? '<img class="imc_icon" src="' + elem.image + '"/>' : '' ) +
 		'</div>';
 
 		submenu['情報'] = $( html );
@@ -9066,6 +9067,7 @@ getBuildStatus: function() {
 		village = Util.getVillageByName( name ),
 		data, list;
 
+	if ( !village ) { return; }
 	//本領・所領の場合は処理しない
 	if ( village.type == '本領' || village.type == '所領' ) { return; }
 
