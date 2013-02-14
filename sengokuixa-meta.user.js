@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.3.10
+// @version        1.1.3.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -415,7 +415,7 @@ getVillageList: function() {
 
 //. getVillageCurrent
 getVillageCurrent: function() {
-	var name = $('#imi_basename > .basename .on > SPAN').text();
+	var name = $('#imi_basename .imc_basename .on > SPAN').text();
 
 	return Util.getVillageByName( name );
 },
@@ -2223,6 +2223,63 @@ dialogTraining: function() {
 
 	var href = Util.getVillageChangeUrl( current.id, '/user/' );
 	$.get( href ).pipe( ol.close );
+},
+
+//. dialogRename
+dialogRename: function( village ) {
+	var html = '' +
+	'<div>' + village.name + '</div>' +
+	'<br/>' +
+	'<input id="imi_village_name" maxlength="12" style="ime-mode: active;" value="' + village.name + '" />' +
+	'<div style="margin-top: 15px; color: #c00;">' +
+	'以下の名前から始まる名前は付けられません。<br/><br/>' +
+	'新規城 / 新規村 / 新規砦 / 新領地 / 新規陣<br/>開拓地 / 出城 / 支城 / 商人町' +
+	'</div>';
+
+	Display.dialog({
+		title: '拠点名変更',
+		width: 400, height: 110,
+		content: html,
+		buttons: {
+			'決定': function() {
+				var self = this,
+					new_name = $('#imi_village_name').val();
+
+				if ( new_name == village.name ) {
+					self.close();
+					return;
+				}
+
+				$.get('/user/change/change.php')
+				.pipe(function( html ) {
+					var $form = $(html).find('FORM[name="input_user_profile"]');
+
+					if ( $form.length == 0 ) { return $.Deferred().reject(); }
+
+					$form.find('INPUT[name="new_name\\[' + village.id + '\\]"]').val( new_name );
+					return $.post('/user/change/change.php#ptop', $form.serialize() );
+				})
+				.pipe(function( html ) {
+					var $form = $(html).find('FORM[name="input_user_profile"]');
+
+					if ( $form.find('INPUT[name="btn_send"]').length == 0 ) {
+						return $.Deferred().reject();
+					}
+
+					$form.prepend('<INPUT type="hidden" name="btn_send" value="更新" />');
+					return $.post('/user/change/change.php#ptop', $form.serialize() );
+				})
+				.done( location.reload )
+				.fail(function() {
+					Display.alert('変更に失敗しました。');
+					self.close();
+				});
+			},
+			'キャンセル': function() { this.close(); }
+		}
+	});
+
+	$('#imi_village_name').focus();
 }
 
 });
@@ -2372,7 +2429,7 @@ style: '' +
 
 /* コンテキストメニュー用 z-index: 9999 */
 '.imc_menulist { position: absolute; padding: 2px; min-width: 120px; font-size: 12px; color: #fff; background: #000; border: solid 1px #b8860b; z-index: 9999; -moz-user-select: none; }' +
-'.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: 2px -2px 2px -2px; padding: 4px 8px; font-size: 13px; font-weight: bold; min-width: 120px; }' +
+'.imc_menutitle { background: -moz-linear-gradient(left, #a82, #420); color: #eee; margin: 2px -2px 2px -2px; padding: 4px 8px; white-space: nowrap; font-size: 13px; font-weight: bold; min-width: 120px; }' +
 '.imc_menulist > .imc_menutitle:first-child { margin: -2px -2px 2px -2px; }' +
 '.imc_menuitem { margin: 0px; padding: 4px 20px 4px 8px; white-space: nowrap; cursor: pointer; border-radius: 2px; }' +
 '.imc_separater { border-top: groove 2px #ffffff; margin: 3px 5px; cursor: default; }' +
@@ -2481,6 +2538,7 @@ style: '' +
 '#imi_basename .imc_side_countdown { line-height: 100% !important; margin: 2px 0px -2px -10px; text-align: right; color: #fff; }' +
 '#imi_basename .imc_coord { font-weight: normal; }' +
 '#imi_basename .imc_break { color: #999; }' +
+'#imi_basename .imc_unit { padding: 2px 0px; }' +
 '#imi_basename .imc_enemy > :first-child { color: #f66; font-weight: bold; }' +
 
 '#imi_basename .imc_attack  { background-color: #f66; color: #000; padding: 0px 2px; }' +
@@ -2517,6 +2575,82 @@ style: '' +
 /* 一括兵士訓練ダイアログ用 */
 '#imi_training_dialog .imc_surplus { color: #090; }' +
 '#imi_training_message { width: 350px; float: left; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #c00; }' +
+
+/* 部隊作成ダイアログ用 */
+'#imi_unit_dialog #imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
+'#imi_unit_dialog #imi_deck_info { margin-left: 10px; padding: 2px; width: 280px; height: 149px; float: left; }' +
+'#imi_unit_dialog #imi_deck_info LI { height: 18px; line-height: 18px; padding-top: 3px; border-bottom: solid 1px #cc9; font-size: 12px; }' +
+'#imi_unit_dialog #imi_deck_info LI LABEL { width: 40px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }' +
+'#imi_unit_dialog #imi_deck_info LI.imc_enemy { border-color: #f66; }' +
+'#imi_unit_dialog #imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }' +
+'#imi_unit_dialog #imi_deck_info .imc_countdown_display { padding-left: 5px; }' +
+'#imi_unit_dialog .imc_village { margin-left: 5px; }' +
+'#imi_unit_dialog .imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'#imi_unit_dialog .imc_info1_free { width: 30px; text-align: right; display: inline-block; margin-right: 20px; }' +
+'#imi_unit_dialog .imc_info2 { width: 20px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
+'#imi_unit_dialog .imc_info2_free { width: 20px; text-align: right; display: inline-block; }' +
+'#imi_unit_dialog .imc_info3,' +
+'#imi_unit_dialog .imc_info4,' +
+'#imi_unit_dialog .imc_info5 { width: 71px; text-align: right; display: inline-block; margin-right: 20px; }' +
+'#imi_unit_dialog .imc_info6,' +
+'#imi_unit_dialog .imc_info7 { width: 85px; text-align: right; display: inline-block; }' +
+'#imi_unit_dialog .imc_info8 { width: 91px; border-style: none; }' +
+'#imi_unit_dialog .imc_info9 { padding-left: 5px; }' +
+'#imi_unit_dialog #ig_deck_smallcardarea_out { border: solid 1px #b8860b; height: 355px; margin: 0px; padding: 4px; background-color: #000; overflow: auto; }' +
+/* カード */
+'#imi_unit_dialog.imc_infotype_2 .imc_status1 { display: none; }' +
+'#imi_unit_dialog.imc_infotype_1 .imc_status2 { display: none; }' +
+'#imi_unit_dialog .ig_deck_smallcardarea { float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
+'#imi_unit_dialog .ig_deck_smallcardarea.imc_disabled { opacity:0.7; }' +
+'#imi_unit_dialog .ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }' +
+'#imi_unit_dialog .ig_deck_smallcardarea TR { height: 15px; }' +
+'#imi_unit_dialog .ig_deck_smallcardarea TH { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #ff0; }' +
+'#imi_unit_dialog .ig_deck_smallcardarea TD { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #fff; }' +
+'#imi_unit_dialog .imc_card_header { position: relative; color: #fff; }' +
+'#imi_unit_dialog .imc_disabled .imc_card_header { color: #999; }' +
+'#imi_unit_dialog .imc_cardname { font-weight: bold; }' +
+'#imi_unit_dialog .imc_rarity { position: absolute; left: 88px; font-size: 10px; line-height: 16px; }' +
+'#imi_unit_dialog .imc_cost { position: absolute; left: 100px; font-size: 11px; line-height: 17px; letter-spacing: -1px; }' +
+'#imi_unit_dialog .imc_rank { color: red; font-weight: bold; font-size: 11px; }' +
+'#imi_unit_dialog .imc_lv { font-size: 11px; letter-spacing: -1px; }' +
+'#imi_unit_dialog .imc_card_status TH { width: 45px; }' +
+'#imi_unit_dialog .imc_card_status .emphasis { background-color: #808080; }' +
+'#imi_unit_dialog .imc_card_status .imc_solmax { background-color: #642; }' +
+'#imi_unit_dialog .imc_card_status .imc_power { background-color: #246; }' +
+'#imi_unit_dialog .imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
+'#imi_unit_dialog .imc_card_param { }' +
+'#imi_unit_dialog .imc_card_skill { }' +
+'#imi_unit_dialog .imc_card_skill TH { width: 20px; }' +
+/* HP・討伐ゲージ用バー */
+'#imi_unit_dialog .imc_bar_title { color: white; font-size: 10px; }' +
+'#imi_unit_dialog .imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
+'#imi_unit_dialog .imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
+'#imi_unit_dialog .imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
+
+/* フィルタ */
+'#imi_unit_dialog .imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
+'#imi_unit_dialog .imc_command_selecter LI:hover .imc_pulldown { display: block; }' +
+'#imi_unit_dialog .imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
+'#imi_unit_dialog .imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
+'#imi_unit_dialog #ig_deck_smallcardarea_out .imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
+
+'#imi_unit_dialog #imi_new_deck { float: right; margin-right: 16px; }' +
+'#imi_unit_dialog #imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
+'#imi_unit_dialog #imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_unit_dialog #imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }' +
+'#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_1:after { content: "表示１" }' +
+'#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_2:after { content: "表示２" }' +
+
+/* 全部隊登録 */
+'#imi_unitnum TD { width: 40px; cursor: pointer; }' +
+'#imi_unitnum .imc_selected { background-color: #f9dea1; }' +
+
+/* 兵種変更 */
+'#imi_unitedit { margin: auto; }' +
+'#imi_unitedit TH:first-child { width: 60px; }' +
+'#imi_unitedit TD { width: 40px; cursor: pointer; }' +
+'#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
+'#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
 '',
 
 //. images
@@ -4298,10 +4432,9 @@ createUnitNearby: function( data, brigade ) {
 breakUp: function( data ) {
 	if ( !confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
 
-	Deck.breakUp( data.castle )
+	Deck.breakUpAll( data.castle )
 	.always(function( ol ) {
 		Util.getUnitStatus();
-		Deck.dialog.loaded = 0x00;
 		if ( ol && ol.close ) {
 			setTimeout( ol.close, 500 );
 		}
@@ -4343,61 +4476,14 @@ renameVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = Map.analyzedData[ idx ],
-		village = Util.getVillageByName( data.castle ),
-		html;
+		village = Util.getVillageByName( data.castle );
 
-	if ( !village.id ) {
-		Display.alert( '拠点は見つかりませんでした。' );
-		return;
+	if ( village ) {
+		Display.dialogRename( village );
 	}
-
-	html = '' +
-	'<div>' + village.name + '</div>' +
-	'<br/>' +
-	'<input id="imi_village_name" maxlength="12" style="ime-mode: active;" value="' + village.name + '" />';
-
-	Display.dialog({
-		title: '拠点名変更',
-		width: 400, height: 60,
-		content: html,
-		buttons: {
-			'決定': function() {
-				var self = this,
-					new_name = $('#imi_village_name').val();
-
-				if ( new_name == village.name ) {
-					self.close();
-					return;
-				}
-
-				$.get('/user/change/change.php')
-				.pipe(function( html ) {
-					var $form = $(html).find('FORM[name="input_user_profile"]');
-
-					if ( $form.length == 0 ) { return $.Deferred().reject(); }
-
-					$form.find('INPUT[name="new_name\\[' + village.id + '\\]"]').val( new_name );
-					return $.post('/user/change/change.php#ptop', $form.serialize() );
-				})
-				.pipe(function( html ) {
-					var $form = $(html).find('FORM[name="input_user_profile"]');
-
-					if ( $form.find('INPUT[name="btn_send"]').length == 0 ) { return $.Deferred().reject(); }
-
-					$form.prepend('<INPUT type="hidden" name="btn_send" value="更新" />');
-					return $.post('/user/change/change.php#ptop', $form.serialize() );
-				})
-				.done( location.reload )
-				.fail(function() {
-					Display.alert('変更に失敗しました。');
-					self.close();
-				});
-			},
-			'キャンセル': function() { this.close(); }
-		}
-	});
-
-	$('#imi_village_name').focus();
+	else {
+		Display.alert( '拠点は見つかりませんでした。' );
+	}
 },
 
 //.. coordRegister - 座標登録
@@ -5366,7 +5452,45 @@ assignCard: function( village_id, unit_id ) {
 },
 
 //.. breakUp
-breakUp: function( village ) {
+breakUp: function( ano, name ) {
+	var ol = Display.dialog();
+
+	ol.message('[' + name + ']部隊の解散処理開始...');
+
+	return $.get( '/card/deck.php?ano=' + ano )
+	.pipe(function( html ) {
+		var $html = $(html),
+			found = $html.find('#ig_unitchoice .now:contains("' + name + '")').length,
+			$a = $html.find('.deck_navi a:first'),
+			source, args, postdata;
+
+		if ( !found ) { return $.Deferred().reject( ol ); }
+
+		source = $a.attr('onClick') || '';
+		args = source.match(/confirmUnregist\('(\d+)', '(\d+)'/);
+
+		if ( args == null ) { return $.Deferred().reject( ol ); }
+
+		$html.find('#unit_assign_id').val( args[1] );
+		$html.find('#unset_unit_squad_id').val( args[2] );
+		$html.find('#select_assign_no').val('0');
+
+		postdata = $html.find('#assign_form').serialize();
+
+		return $.post( '/card/deck.php', postdata );
+	})
+	.pipe(function() { return ol; })
+	.done(function() {
+		Deck.dialog.clear();
+		ol.message('解散処理終了');
+	})
+	.fail(function() {
+		ol.message('該当の部隊は見つかりませんでした。');
+	});
+},
+
+//.. breakUpAll
+breakUpAll: function( villageName ) {
 	var tasks = new Array(5),
 		ol = Display.dialog();
 
@@ -5397,7 +5521,7 @@ breakUp: function( village ) {
 				$a    = $html.find('.deck_navi a:first'),
 				source, args, postdata, unitname;
 
-			if ( village && village != name ) { continue; }
+			if ( villageName && villageName != name ) { continue; }
 			if ( $a.length == 0 ) { continue; }
 
 			source = $a.attr('onClick') || '';
@@ -5429,10 +5553,10 @@ breakUp: function( village ) {
 		if ( done == 0 ) {
 			return $.Deferred().reject( ol );
 		}
-
 		return ol;
 	})
 	.done(function() {
+		Deck.dialog.clear();
 		ol.message('解散処理終了');
 	})
 	.fail(function() {
@@ -5663,7 +5787,7 @@ Deck.dialog = function( village, brigade, coord ) {
 		html, $content, options, dialog;
 
 	html = '' +
-	'<div class="imc_infotype_1">' +
+	'<div id="imi_unit_dialog" class="imc_infotype_1">' +
 		'<div style="height: 155px; margin-bottom: 5px;">' +
 			'<div id="imi_card_container"></div>' +
 			'<ul id="imi_deck_info">' +
@@ -5822,13 +5946,14 @@ Deck.dialog = function( village, brigade, coord ) {
 				unit;
 
 			if ( assignlist.length == 0 ) {
-				Display.dialog().message('ページを更新します...');
-
 				if ( dungeon ) {
+					Display.dialog().message('ページを更新します...');
 					location.href = Util.getVillageChangeUrl( village.id, '/facility/dungeon.php' );
 				}
 				else {
-					location.reload();
+					Util.getUnitStatusCD();
+					Deck.dialog.clear();
+					dialog.close();
 				}
 				return;
 			}
@@ -5924,7 +6049,7 @@ Deck.dialog = function( village, brigade, coord ) {
 		Util.countDown();
 	}
 
-	Deck.commandMenu( $('#imi_command_selecter') );
+	Deck.commandMenu( $content.find('#imi_command_selecter') );
 	Deck.dialog.loadCard( brigade ).done(function() {
 		Deck.update();
 		if ( coord ) {
@@ -6062,6 +6187,12 @@ loadCard: function( brigade ) {
 	.always(function() {
 		$('#imi_temporary').remove();
 	});
+},
+
+//.. clear
+clear: function() {
+	Deck.dialog.loaded = 0x00;
+	Deck.analyzedData = {};
 },
 
 //.. contextmenu
@@ -7436,14 +7567,15 @@ var SideBar = {
 
 //. init
 init: function() {
-	$('#sideboxBottom .basename').parent().attr('id', 'imi_basename');
+	$('#sideboxBottom .basename')
+	.eq( 0 ).addClass('imc_basename imc_home').end()
+	.eq( 1 ).addClass('imc_basename imc_away').end()
+	.parent().attr('id', 'imi_basename');
 },
 
 //. setup
 setup: function() {
-	var $base = $('#imi_basename');
-
-	$('DIV.basename:eq(0)').prev().css({ cursor: 'pointer' })
+	$('#imi_basename .imc_home').prev().css({ cursor: 'pointer' })
 	.find('H4').append('<span style="float: right">設定</span>').end()
 	.on('click', function() {
 		var build = MetaStorage('SETTINGS').get('build') || 0,
@@ -7486,7 +7618,7 @@ setup: function() {
 		});
 	});
 
-	$base
+	$('#imi_basename')
 	.on('update', function() {
 		var build = MetaStorage('SETTINGS').get('build') || 0;
 
@@ -7500,9 +7632,11 @@ setup: function() {
 		if ( build & 0x02 ) { SideBar.countDown('訓練'); }
 
 		Util.countDown();
-	});
+	})
+	.trigger('update');
+	
+	$('#imi_basename .basename LI').contextMenu( SideBar.contextmenu, true );
 
-	$base.trigger('update');
 },
 
 //. countDown
@@ -7524,7 +7658,7 @@ countDown: function( type ) {
 				$other = $('<div class="imc_other">' +
 					'<div class="sideBoxHead"><h4>その他</h4></div>' +
 					'<div class="sideBoxInner basename"><ul /></div></div>');
-				$('#imi_basename > .basename').first().prev().before( $other );
+				$('#imi_basename .imc_basename').first().prev().before( $other );
 			}
 
 			$base = $('<li><span>' + key + '</span></li>');
@@ -7539,7 +7673,7 @@ countDown: function( type ) {
 		});
 
 		for ( var i = 0, len = list.length; i < len; i++ ) {
-			let [ endtime, label, mode, x, y, c ] = list[ i ],
+			let [ endtime, label, mode, ano, x, y, c ] = list[ i ],
 				html, $div, finishevent, message, cssClass;
 
 			cssClass = classlist[ mode ] || '';
@@ -7555,7 +7689,7 @@ countDown: function( type ) {
 				finishevent = 'actionrefresh';
 			}
 			else if ( type == '部隊' && ( mode == '待機' || mode == '加待' ) ) {
-				$div.css({ padding: '2px 0px' }).removeClass('imc_countdown');
+				$div.attr('ano', ano).addClass('imc_unit').removeClass('imc_countdown');
 				$div.find('.imc_countdown_display').removeAttr('class').text( ' ' + mode + ' ' );
 
 				if ( mode == '加待' ) {
@@ -7563,7 +7697,7 @@ countDown: function( type ) {
 				}
 			}
 			else if ( type == '部隊' && location.pathname != '/map.php' ) {
-				$div.css({ padding: '2px 0px' });
+				$div.attr('ano', ano).addClass('imc_unit');
 				if ( endtime <= date ) {
 					$div.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
 					endtime = date + 7;
@@ -7575,7 +7709,7 @@ countDown: function( type ) {
 				message = '・[' + label + ']部隊';
 			}
 			else if ( type == '部隊' ) {
-				$div.css({ padding: '2px 0px' });
+				$div.attr('ano', ano).addClass('imc_unit');
 				if ( endtime <= date ) {
 					$div.find('.imc_countdown_display').removeAttr('class').text('--:--:--');
 				}
@@ -7622,7 +7756,7 @@ loadUnit: function() {
 			basename = ( base.mode == '加待' ) ? base.target : base.base;
 
 		if ( !result[ basename ] ) { result[ basename ] = []; }
-		result[ basename ].push([ base.arrival, base.name, base.mode, base.ex, base.ey, base.ec ]);
+		result[ basename ].push([ base.arrival, base.name, base.mode, i, base.ex, base.ey, base.ec ]);
 	}
 
 	return result;
@@ -7683,6 +7817,143 @@ loadFacility: function( type ) {
 	MetaStorage('COUNTDOWN').set( type, newdata );
 
 	return result;
+},
+
+//. contextmenu
+contextmenu: function() {
+	var $this = $(this),
+		name = $this.children('SPAN, A').text(),
+		other = $this.closest('.imc_other').length,
+		$units = $this.find('.imc_unit'),
+		menu = {}, village;
+
+	if ( other ) {
+		menu[ name ] = $.contextMenu.title;
+
+		var $coord = $this.find('.imc_coord');
+		if ( $coord.length ) {
+			var x = $coord.attr('x'),
+				y = $coord.attr('y'),
+				c = $coord.attr('c');
+
+			menu['地図表示'] = function() {
+				Map.move( x, y, c );
+			};
+			menu['合戦報告書【座標】'] = function() {
+				var search = 'm=&s=1&name=lord&word=&coord=map&x=' + x + '&y=' + y;
+				location.href = '/war/list.php?' + search;
+			};
+		}
+
+		if ( $coord.length && $units.length ) {
+			menu['セパレーター１'] = $.contextMenu.separator;
+		}
+
+		$units.each(function() {
+			var $this = $(this),
+				ano = $this.attr('ano'),
+				name = $this.find('SPAN').first().text();
+
+			menu[ '[' + name + ']部隊' ] = {
+				'部隊編成': function() {
+					location.href = '/card/deck.php?ano=' + ano;
+				}
+			};
+		});
+
+		return menu;
+	}
+
+	village = Util.getVillageByName( name );
+
+	if ( village.fall ) { name = '【陥落】' + name; }
+	menu[ name ] = $.contextMenu.title;
+
+	menu['地図表示'] = function() { location.href = Util.getVillageChangeUrl( village.id, '/map.php' ); };
+	if ( village.type == '本領' || village.type == '所領' ) {
+		menu['内政実行'] = function() { location.href = Util.getVillageChangeUrl( village.id, '/village.php' ); };
+	}
+	else {
+		var href = '/land.php?x=' + village.x + '&y=' + village.y + '&c=' + village.country;
+		menu['内政実行'] = function() { location.href = Util.getVillageChangeUrl( village.id, href ); };
+	}
+	if ( village.type == '本領' || village.type == '所領' ) {
+		menu['秘境探索'] = function() { location.href = Util.getVillageChangeUrl( village.id, '/facility/dungeon.php' ); };
+	}
+
+	menu['セパレーター１'] = $.contextMenu.separator;
+
+	if ( location.pathname != '/card/deck.php' ) {
+		menu['部隊作成'] = {
+			'部隊作成【第一組】': function() { Deck.dialog( village, 1 ); },
+			'部隊作成【第二組】': function() { Deck.dialog( village, 2 ); },
+			'部隊作成【第三組】': function() { Deck.dialog( village, 3 ); },
+			'部隊作成【第四組】': function() { Deck.dialog( village, 4 ); },
+			'部隊作成【全武将】': function() { Deck.dialog( village, 0 ); }
+		};
+	}
+	else {
+		menu['部隊作成'] = {
+			'この画面では使用不可': $.contextMenu.nothing
+		};
+	}
+
+	if ( $units.has('.imc_wait').length > 0 ) {
+		menu['拠点部隊解散'] = function() {
+			if ( !confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
+
+			Deck.breakUpAll( village.name )
+			.always(function( ol ) {
+				Util.getUnitStatus();
+				if ( ol && ol.close ) { ol.close(); }
+			});
+		};
+	}
+	else {
+		menu['拠点部隊解散'] = $.contextMenu.nothing;
+	}
+
+	if ( $units.length ) {
+		menu['セパレーター２'] = $.contextMenu.separator;
+	}
+
+	$units.each(function() {
+		var $this = $(this),
+			ano = $this.attr('ano'),
+			name = $this.find('SPAN').first().text(),
+			wait = $this.has('.imc_wait').length;
+
+		if ( wait ) {
+			menu[ '[' + name + ']部隊' ] = {
+				'部隊編成': function() {
+					location.href = '/card/deck.php?ano=' + ano;
+				},
+				'兵編成': function() {
+					location.href = '/facility/set_unit_list.php?ano=' + ano;
+				},
+				'セパレーター': $.contextMenu.separator,
+				'部隊解散': function() {
+					if ( !confirm( '[' + name + ']部隊を解散させます。\nよろしいですか？') ) { return; }
+
+					Deck.breakUp( ano, name )
+					.always(function( ol ) {
+						Util.getUnitStatus();
+						if ( ol && ol.close ) { ol.close(); }
+					});
+				}
+			};
+		}
+		else {
+			menu[ '[' + name + ']部隊' ] = {
+				'行動中': $.contextMenu.nothing
+			};
+		}
+	});
+
+	menu['セパレーター３'] = $.contextMenu.separator;
+	menu['名称変更'] = function() { Display.dialogRename( village ); };
+
+	return menu;
 }
 
 };
@@ -7695,7 +7966,7 @@ function base( country ) {
 	var list = [],
 		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff' };
 
-	$('#imi_basename > .basename LI > *:first-child').each(function() {
+	$('#imi_basename .imc_basename LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -7714,7 +7985,7 @@ function base( country ) {
 function home() {
 	var list = [];
 
-	$('#imi_basename > .basename:eq(0) LI > *:first-child').each(function() {
+	$('#imi_basename .imc_basename.imc_home LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -7730,7 +8001,7 @@ function home() {
 function away() {
 	var list = [];
 
-	$('#imi_basename > .basename:eq(1) LI > *:first-child').each(function() {
+	$('#imi_basename .imc_basename.imc_away LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
 			village = Util.getVillageByName( name );
 
@@ -10401,10 +10672,10 @@ style: '' +
 '#imi_bottom_container TABLE.imc_soldier_total TH { width: 45px; padding: 3px 3px; line-height: 1.2; }' +
 '.imc_set_value { color: #060; font-size: 12px; text-decoration: underline; cursor: pointer; }' +
 
-'.imc_command_selecter { margin-top: 10px; }' +
-'.imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }' +
-'.imc_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }' +
-'.imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
+'#deck_file .imc_command_selecter { margin-top: 10px; }' +
+'#deck_file .imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; width: 65px; background-color: #000; border: solid 1px #fff; z-index: 2000; display: none; }' +
+'#deck_file .imc_command_selecter LI A.imc_pulldown_item { padding: 5px; text-indent: 0px; width: auto !important; height: 20px; line-height: 20px; color: #fff; background: #000 none; display: block; }' +
+'#deck_file .imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
 '#busho_info SELECT.force_type2 { font-size: 13px; width: auto; }' +
 '#busho_info INPUT.force_size { font-size: 13px; width: 45px; }' +
@@ -11176,13 +11447,6 @@ style: '' +
 '.imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
 '.imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
-/* 兵種変更 */
-'#imi_unitedit { margin: auto; width: 350px; }' +
-'#imi_unitedit TH:first-child { width: 60px; }' +
-'#imi_unitedit TD { width: 40px; cursor: pointer; }' +
-'#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
-'#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
-
 /* ソート条件選択用 */
 '#selectarea SELECT { margin-right: 8px; }' +
 '#imi_order_open { color: #fff; padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
@@ -11418,7 +11682,7 @@ layouter: function() {
 unregistAll: function() {
 	if ( !confirm('全部隊を解散させます。\nよろしいですか？') ) { return; }
 
-	Deck.breakUp()
+	Deck.breakUpAll()
 	.always(function( ol ) {
 		Util.getUnitStatus();
 		ol.message('ページを更新します...');
@@ -11469,9 +11733,9 @@ deckSelecter: function() {
 //. villageSelecter
 villageSelecter: function() {
 	if ( $('#select_village').val() == '' ) {
-		var base = $('#imi_basename > .basename .on > SPAN').text();
+		var village = Util.getVillageCurrent();
 
-		$('#select_village > OPTION[label="' + base + '"]').attr('selected', true);
+		$('#select_village > OPTION[label="' + village.name + '"]').attr('selected', true);
 	}
 
 	if ( $('#select_village').length == 0 ) {
@@ -11971,81 +12235,6 @@ style: '' +
 '#imi_mapcontainer { border-width: 5px; }' :
 '#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 3px; }' ) +
-
-
-/* 部隊編成 */
-'#imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
-'#imi_deck_info { margin-left: 10px; padding: 2px; width: 280px; height: 149px; float: left; }' +
-'#imi_deck_info LI { height: 18px; line-height: 18px; padding-top: 3px; border-bottom: solid 1px #cc9; font-size: 12px; }' +
-'#imi_deck_info LI LABEL { width: 40px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }' +
-'#imi_deck_info LI.imc_enemy { border-color: #f66; }' +
-'#imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }' +
-'#imi_deck_info .imc_countdown_display { padding-left: 5px; }' +
-'.imc_village { margin-left: 5px; }' +
-'.imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
-'.imc_info1_free { width: 30px; text-align: right; display: inline-block; margin-right: 20px; }' +
-'.imc_info2 { width: 20px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
-'.imc_info2_free { width: 20px; text-align: right; display: inline-block; }' +
-'.imc_info3,' +
-'.imc_info4,' +
-'.imc_info5 { width: 71px; text-align: right; display: inline-block; margin-right: 20px; }' +
-'.imc_info6,' +
-'.imc_info7 { width: 85px; text-align: right; display: inline-block; }' +
-'.imc_info8 { width: 91px; border-style: none; }' +
-'.imc_info9 { padding-left: 5px; }' +
-/* カード */
-'.ig_deck_smallcardarea { float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
-'.ig_deck_smallcardarea.imc_disabled { opacity:0.7; }' +
-'.ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }' +
-'.ig_deck_smallcardarea TR { height: 15px; }' +
-'.ig_deck_smallcardarea TH { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #ff0; }' +
-'.ig_deck_smallcardarea TD { padding: 2px; border-right: 1px dotted #fff; border-bottom: 1px dotted #fff; color: #fff; }' +
-'.imc_card_header { position: relative; color: #fff; }' +
-'.imc_infotype_2 .imc_status1 { display: none; }' +
-'.imc_infotype_1 .imc_status2 { display: none; }' +
-'.imc_disabled .imc_card_header { color: #999; }' +
-'.imc_cardname { font-weight: bold; }' +
-'.imc_rarity { position: absolute; left: 88px; font-size: 10px; line-height: 16px; }' +
-'.imc_cost { position: absolute; left: 100px; font-size: 11px; line-height: 17px; letter-spacing: -1px; }' +
-'.imc_rank { color: red; font-weight: bold; font-size: 11px; }' +
-'.imc_lv { font-size: 11px; letter-spacing: -1px; }' +
-'.imc_card_status TH { width: 45px; }' +
-'.imc_card_status .emphasis { background-color: #808080; }' +
-'.imc_card_status .imc_solmax { background-color: #642; }' +
-'.imc_card_status .imc_power { background-color: #246; }' +
-'.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
-'.imc_card_param { }' +
-'.imc_card_skill { }' +
-'.imc_card_skill TH { width: 20px; }' +
-/* HP・討伐ゲージ用バー */
-'.imc_bar_title { color: white; font-size: 10px; }' +
-'.imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
-'.imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
-'.imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
-/* 全部隊登録 */
-'#imi_unitnum TD { width: 40px; cursor: pointer; }' +
-'#imi_unitnum .imc_selected { background-color: #f9dea1; }' +
-
-/* フィルタ */
-'.imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
-'.imc_command_selecter LI:hover .imc_pulldown { display: block; }' +
-'.imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
-'.imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
-'#ig_deck_smallcardarea_out .imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
-
-'#imi_new_deck { float: right; margin-right: 16px; }' +
-'#imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
-'#imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
-'#imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }' +
-'#imi_new_deck #imi_info_change.imc_infotype_1:after { content: "表示１" }' +
-'#imi_new_deck #imi_info_change.imc_infotype_2:after { content: "表示２" }' +
-
-/* 兵種変更 */
-'#imi_unitedit { margin: auto; }' +
-'#imi_unitedit TH:first-child { width: 60px; }' +
-'#imi_unitedit TD { width: 40px; cursor: pointer; }' +
-'#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
-'#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
 
 /* style調整 */
 '#material { line-height: 14px; }' +
