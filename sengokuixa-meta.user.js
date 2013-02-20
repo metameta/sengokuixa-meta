@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.0
+// @version        1.1.4.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5577,7 +5577,7 @@ breakUpAll: function( villageName ) {
 			ol.message('デッキ' + ( i + 1 ) + 'の情報を取得中...');
 			tasks[ i ] = $.get( '/card/deck.php?ano=' + i );
 		}
-		
+
 		return $.when.apply( $, tasks );
 	})
 	.pipe(function() {
@@ -7705,7 +7705,7 @@ setup: function() {
 		Util.countDown();
 	})
 	.trigger('update');
-	
+
 	$('#imi_basename .basename LI').contextMenu( SideBar.contextmenu, true );
 
 },
@@ -8016,7 +8016,9 @@ contextmenu: function() {
 		}
 		else {
 			menu[ '[' + name + ']部隊' ] = {
-				'行動中': $.contextMenu.nothing
+				'部隊編成': function() {
+					location.href = '/card/deck.php?ano=' + ano;
+				}
 			};
 		}
 	});
