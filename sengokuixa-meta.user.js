@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.4
+// @version        1.1.4.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -765,6 +765,59 @@ getDistance: function( point1, point2 ) {
 	return distance;
 },
 
+//. getExpectPower
+getExpectPower: function( cards ) {
+	var int = cards.reduce(function( prev, curr ) { return prev + curr.int; }, 0),
+		max = Math.max.apply( null, cards.map(function( card ) { return card.int; }) ),
+		intMod = ( ( int - max ) / 600 ) + ( max / 100 ),
+		result = { '将': { atk: 0, def: 0 }, '上': { atk: 0, def: 0 } },
+		atk_mod = {}, def_mod = {};
+
+	cards.forEach(function( card ) {
+		var type = Soldier.getByName( card.solName ).skillType,
+			mod = Soldier.modify( card.solName, card.commands );
+
+		//atk, defは素の状態の為補正
+		result['将'].atk += card.atk * mod / 100;
+		result['将'].def += card.def * mod / 100;
+
+		if ( $.inArray( card.solName, [ '武士', '弓騎馬', '赤備え', '騎馬鉄砲' ] ) != -1 ) {
+			result['上'].atk += card.totalAtk;
+			result['上'].def += card.totalDef;
+		}
+
+		if ( !result[ type ] ) { result[ type ] = { atk: 0, def: 0 }; }
+		result[ type ].atk += card.totalAtk;
+		result[ type ].def += card.totalDef;
+
+		$.each( card.getSkillModify( '攻', intMod ), function( key, value ) {
+			if ( !atk_mod[ key ] ) { atk_mod[ key ] = 0; }
+			atk_mod[ key ] += value;
+		});
+
+		$.each( card.getSkillModify( '防', intMod ), function( key, value ) {
+			if ( !def_mod[ key ] ) { def_mod[ key ] = 0; }
+			def_mod[ key ] += value;
+		});
+	});
+
+	var atk = 0, def = 0;
+
+	$.each( result, function( key, elem ) {
+		var atkMod = 0, defMod = 0;
+
+		if ( atk_mod[ key ] ) { atkMod += atk_mod[ key ]; }
+		if ( atk_mod['全'] && key != '将' && key != '上' ) { atkMod += atk_mod[ '全' ]; }
+		if ( def_mod[ key ] ) { defMod += def_mod[ key ]; }
+		if ( def_mod['全'] && key != '将' && key != '上' ) { defMod += def_mod[ '全' ]; }
+
+		atk += elem.atk * atkMod / 100;
+		def += elem.def * defMod / 100;
+	});
+
+	return { atk: atk, def: def };
+},
+
 //. getSpeed
 getSpeed: function( cards, unitskill ) {
 	var speed_list = {}, speed_mod = {}, min_speed = Number.MAX_VALUE;
@@ -782,7 +835,7 @@ getSpeed: function( cards, unitskill ) {
 			speed_list[ data.skillType ] = data.speed;
 		}
 
-		$.each( card.speedModify, function( key, value ) {
+		$.each( card.getSkillModify( '速' ), function( key, value ) {
 			if ( !speed_mod[ key ] ) { speed_mod[ key ] = 0; }
 			speed_mod[ key ] += value;
 		});
@@ -2642,9 +2695,10 @@ style: '' +
 
 /* 部隊作成ダイアログ用 */
 '#imi_unit_dialog #imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
-'#imi_unit_dialog #imi_deck_info { margin-left: 10px; padding: 2px; width: 280px; height: 149px; float: left; }' +
+'#imi_unit_dialog #imi_deck_info { margin-left: 8px; padding: 2px; width: 300px; height: 149px; float: left; }' +
 '#imi_unit_dialog #imi_deck_info LI { height: 18px; line-height: 18px; padding-top: 3px; border-bottom: solid 1px #cc9; font-size: 12px; }' +
 '#imi_unit_dialog #imi_deck_info LI LABEL { width: 40px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }' +
+'#imi_unit_dialog #imi_deck_info LI LABEL.imc_destory_label { width: 50px; text-align: right; margin-left: 15px; padding-right: 5px; }' +
 '#imi_unit_dialog #imi_deck_info LI.imc_enemy { border-color: #f66; }' +
 '#imi_unit_dialog #imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }' +
 '#imi_unit_dialog #imi_deck_info .imc_countdown_display { padding-left: 5px; }' +
@@ -2654,12 +2708,16 @@ style: '' +
 '#imi_unit_dialog .imc_info2 { width: 20px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
 '#imi_unit_dialog .imc_info2_free { width: 20px; text-align: right; display: inline-block; }' +
 '#imi_unit_dialog .imc_info3,' +
-'#imi_unit_dialog .imc_info4,' +
-'#imi_unit_dialog .imc_info5 { width: 71px; text-align: right; display: inline-block; margin-right: 20px; }' +
-'#imi_unit_dialog .imc_info6,' +
-'#imi_unit_dialog .imc_info7 { width: 85px; text-align: right; display: inline-block; }' +
+'#imi_unit_dialog .imc_info4 { width: 56px; text-align: right; display: inline-block; margin-right: 5px; }' +
+'#imi_unit_dialog .imc_info5 { width: 86px; display: inline-block; margin-left: 5px; }' +
+'#imi_unit_dialog .imc_info6 { width: 69px; text-align: right; display: inline-block; }' +
+'#imi_unit_dialog .imc_info7 { width: 95px; display: inline-block; margin-left: 5px; }' +
 '#imi_unit_dialog .imc_info8 { width: 91px; border-style: none; }' +
 '#imi_unit_dialog .imc_info9 { padding-left: 5px; }' +
+'#imi_unit_dialog .imc_info10,' +
+'#imi_unit_dialog .imc_info11 { width: 56px; text-align: right; display: inline-block; margin-right: 5px; }' +
+'#imi_unit_dialog .imc_info12,' +
+'#imi_unit_dialog .imc_info13 { width: 30px; text-align: right; display: inline-block; margin: 0px 1px; }' +
 '#imi_unit_dialog #ig_deck_smallcardarea_out { border: solid 1px #b8860b; height: 355px; margin: 0px; padding: 4px; background-color: #000; overflow: auto; }' +
 /* カード */
 '#imi_unit_dialog.imc_infotype_2 .imc_status1 { display: none; }' +
@@ -2686,6 +2744,7 @@ style: '' +
 '#imi_unit_dialog .imc_card_skill { }' +
 '#imi_unit_dialog .imc_card_skill TH { width: 20px; }' +
 /* HP・討伐ゲージ用バー */
+'#imi_unit_dialog .ig_deck_smallcarddataarea { float: left; }' +
 '#imi_unit_dialog .imc_bar_title { color: white; font-size: 10px; }' +
 '#imi_unit_dialog .imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
 '#imi_unit_dialog .imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
@@ -5873,12 +5932,12 @@ Deck.dialog = function( village, brigade, coord ) {
 		'<div style="height: 155px; margin-bottom: 5px;">' +
 			'<div id="imi_card_container"></div>' +
 			'<ul id="imi_deck_info">' +
-				'<li><label>拠点</label><span class="imc_village"></span></li>' +
-				'<li><label>コスト</label><span class="imc_info1"></span>/<span class="imc_info1_free"></span><label>部隊枠</label><span class="imc_info2"></span>/<span class="imc_info2_free"></span></li>' +
-				'<li><label>攻撃力</label><span class="imc_info3">0</span><label>破壊力</label><span class="imc_info6"></span></li>' +
-				'<li><label>防御力</label><span class="imc_info4">0</span></li>' +
-				'<li><label>速度</label><span class="imc_info5">0</span><label>時間</label><span class="imc_info7"></span></li>' +
-				'<li><label>目的地</label><input class="imc_info8" /><label>時間</label><span class="imc_info9"></span></li>' +
+				'<li><label>拠点</label><span class="imc_village" /></li>' +
+				'<li><label>コスト</label><span class="imc_info1" />/<span class="imc_info1_free" /><label>部隊枠</label><span class="imc_info2" />/<span class="imc_info2_free" /></li>' +
+				'<li><label>攻撃力</label><span class="imc_info3" />/<span class="imc_info10" />(+<span class="imc_info12" />%)<label class="imc_destory_label">破壊力</label></li>' +
+				'<li><label>防御力</label><span class="imc_info4" />/<span class="imc_info11" />(+<span class="imc_info13" />%)<span class="imc_info6" /></li>' +
+				'<li><label>速度</label><span class="imc_info5" /><label>時間</label><span class="imc_info7" /></li>' +
+				'<li><label>目的地</label><input class="imc_info8" /><label>時間</label><span class="imc_info9" /></li>' +
 			'</ul>' +
 		'</div>' +
 		'<div>' +
@@ -5916,7 +5975,8 @@ Deck.dialog = function( village, brigade, coord ) {
 	.on( 'update', '#imi_deck_info', function() {
 		var unit = Deck.currentUnit,
 			speed = unit.speed,
-			time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed );
+			time = ( speed == 0 ) ? 0 : Math.floor( 3600 / speed ),
+			increase;
 
 		$('.imc_info1').text( unit.cost.toFixed( 1 ) );
 		$('.imc_info1_free').text( Deck.freeCost.toFixed( 1 ) );
@@ -5924,6 +5984,14 @@ Deck.dialog = function( village, brigade, coord ) {
 		$('.imc_info2_free').text( 5 );
 		$('.imc_info3').text( Math.floor( unit.atk ).toFormatNumber() );
 		$('.imc_info4').text( Math.floor( unit.def ).toFormatNumber() );
+		$('.imc_info10').text( Math.floor( unit.expectAtk ).toFormatNumber() );
+		$('.imc_info11').text( Math.floor( unit.expectDef ).toFormatNumber() );
+		increase = ( ( unit.expectAtk / unit.atk - 1 ) * 100 ).toRound( 1 );
+		increase = increase ? increase : 0;
+		$('.imc_info12').text( increase );
+		increase = ( ( unit.expectDef / unit.def - 1 ) * 100 ).toRound( 1 );
+		increase = increase ? increase : 0;
+		$('.imc_info13').text( increase );
 		$('.imc_info5').text( speed.toRound( 1 ) );
 		$('.imc_info6').text( unit.des.toFormatNumber() );
 		$('.imc_info7').text( time.toFormatTime() + '／距離' );
@@ -6097,7 +6165,7 @@ Deck.dialog = function( village, brigade, coord ) {
 
 	options = {
 		title: '部隊作成',
-		width: 880, height: 550, top: 20,
+		width: 890, height: 550, top: 20,
 		content: $content,
 		buttons: {
 			'目的地へ出陣': function() {
@@ -6581,6 +6649,10 @@ update: function() {
 	this.def = def;
 	this.des = des;
 	this.speed = Util.getSpeed( list );
+
+	var result = Util.getExpectPower( list );
+	this.expectAtk = atk + result.atk;
+	this.expectDef = def + result.def;
 },
 
 //.. unsetCard
@@ -7134,6 +7206,29 @@ setUnitMax: function() {
 	return card.setUnit( sol_num );
 },
 
+//.. getSkillModify
+getSkillModify: function( type, intMod ) {
+	intMod = intMod || 0;
+
+	return this.skillList.reduce(function( prev, curr ) {
+		if ( !curr.effects ) { return prev; }
+
+		curr.effects.forEach(function( effect ) {
+			if ( effect.type != type ) { return; }
+
+			effect.targets.split('').forEach(function( target ) {
+				var prob = ( effect.prob + intMod ) / 100;
+				prob = ( prob > 1 ) ? 1 : prob;
+
+				if ( !prev[ target ] ) { prev[ target ] = 0; }
+				prev[ target ] += effect.effect * prob;
+			});
+		});
+
+		return prev;
+	}, {});
+},
+
 //.. getRecoveryTime
 getRecoveryTime: function() {
 	var time;
@@ -7268,50 +7363,35 @@ analyze: function( $elem ) {
 
 	//スキル
 	this.skillList = $elem.find('.skill1, .skill2, .skill3').map(function() {
-		var text = $(this).find('.ig_skill_name, .grayig_skill_name').text(),
+		var $this = $(this),
+			text = $this.find('.ig_skill_name, .grayig_skill_name').text(),
 			array = text.match(/(.+)LV(\d+)$/),
-			deck, type;
+			desk, type, targets, prob, effects;
 
 		if ( !array ) {
 			//レベルのないもの（感謝の饗宴、東西無双など）
 			return { name: text, lv: 0 };
 		}
 
-		array[ 1 ] = array[ 1 ].trim().replace(/ +/g, ' ');
+		var [ all, name, lv ] = array;
+		name = name.trim().replace(/ +/g, ' ');
 
-		deck = $(this).find('.ig_skill_desc').text();
-		if ( deck.indexOf('速：') != -1 ) { type = '速'; }
-		else if ( deck.indexOf('攻：') != -1 ) { type = '攻'; }
-		else if ( deck.indexOf('防：') != -1 ) { type = '防'; }
+		desk = $this.find('.ig_skill_desc').text();
+		if ( desk.indexOf('速：') != -1 ) { type = '速'; }
+		else if ( desk.indexOf('攻：') != -1 ) { type = '攻'; }
+		else if ( desk.indexOf('防：') != -1 ) { type = '防'; }
 		else { type = '特'; }
 
-		return { name: array[ 1 ], lv: array[ 2 ].toInt(), type: type };
-	}).get();
-	this.skillCount = this.skillList.length;
-	this.speedModify = (function() {
-		var mod = {},
-			speedReg = /速：(\d+(?:\.\d+)?)%上昇/;
-
-		$elem.find('.skill1, .skill2, .skill3').each(function() {
-			var $this = $(this),
-				effect = ( $this.find('.ig_skill_desc').text().match( speedReg ) || [] )[1],
-				targets = $this.find('.ig_skill_desc FONT').text(),
-				target;
-
-			if ( !effect ) { return; }
-
-			targets = targets.split('');
-
-			for ( var i = 0, len = targets.length; i < len; i++ ) {
-				target = targets[ i ];
-
-				if ( !mod[ target ] ) { mod[ target ] = 0; }
-				mod[ target ] += effect.toFloat();
-			}
+		targets = $this.find('.ig_skill_desc FONT').text().replace('級', '');
+		prob = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , 0 ] )[ 1 ].toFloat();
+		effects = ( desk.match(/(.)：(\d+(?:\.\d+)?)%上昇/g) || [] ).map(function( elem ) {
+			var [ all, type, effect ] = elem.match(/(.)：(\d+(?:\.\d+)?)%上昇/);
+			return { targets: targets, type: type, prob: prob, effect: effect.toFloat() };
 		});
 
-		return mod;
-	})();
+		return { name: name, lv: lv.toInt(), type: type, effects: effects };
+	}).get();
+	this.skillCount = this.skillList.length;
 	this.image = $elem.find('.ig_card_back').attr('src').split('/').pop();
 
 	//card_id
