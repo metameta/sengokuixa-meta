@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.3
+// @version        1.1.4.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2599,7 +2599,7 @@ style: '' +
 
 /* サイドバーカウントダウン用 */
 '#imi_basename LI:hover { margin-left: 3px !important; border-left: solid 3px #ff8; }' +
-'#imi_basename .imc_side_countdown { line-height: 100% !important; margin: 2px 0px -2px -10px; text-align: right; color: #fff; }' +
+'#imi_basename .imc_side_countdown { line-height: 100% !important; margin: 2px 0px -2px -15px; text-align: right; color: #fff; }' +
 '#imi_basename .imc_coord { font-weight: normal; }' +
 '#imi_basename .imc_break { color: #999; }' +
 '#imi_basename .imc_unit { padding: 2px 0px; }' +
