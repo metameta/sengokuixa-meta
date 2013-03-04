@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.5
+// @version        1.1.4.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2578,7 +2578,6 @@ style: '' +
 
 /* ステータスバー用 */
 '#status { padding: 6px 5px 5px 5px; }' +
-'#status_left { width: 930px; }' +
 '#status_left UL LI { padding: 0px 3px; border: none; }' +
 '#status_left UL LI.sep { border-right: solid 1px #999; }' +
 '#status_left .money_b,' +
@@ -8684,7 +8683,7 @@ changeStatusBar: function() {
 	});
 
 	//幅確保の為、セパレータをいくつか削除
-	$('#status_left').find('.sep').text('|').slice( 0, 4 ).remove();
+	$('#status_left').css('width', '100%').find('.sep').text('|').slice( 0, 4 ).remove();
 
 	var $clone, html;
 
@@ -8939,7 +8938,7 @@ createPulldownMenu: function() {
 	createMenu($('#gnavi .gMenu06'), [
 		{ title: 'プレゼントボックス', action: '/user/present.php' },
 		{ title: '戦国くじ', action: '/senkuji/senkuji.php' },
-		{ title: 'スペシャル戦国くじ', action: '/senkuji/senkuji.php?ex=1' },
+//		{ title: 'スペシャル戦国くじ', action: '/senkuji/senkuji.php?ex=1' },
 		{ title: '戦国くじ履歴', action: '/senkuji/senkuji_history.php' },
 		{ title: 'カード一括破棄', action: function() { Page.form( '/card/deck_card_delete.php', { show_num: 100 } ); } },
 		{ title: 'カードアルバム', action: '/card/card_album.php' },
