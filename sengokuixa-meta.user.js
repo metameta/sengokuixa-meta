@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.6
+// @version        1.1.4.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2721,7 +2721,7 @@ style: '' +
 /* カード */
 '#imi_unit_dialog.imc_infotype_2 .imc_status1 { display: none; }' +
 '#imi_unit_dialog.imc_infotype_1 .imc_status2 { display: none; }' +
-'#imi_unit_dialog .ig_deck_smallcardarea { float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
+'#imi_unit_dialog .ig_deck_smallcardarea { position: relative; float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
 '#imi_unit_dialog .ig_deck_smallcardarea.imc_disabled { opacity:0.7; }' +
 '#imi_unit_dialog .ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }' +
 '#imi_unit_dialog .ig_deck_smallcardarea TR { height: 15px; }' +
@@ -2742,6 +2742,7 @@ style: '' +
 '#imi_unit_dialog .imc_card_param { }' +
 '#imi_unit_dialog .imc_card_skill { }' +
 '#imi_unit_dialog .imc_card_skill TH { width: 20px; }' +
+'#imi_unit_dialog #ig_deck_smallcardarea_out .ig_deck_smallcardarea.imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
 /* HP・討伐ゲージ用バー */
 '#imi_unit_dialog .ig_deck_smallcarddataarea { float: left; }' +
 '#imi_unit_dialog .imc_bar_title { color: white; font-size: 10px; }' +
@@ -2754,7 +2755,6 @@ style: '' +
 '#imi_unit_dialog .imc_command_selecter LI:hover .imc_pulldown { display: block; }' +
 '#imi_unit_dialog .imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
 '#imi_unit_dialog .imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
-'#imi_unit_dialog #ig_deck_smallcardarea_out .imc_selected { padding: 4px 6px; border: solid 2px #f80 !important; background: -moz-linear-gradient(top left, #654, #000) !important; }' +
 
 '#imi_unit_dialog #imi_new_deck { float: right; margin-right: 16px; }' +
 '#imi_unit_dialog #imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
@@ -2762,6 +2762,12 @@ style: '' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_1:after { content: "表示１" }' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_2:after { content: "表示２" }' +
+
+'#imi_unit_dialog .imc_sc_panel { position: absolute; top: 124px; left: 0px; width: 128px; height: 20px; padding: 1px; z-index: 5; }' +
+'#imi_unit_dialog .imc_sc_panel SPAN { display: inline-block; width: 62px; height: 18px; border: solid 1px #999; color: #fff; background-color: #000; text-align: center; line-height: 18px; cursor: pointer; }' +
+'#imi_unit_dialog .imc_sc_panel SPAN[class]:hover { color: #fff; background-color: #666; }' +
+'#imi_unit_dialog .imc_selected .imc_sc_panel { padding: 0px; }' +
+'#imi_unit_dialog #imi_card_container .imc_sc_panel { padding: 1px; }' +
 
 /* 全部隊登録 */
 '#imi_unitnum TD { width: 40px; cursor: pointer; }' +
@@ -6160,6 +6166,73 @@ Deck.dialog = function( village, brigade, coord ) {
 		.always(function( ol ) {
 			if ( ol && ol.close ) { setTimeout( ol.close, 500 ); }
 		});
+	})
+	.on('mouseenter', '.ig_deck_smallcardarea', function() {
+		var $this = $(this),
+			card_id = $this.attr('card_id'),
+			card = Deck.analyzedData[ card_id ];
+			data = Deck.getPoolSoldiers(),
+			num = data.pool[ card.solType ] || 0;
+			html;
+
+		if ( !card.solType ) { return; }
+
+		html = '<div class="imc_sc_panel">';
+
+		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
+			html += '<span class="imc_sc_solmax">最大</span>';
+		}
+		else {
+			html += '<span>-</span>';
+		}
+
+		if ( card.solNum > 1 ) {
+			html += '<span class="imc_sc_sol1">兵１</span>';
+		}
+		else {
+			html += '<span>-</span>';
+		}
+
+		html += '</div>';
+
+		$('.imc_sc_panel').remove();
+		$this.append( html );
+	})
+	.on('mouseleave', '.ig_deck_smallcardarea', function() {
+		$('.imc_sc_panel').remove();
+	})
+	.on('click', '.imc_sc_panel', function() {
+		return false;
+	})
+	.on('click', '.imc_sc_solmax', function() {
+		var card_id = $(this).closest('.ig_deck_smallcardarea').attr('card_id'),
+			card = Deck.analyzedData[ card_id ];
+
+		if ( card.solNum == card.maxSolNum ) { return false; }
+		if ( Env.ajax ) { return false; }
+		Env.ajax = true;
+
+		card.setUnitMax()
+		.done( Deck.update )
+		.fail(function() { Display.alert('編成できませんでした。'); })
+		.always(function() { Env.ajax = false; });
+
+		return false;
+	})
+	.on('click', '.imc_sc_sol1', function() {
+		var card_id = $(this).closest('.ig_deck_smallcardarea').attr('card_id'),
+			card = Deck.analyzedData[ card_id ];
+
+		if ( card.solNum == 1 ) { return false; }
+		if ( Env.ajax ) { return false; }
+		Env.ajax = true;
+
+		card.setUnit( 1 )
+		.done( Deck.update )
+		.fail(function() { Display.alert('編成できませんでした。'); })
+		.always(function() { Env.ajax = false; });
+
+		return false;
 	});
 
 	options = {
@@ -6180,8 +6253,14 @@ Deck.dialog = function( village, brigade, coord ) {
 	dialog = Display.dialog( options );
 	dialog.buttons.attr('disabled', true);
 
-	$('.ig_deck_smallcardarea').contextMenu( Deck.dialog.contextmenu, true );
-	$('#ig_deck_smallcardarea_out').contextMenu( Deck.dialog.contextmenu2, true );
+	$('.ig_deck_smallcardarea')
+	.contextMenu( Deck.dialog.contextmenu, true );
+
+	$('#ig_deck_smallcardarea_out')
+	.on('update', function() {
+		$('.imc_sc_panel').remove();
+	})
+	.contextMenu( Deck.dialog.contextmenu2, true );
 
 	$('.imc_village').text( village.name );
 	if ( coord ) {
@@ -6353,7 +6432,7 @@ contextmenu: function() {
 		card_id = $this.attr('card_id'),
 		card = Deck.analyzedData[ card_id ],
 		data = Deck.getPoolSoldiers(),
-		menu = {}, pool = [], submenu, num;
+		menu = {}, pool = [], submenu, num, max;
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -6365,14 +6444,18 @@ contextmenu: function() {
 
 	if ( card.solType ) {
 		num = data.pool[ card.solType ] || 0;
+		max = Math.min( card.solNum + num, card.maxSolNum );
 		submenu = {};
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
-			submenu['最大補充'] = function() {
+			submenu['兵数最大 ( ' + max + ' )'] = function() {
 				card.setUnitMax()
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
 			};
+		}
+		else {
+			submenu['兵数最大'] = $.contextMenu.nothng;
 		}
 
 		[ 1, 10, 250, 500 ].forEach(function( value ) {
@@ -6395,14 +6478,11 @@ contextmenu: function() {
 		}
 
 		if ( $.isEmptyObject( submenu ) ) {
-			menu['兵数変更'] = $.contextMenu.nothing;
+			menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = $.contextMenu.nothing;
 		}
 		else {
-			menu['兵数変更'] = submenu;
+			menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = submenu;
 		}
-	}
-	else {
-		menu['兵数変更'] = $.contextMenu.nothing;
 	}
 
 	$.each( Soldier.typeKeys, function( type ) {
@@ -6415,41 +6495,34 @@ contextmenu: function() {
 	});
 
 	if ( pool.length > 0 ) {
-		submenu = {};
-
 		pool.forEach(function( poolSol ) {
-			var menu = {}, base, max;
+			var submenu = {}, base, max;
 
 			base = Math.min( poolSol.num, card.solNum );
 			max = Math.min( poolSol.num, card.maxSolNum );
 
 			if ( max >= base ) {
-				menu['兵数最大 ( ' + max + ' )'] = function() {
+				submenu['兵数最大 ( ' + max + ' )'] = function() {
 					card.setUnit( max, poolSol.type )
 					.done( Deck.update )
 					.fail(function() { Display.alert('編成できませんでした。'); });
 				}
 			}
 			if ( base != max && base >= 2 ) {
-				menu['現状維持 ( ' + base + ' )'] = function() {
+				submenu['現状維持 ( ' + base + ' )'] = function() {
 					card.setUnit( base, poolSol.type )
 					.done( Deck.update )
 					.fail(function() { Display.alert('編成できませんでした。'); });
 				}
 			}
-			menu['兵数 1'] = function() {
+			submenu['兵数 1'] = function() {
 				card.setUnit( 1, poolSol.type )
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
 			}
 
-			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = menu;
+			menu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = submenu;
 		});
-
-		menu['兵種変更'] = submenu;
-	}
-	else {
-		menu['兵種変更'] = $.contextMenu.nothing;
 	}
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
@@ -7912,7 +7985,12 @@ layouter: function() {
 
 //.. clone
 clone: function() {
-	return this.element.clone().show();
+	var $clone = this.element.clone();
+
+	$clone.show();
+	$clone.find('.imc_sc_panel').remove();
+
+	return $clone;
 }
 
 });
