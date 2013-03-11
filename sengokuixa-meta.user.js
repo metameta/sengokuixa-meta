@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.7
+// @version        1.1.4.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6325,22 +6325,7 @@ loadCard: function( brigade ) {
 	$('#ig_deck_smallcardarea_out').hide();
 	$('<div id="imi_temporary" style="display: none;" />').appendTo('BODY');
 
-	return $.post( '/card/deck.php', {
-		target_card: '',
-		select_assign_no: 4,
-		mode: '',
-		btn_change_flg: 1,
-		set_village_id: '',
-		set_assign_id: '',
-		set_squad_id: '',
-		deck_mode: 'nomal',
-		p: 1,
-		myselect2: '',
-		select_card_group: brigade,
-//		'sort_order[]': [ 1, 0, 0 ],
-//		'sort_order_type[]': [ 0, 0, 0 ],
-		show_deck_card_count: 15
-	})
+	return $.get( '/card/deck.php', { myselect: '', ano: 4, dmo: 'normal', select_card_group: brigade, p: 1 })
 	.pipe(function( html ) {
 		var $html = $( html.replace(/"http:\/\/.*(png|gif|jpg)"/g, '""') ),
 			$card_list = $html.find('#ig_deck_smallcardarea_out').find('.ig_deck_smallcardarea'),
