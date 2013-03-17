@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.8
+// @version        1.1.4.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6175,12 +6175,13 @@ Deck.dialog = function( village, brigade, coord ) {
 			num = data.pool[ card.solType ] || 0;
 			html;
 
-		if ( !card.solType ) { return; }
-
 		html = '<div class="imc_sc_panel">';
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
 			html += '<span class="imc_sc_solmax">最大</span>';
+		}
+		else if ( !card.solType ) {
+			html += '<span class="imc_sc_soledit">兵編成</span>';
 		}
 		else {
 			html += '<span>-</span>';
@@ -6231,6 +6232,15 @@ Deck.dialog = function( village, brigade, coord ) {
 		.done( Deck.update )
 		.fail(function() { Display.alert('編成できませんでした。'); })
 		.always(function() { Env.ajax = false; });
+
+		return false;
+	})
+	.on('click', '.imc_sc_soledit', function() {
+		var card_id = $(this).closest('.ig_deck_smallcardarea').attr('card_id'),
+			card = Deck.analyzedData[ card_id ];
+
+		card.editUnit()
+		.done( Deck.update );
 
 		return false;
 	});
