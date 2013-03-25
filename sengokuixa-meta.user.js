@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.9
+// @version        1.1.4.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2222,7 +2222,7 @@ dialogTraining: function() {
 
 	dialog = Display.dialog({
 		title: '一括兵士訓練',
-		width: 840, height: 480, top: 50,
+		width: 833, height: 480, top: 50,
 		content: $html,
 		buttons: {
 			'訓練開始': function() {
@@ -2536,7 +2536,7 @@ style: '' +
 /* ダイアログメッセージ用 */
 '#imi_dialog_container { position: relative; margin: auto; width: 500px; height: auto; background-color: #f1f0dc; border: solid 2px #666; overflow: hidden; }' +
 '#imi_dialog_container .imc_dialog_header { background-color: #ccc; padding: 8px; font-weight: bold; }' +
-'#imi_dialog_container .imc_dialog_body { margin: 10px 0px 10px 10px; padding-right: 10px; font-size: 12px; height: 200px; overflow: auto; }' +
+'#imi_dialog_container .imc_dialog_body { margin: 8px 0px 8px 8px; padding-right: 8px; font-size: 12px; height: 200px; overflow: auto; }' +
 '#imi_dialog_container .imc_dialog_footer { margin: 5px; padding: 5px 10px; border-top: solid 1px black; text-align: right; }' +
 '#imi_dialog_container .imc_message { margin: 4px; }' +
 '#imi_dialog_container BUTTON { margin-left: 8px; padding: 5px; min-width: 60px; border: solid 1px #999; border-radius: 3px; cursor: pointer; color: #000; background: -moz-linear-gradient(top, #fff, #ccc); box-shadow: 1px 1px 2px #ccc; }' +
@@ -2563,10 +2563,10 @@ style: '' +
 
 /* コマンド群 */
 '.imc_command_selecter { height: 22px; margin: 0px 0px 2px 0px; }' +
+'.imc_command_selecter LABEL { float: left; width: 65px; height: 20px; margin-right: 8px; line-height: 20px; text-align: center; font-weight: bold; color: #76601D; border: solid 1px #76601D; background-color: #E0DCC1; }' +
 '.imc_command_selecter LI { float: left; width: 65px; height: 20px; line-height: 20px; text-align: center; border: solid 1px #666; color: #666; background-color: #000; margin-right: 8px; cursor: pointer; }' +
 '.imc_command_selecter LI.imc_selected { background-color: #666; border-color: #fff; color: #fff; }' +
 '.imc_command_selecter LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
-'.imc_command_selecter LABEL { float: left; width: 65px; height: 20px; margin-right: 8px; line-height: 20px; text-align: center; font-weight: bold; color: #76601D; border: solid 1px #76601D; background-color: #E0DCC1; }' +
 
 /* 募集・チャット用 */
 '#commentBody TD { height: 13px; }' +
@@ -2721,7 +2721,7 @@ style: '' +
 /* カード */
 '#imi_unit_dialog.imc_infotype_2 .imc_status1 { display: none; }' +
 '#imi_unit_dialog.imc_infotype_1 .imc_status2 { display: none; }' +
-'#imi_unit_dialog .ig_deck_smallcardarea { position: relative; float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 8px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
+'#imi_unit_dialog .ig_deck_smallcardarea { position: relative; float: left; width: 116px; height: 136px; padding: 5px 7px; margin: 0px 5px 6px 0px; border: solid 1px #666; background: -moz-linear-gradient(top left, #444, #000); }' +
 '#imi_unit_dialog .ig_deck_smallcardarea.imc_disabled { opacity:0.7; }' +
 '#imi_unit_dialog .ig_deck_smallcardarea TABLE { position: relative; width: 100%; margin-bottom: 5px; border-left: 1px dotted #fff; border-top: 1px dotted #fff; border-collapse: separate; background-color: #333; font-size: 10px; z-index: 4; }' +
 '#imi_unit_dialog .ig_deck_smallcardarea TR { height: 15px; }' +
@@ -2756,18 +2756,28 @@ style: '' +
 '#imi_unit_dialog .imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
 '#imi_unit_dialog .imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
 
-'#imi_unit_dialog #imi_new_deck { float: right; margin-right: 16px; }' +
+'#imi_unit_dialog #imi_new_deck { float: right; }' +
 '#imi_unit_dialog #imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
 '#imi_unit_dialog #imi_new_deck LI:hover { background-color: #666; border-color: #fff; color: #fff; }' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change { background-color: #666; border-color: #fff; color: #fff; }' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_1:after { content: "表示１" }' +
 '#imi_unit_dialog #imi_new_deck #imi_info_change.imc_infotype_2:after { content: "表示２" }' +
 
-'#imi_unit_dialog .imc_sc_panel { position: absolute; top: 124px; left: 0px; width: 128px; height: 20px; padding: 1px; z-index: 5; }' +
-'#imi_unit_dialog .imc_sc_panel SPAN { display: inline-block; width: 62px; height: 18px; border: solid 1px #999; color: #fff; background-color: #000; text-align: center; line-height: 18px; cursor: pointer; }' +
+'#imi_unit_dialog .imc_sc_panel { position: absolute; top: 124px; left: 0px; width: 128px; height: 20px; padding: 1px 2px; z-index: 5; }' +
+'#imi_unit_dialog .imc_sc_panel SPAN { display: inline-block; width: 40px; height: 18px; border: solid 1px #999; color: #fff; background-color: #000; text-align: center; line-height: 18px; cursor: pointer; }' +
 '#imi_unit_dialog .imc_sc_panel SPAN[class]:hover { color: #fff; background-color: #666; }' +
-'#imi_unit_dialog .imc_selected .imc_sc_panel { padding: 0px; }' +
-'#imi_unit_dialog #imi_card_container .imc_sc_panel { padding: 1px; }' +
+'#imi_unit_dialog .imc_selected .imc_sc_panel { padding: 0px 1px; }' +
+'#imi_unit_dialog #imi_card_container .imc_sc_panel { padding: 1px 2px; }' +
+
+/* 読み込み組表示 */
+'#imi_unit_dialog .imc_brigade { width: 50px; height: 22px; margin-right: 0px; border: none; background-position: -1px 0px; cursor: default; }' +
+'#imi_unit_dialog .imc_brigade.imc_brigade_1 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_01.png\'); }' +
+'#imi_unit_dialog .imc_brigade.imc_brigade_2 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_02.png\'); }' +
+'#imi_unit_dialog .imc_brigade.imc_brigade_3 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_03.png\'); }' +
+'#imi_unit_dialog .imc_brigade.imc_brigade_4 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_04.png\'); }' +
+'#imi_unit_dialog .imc_brigade.imc_brigade_5 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_05.png\'); margin-right: 8px; }' +
+'#imi_unit_dialog .imc_brigade.imc_off { opacity: 0.3; cursor: pointer; }' +
+'#imi_unit_dialog .imc_brigade.imc_off:hover { opacity: 0.7; }' +
 
 /* 全部隊登録 */
 '#imi_unitnum TD { width: 40px; cursor: pointer; }' +
@@ -5365,6 +5375,7 @@ setUnit: function( cardlist, num, type ) {
 			newNum = ( num <= card.maxSolNum ) ? num : card.maxSolNum,
 			pool;
 
+		if ( !newType ) { continue; }
 		if ( num == card.solNum && newType == card.solType ) { continue; }
 
 		pooldata[ card.solType ] += card.solNum;
@@ -5401,6 +5412,8 @@ gatherSoldier: function( cardlist, num ) {
 
 	for ( var i = 0, len = cardlist.length; i < len; i++ ) {
 		let card = cardlist[ i ];
+
+		if ( !card.solType ) { continue; }
 
 		pooldata[ card.solType ] += card.solNum - 1;
 		editlist.push( [ card, 1, card.solType ] );
@@ -5947,14 +5960,27 @@ Deck.dialog = function( village, brigade, coord ) {
 		'</div>' +
 		'<div>' +
 			'<ul id="imi_new_deck">' +
-				'<li id="imi_card_assign">選択武将を部隊へ登録</li>' +
+				'<li id="imi_card_assign">選択武将を登録</li>' +
 				'<li id="imi_all_assign">全部隊登録</li>' +
 				'<li id="imi_info_change" class="imc_infotype_1"></li>' +
 			'</ul>' +
 			'<ul id="imi_command_selecter" class="imc_command_selecter" />' +
 		'</div>' +
-		'<div id="imi_info" style="border: solid 1px #b8860b; height: 343px; padding-top: 20px; background-color: #000; color: #fff; font-size: 18px; text-align: center;">武将カード情報取得中...</div>' +
-		'<div id="ig_deck_smallcardarea_out" style="border: solid 1px #b8860b; height: 355px; padding: 4px; background-color: #000; overflow: auto;">' +
+		'<div id="imi_info" style="border: solid 1px #b8860b; height: 368px; padding-top: 20px; background-color: #000; color: #fff; font-size: 18px; text-align: center;">武将カード情報取得中...</div>' +
+		'<div id="ig_deck_smallcardarea_out" style="border: solid 1px #b8860b; border-bottom: none; height: 351px; padding: 4px; background-color: #000; overflow: auto;" />' +
+		'<div id="imi_deck_bottom" style="height: 22px; padding: 4px 3px 3px 3px; background-color: #000; border: solid 1px #b8860b; border-top: none;">' +
+			'<ul class="imc_command_selecter">' +
+				'<label>読込済</label>' +
+				'<li data-brigade="1" class="imc_brigade imc_brigade_1 imc_off" />' +
+				'<li data-brigade="2" class="imc_brigade imc_brigade_2 imc_off" />' +
+				'<li data-brigade="3" class="imc_brigade imc_brigade_3 imc_off" />' +
+				'<li data-brigade="4" class="imc_brigade imc_brigade_4 imc_off" />' +
+				'<li data-brigade="5" class="imc_brigade imc_brigade_5 imc_off" />' +
+				'<label>一括編成</label>' +
+				'<li class="imc_batch_gather">兵寄せ</li>' +
+				'<li class="imc_batch_max">最大補充</li>' +
+				'<li class="imc_batch_sol1">兵１</li>' +
+			'</ul>' +
 		'</div>' +
 	'</div>';
 
@@ -6175,13 +6201,12 @@ Deck.dialog = function( village, brigade, coord ) {
 			num = data.pool[ card.solType ] || 0;
 			html;
 
-		html = '<div class="imc_sc_panel">';
+		html = '' +
+		'<div class="imc_sc_panel">' +
+		'<span class="imc_sc_soledit">編成</span>';
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
 			html += '<span class="imc_sc_solmax">最大</span>';
-		}
-		else if ( !card.solType ) {
-			html += '<span class="imc_sc_soledit">兵編成</span>';
 		}
 		else {
 			html += '<span>-</span>';
@@ -6243,11 +6268,42 @@ Deck.dialog = function( village, brigade, coord ) {
 		.done( Deck.update );
 
 		return false;
+	})
+	.on('update', '#imi_deck_bottom', function() {
+		for ( var i = 1; i <= 5; i++ ) {
+			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
+				$content.find('.imc_brigade_' + i).removeClass('imc_off');
+			}
+		}
+	})
+	.on('click', '.imc_brigade', function() {
+		var $this = $(this),
+			brigade = $this.data('brigade');
+
+		if ( !$this.hasClass('imc_off') ) { return; }
+
+		Deck.dialog.loadCard( brigade )
+		.done(function() {
+			Deck.update();
+			$('#imi_deck_bottom').trigger('update');
+		});
+	})
+	.on('click', '.imc_batch_gather', function() {
+		var list = Deck.targetList();
+		Deck.gatherSoldierMax( list );
+	})
+	.on('click', '.imc_batch_max', function() {
+		var list = Deck.targetList();
+		Deck.setUnitMax( list );
+	})
+	.on('click', '.imc_batch_sol1', function() {
+		var list = Deck.targetList();
+		Deck.setUnit( list, 1 );
 	});
 
 	options = {
 		title: '部隊作成',
-		width: 890, height: 550, top: 20,
+		width: 890, height: 575, top: 10,
 		content: $content,
 		buttons: {
 			'目的地へ出陣': function() {
@@ -6269,8 +6325,7 @@ Deck.dialog = function( village, brigade, coord ) {
 	$('#ig_deck_smallcardarea_out')
 	.on('update', function() {
 		$('.imc_sc_panel').remove();
-	})
-	.contextMenu( Deck.dialog.contextmenu2, true );
+	});
 
 	$('.imc_village').text( village.name );
 	if ( coord ) {
@@ -6293,6 +6348,9 @@ Deck.dialog = function( village, brigade, coord ) {
 	Deck.commandMenu( $content.find('#imi_command_selecter') );
 	Deck.dialog.loadCard( brigade ).done(function() {
 		Deck.update();
+		Deck.getPoolSoldiers();
+		$('#imi_deck_bottom').trigger('update');
+
 		if ( coord ) {
 			dialog.buttons.attr('disabled', false);
 		}
@@ -6332,7 +6390,7 @@ loadCard: function( brigade ) {
 	}
 
 	$('#imi_info').show();
-	$('#ig_deck_smallcardarea_out').hide();
+	$('#ig_deck_smallcardarea_out, #imi_deck_bottom').hide();
 	$('<div id="imi_temporary" style="display: none;" />').appendTo('BODY');
 
 	return $.get( '/card/deck.php', { myselect: '', ano: 4, dmo: 'normal', select_card_group: brigade, p: 1 })
@@ -6401,7 +6459,7 @@ loadCard: function( brigade ) {
 		}
 
 		$('#imi_info').hide();
-		$('#ig_deck_smallcardarea_out').show();
+		$('#ig_deck_smallcardarea_out, #imi_deck_bottom').show();
 
 		if ( brigade == 0 ) {
 			Deck.dialog.loaded = 0x3E;
@@ -6478,6 +6536,8 @@ contextmenu: function() {
 		else {
 			menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = submenu;
 		}
+
+		menu['セパレーター0'] = $.contextMenu.separator;
 	}
 
 	$.each( Soldier.typeKeys, function( type ) {
@@ -6526,7 +6586,6 @@ contextmenu: function() {
 		Deck.filter.exceptions[ card_id ] = true;
 		card.element.hide();
 	};
-	menu['セパレーター2'] = $.contextMenu.separator;
 
 	var condition = Deck.filter.conditions[ 0 ] || [,[]],
 		deck = $this.closest('#imi_card_container').length,
@@ -6578,6 +6637,7 @@ contextmenu: function() {
 			});
 		}
 
+		menu['セパレーター2'] = $.contextMenu.separator;
 		menu['選択中の武将'] = submenu;
 	}
 	else if ( list && batch >= 1 ) {
@@ -6616,65 +6676,14 @@ contextmenu: function() {
 			});
 		}
 
+		menu['セパレーター2'] = $.contextMenu.separator;
+
 		if ( $.isEmptyObject( submenu ) ) {
 			menu['表示中の武将'] = $.contextMenu.nothing;
 		}
 		else {
 			menu['表示中の武将'] = submenu;
 		}
-	}
-
-	if ( Deck.dialog.loaded ^ 0x3F ) {
-		var labellist = [ '', '【第一組】', '【第二組】', '【第三組】', '【第四組】', '【未設定】' ];
-
-		submenu = {};
-		for ( var i = 1; i <= 5; i++ ) {
-			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
-				submenu[ labellist[ i ] ] = $.contextMenu.nothing;
-			}
-			else {
-				let brigade = i;
-				submenu[ labellist[ i ] ] = function() {
-					Deck.dialog.loadCard( brigade ).done( Deck.update );
-				};
-			}
-		}
-
-		menu['組データ追加読込'] = submenu;
-	}
-	else {
-		menu['組データ追加読込'] = $.contextMenu.nothing;
-	}
-
-	return menu;
-},
-
-//.. contextmenu2
-contextmenu2: function() {
-	var menu = {};
-
-	menu['デッキメニュー'] = $.contextMenu.title;
-
-	if ( Deck.dialog.loaded ^ 0x3F ) {
-		var labellist = [ '', '【第一組】', '【第二組】', '【第三組】', '【第四組】', '【未設定】' ];
-
-		submenu = {};
-		for ( var i = 1; i <= 5; i++ ) {
-			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
-				submenu[ labellist[ i ] ] = $.contextMenu.nothing;
-			}
-			else {
-				let brigade = i;
-				submenu[ labellist[ i ] ] = function() {
-					Deck.dialog.loadCard( brigade ).done( Deck.update );
-				};
-			}
-		}
-
-		menu['組データ追加読込'] = submenu;
-	}
-	else {
-		menu['組データ追加読込'] = $.contextMenu.nothing;
 	}
 
 	return menu;
