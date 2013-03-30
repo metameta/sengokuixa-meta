@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.4.11
+// @version        1.1.4.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -14070,6 +14070,27 @@ layouter: function( cid ) {
 
 	var html = '<span class="rankup_btn"><a href="/card/lead_info.php?cid=' + cid + '&p=1&ano=0&dmo=nomal">指揮力強化</a></span>';
 	$('.parameta_area').append( html );
+}
+
+});
+
+//■ /senkuji/senkuji
+Page.registerAction( 'senkuji', 'senkuji', {
+
+//. main
+main: function() {
+	var $menu = $('#lotMenu LI'),
+		$item = $menu.find('IMG'),
+		$container = $('#cardmachineInner'),
+		$kuji, array1, array2;
+
+	array1 = $item.not('[src$="img_lot_silver_icon.jpg"], [src$="img_lot_gold_icon.jpg"]').get();
+	array2 = $item.filter('[src$="img_lot_silver_icon.jpg"], [src$="img_lot_gold_icon.jpg"]').get();
+	array1 = array1.concat( array2 );
+	$menu.each(function( idx ) {  $(this).append( array1[ idx ] ); });
+
+	$kuji = $container.find('.cardmachine').has('INPUT[src$="img_lot_silver.jpg"], INPUT[src$="img_lot_gold.jpg"]');
+	$container.append( $kuji );
 }
 
 });
