@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.0
+// @version        1.1.5.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -91,23 +91,30 @@ toFormatNumber: function( prefix, replaceNaN ) {
 },
 
 //.. toFormatDate - 0000/00/00 00:00:00
-toFormatDate: function() {
+toFormatDate: function( format ) {
 	var date = new Date( this * 1000 );
 
-	return date.toFormatDate();
+	return date.toFormatDate( format );
 },
 
 //.. toFormatTime - 00:00:00
-toFormatTime: function() {
+toFormatTime: function( format ) {
+	format = format || 'hh:mi:ss';
+
 	var h = Math.floor(this / 3600),
 		m = Math.floor((this - (h * 3600)) / 60 ),
 		s = Math.floor(this - (h * 3600) - (m * 60));
 
-	var str = (h + 100).toString().substr( -2 ) + ':' +
-			  (m + 100).toString().substr( -2 ) + ':' +
-			  (s + 100).toString().substr( -2 );
+	if ( h >= 100 ) {
+		format = format.replace('hh', h );
+	}
+	else {
+		format = format.replace('hh', ( '00' + h ).substr( -2 ) );
+	}
+	format = format.replace('mi', ( '00' + m ).substr( -2 ) );
+	format = format.replace('ss', ( '00' + s ).substr( -2 ) );
 
-	return str;
+	return format;
 }
 
 });
@@ -116,16 +123,17 @@ toFormatTime: function() {
 $.extend( Date.prototype, {
 
 //.. toFormatDate - 0000/00/00 00:00:00
-toFormatDate: function() {
-	var str = '';
+toFormatDate: function( format ) {
+	format = format || 'yyyy/mm/dd hh:mi:ss';
 
-	str += this.getFullYear() + '/' + (this.getMonth() + 1) + '/' + this.getDate();
-	str += ' ';
-	str += ('00' + this.getHours()  ).substr(-2, 2) + ':' +
-		   ('00' + this.getMinutes()).substr(-2, 2) + ':' +
-		   ('00' + this.getSeconds()).substr(-2, 2);
+	format = format.replace('yyyy', this.getFullYear() );
+	format = format.replace('mm', this.getMonth() + 1 );
+	format = format.replace('dd', this.getDate() );
+	format = format.replace('hh', ( '00' + this.getHours() ).substr( -2 ) );
+	format = format.replace('mi', ( '00' + this.getMinutes() ).substr( -2 ) );
+	format = format.replace('ss', ( '00' + this.getSeconds() ).substr( -2 ) );
 
-	return str;
+	return format;
 }
 
 });
@@ -540,9 +548,10 @@ getPoolSoldiers: function() {
 			$tr.slice( 1 ).each(function() {
 				var $td = $(this).find('TD');
 					type = Soldier.getType( $td.eq( 0 ).find('IMG').attr('alt') ),
-					num = $td.eq( 1 ).text().toInt();
+					num = $td.eq( 1 ).text().toInt(),
+					finish = $td.eq( 3 ).text().getTime();
 
-				data.training.push({ id: village.id, type: type, num: num });
+				data.training.push({ id: village.id, type: type, num: num, finish: finish });
 			});
 		});
 	});
@@ -1002,6 +1011,14 @@ getResource: function() {
 	];
 },
 
+//. getUranai
+getUranai: function() {
+	return $('#status .rightF IMG')
+	.map(function() {
+		return ( 100 - $(this).attr('src').match(/_(\d)s/)[ 1 ].toInt() ) / 100;
+	});
+},
+
 //. checkExchange
 checkExchange: function( resource, requirements, rate ) {
 	var shortage = 0, surplus = 0;
@@ -1140,12 +1157,12 @@ getMaxTraining: function( resource, requirements, rate, max, min ) {
 },
 
 //. divide
-divide: function( list, type, solnum ) {
+divide: function( list, soldata, solnum ) {
 	var facilities = [], maxidx = 0, total = 0, soltotal = 0;
 
 	total = 0;
 	for ( var i = 0, len = list.length; i < len; i++ ) {
-		let facility = $.extend( { type: type }, list[ i ] );
+		let facility = $.extend( { type: soldata.type }, list[ i ] );
 
 		facility.mod  = Math.pow( 0.8, facility.lv - 1 );
 		facility.rate = Math.pow( 1 / 0.8, facility.lv - 1 );
@@ -1174,6 +1191,27 @@ divide: function( list, type, solnum ) {
 			facilities[ maxidx ].solnum += ( solnum - soltotal );
 		}
 	}
+
+	return facilities;
+},
+
+//. divide2
+divide2: function( list, soldata, time ) {
+	var uranai = Util.getUranai(),
+		facilities = [], total = 0;
+
+	total = 0;
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		let facility = $.extend( { type: soldata.type }, list[ i ] );
+
+		facility.mod  = Math.pow( 0.8, facility.lv - 1 );
+		facility.solnum = Math.floor( time / facility.mod / soldata.training / uranai[ 1 ] );
+		total += facility.solnum;
+
+		facilities.push( facility );
+	}
+
+	facilities.totalnum = total;
 
 	return facilities;
 },
@@ -1927,7 +1965,7 @@ dialogTraining: function() {
 		slist = Util.getValidSoldiers( flist[ 0 ] );
 		if ( slist.length == 0 ) { return; }
 
-		facility = { list: flist, soldiers: slist, total: 0, count: 0 };
+		facility = { list: flist, soldiers: slist, total: 0, count: 0, finish: 0 };
 
 		tlist = pooldata.training.filter(function( elem ) {
 			return slist.some(function( sol ) { return sol.type == elem.type; });
@@ -1936,6 +1974,7 @@ dialogTraining: function() {
 			if ( !facility[ elem.type ] ) { facility[ elem.type ] = 0; }
 			facility[ elem.type ] += elem.num;
 			facility.total += elem.num;
+			if ( elem.finish > facility.finish ) { facility.finish = elem.finish; }
 		});
 
 		counts = tlist.reduce(function( prev, curr ) {
@@ -1987,12 +2026,21 @@ dialogTraining: function() {
 	});
 	$table.append( $tr );
 
-	$tr = $('<tr><th>人数 ／ 分割</th></tr>');
+	$tr = $('<tr><th>入力方法 ／ 分割</th></tr>');
 	$.each( facilities, function( key, elem ) {
 		var html = '' +
 		'<td colspan="3">' +
-			'<select style="width: 60px;" class="imc_solnum" fname="' + key + '"><option value="0">0</option></select>' +
-			' ／ ' +
+			'<span class="imc_input_type imc_solnum"><span>人数</span>' +
+				'<ul class="imc_pulldown">' +
+					'<li class="imc_solnum">人数</li>' +
+					'<li class="imc_solfinish">時刻</li>' +
+					'<li class="imc_soltime">時間</li>' +
+					'<li class="imc_solinput">入力</li>' +
+				'</ul>' +
+			'</span>' +
+			'<select style="width: 65px;" class="imc_input" fname="' + key + '"><option value="0">0</option></select>' +
+			'<input style="width: 63px; display: none;" class="imc_input_val" fname="' + key + '" />' +
+			'／' +
 			'<select style="width: 40px;" class="imc_create_count" fname="' + key + '">';
 
 		if ( elem.count == 10 ) { html += '<option value="0">0</option>'; }
@@ -2037,6 +2085,12 @@ dialogTraining: function() {
 		vcount++;
 	});
 
+	$tr = $('<tr><th>人数計</th></tr>');
+	$.each( facilities, function( key, elem ) {
+		$tr.append('<th></th><td class="imc_total" fname="' + key + '"></td><th></th>');
+	});
+	$table.append( $tr );
+
 	$html.append(
 	'<br />' +
 	'<table class="imc_table imc_result" style="float: left;">' +
@@ -2066,74 +2120,180 @@ dialogTraining: function() {
 	'');
 
 	$html
+	.on('click', '.imc_input_type LI', function() {
+		var $this = $(this),
+			type  = $this.attr('class'),
+			$td   = $this.closest('TD'),
+			$intype = $td.find('.imc_input_type');
+
+		$intype.removeClass('imc_solnum imc_solfinish imc_soltime imc_solinput').addClass( type );
+		$intype.find('SPAN').text( $this.text() );
+
+		$td.find('.imc_input').attr('disabled', false).trigger('update');
+
+		if ( $this.hasClass('imc_solinput') ) {
+			$td.find('.imc_input').hide()
+			$td.find('.imc_input_val').show();
+		}
+		else {
+			$td.find('.imc_input').show()
+			$td.find('.imc_input_val').hide();
+		}
+	})
 	.on('change', '.imc_soltype', function() {
 		var $this = $(this),
-			type  = $this.val(),
 			fname = $this.attr('fname'),
-			image = $this.find('OPTION:selected').attr('src'),
+			image = $this.find('OPTION:selected').attr('src');
+
+		$this.prevAll('IMG').attr('src', image);
+		$html.find('.imc_input[fname="' + fname + '"]').trigger('update');
+	})
+	.on('update', '.imc_input', function() {
+		var $this = $(this),
+			fname = $this.attr('fname'),
+			type  = $html.find('.imc_soltype[fname="' + fname + '"]').val(),
+			$intype = $this.parent().find('.imc_input_type'),
 			resource = Util.getResource(),
 			market = Util.getMarket(),
 			materials;
-
-		$this.prevAll('IMG').attr('src', image);
 
 		materials = facilities[ fname ].soldiers.filter(function( elem ) {
 			return ( elem.type == type );
 		})[ 0 ].materials;
 
-		//数値プルダウン変更
 		var rate = ( market ) ? market.rate : 0,
 			freecapa = pooldata.capacity - pooldata.soldier,
 			maxnum = Util.getMaxTraining( resource, materials, 0, freecapa, 0 ),
 			overnum = Util.getMaxTraining( resource, materials, rate, freecapa, maxnum ),
-			val = 0, step = 100, color = '#390', options = [];
+			flist = facilities[ fname ].list,
+			color, options, soldata, val, step, basetime, starttime, disabled;
 
-		options.push('<option value="0">0</option>');
-		while ( val < overnum ) {
-			val += step;
-			if ( val == maxnum ) { maxnum = Number.MAX_VALUE; }
-			if ( val > maxnum && maxnum != overnum ) {
-				options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
-				maxnum = Number.MAX_VALUE;
+		color = '#390';
+		options = [];
+		soldata = facilities[ fname ].soldiers.filter(function( elem ) {
+			return ( elem.type == type );
+		})[ 0 ];
+
+		if ( $intype.hasClass('imc_solnum') ) {
+			//人数
+			val = 0;
+			step = 100
+
+			options.push('<option value="0">0</option>');
+			while ( val < overnum ) {
+				val += step;
+				if ( val == maxnum ) { maxnum = Number.MAX_VALUE; }
+				if ( val > maxnum && maxnum != overnum ) {
+					options.push('<option value="' + maxnum + '" style="color: ' + color + '">' + maxnum + '</option>');
+					maxnum = Number.MAX_VALUE;
+				}
+				if ( val > overnum ) { val = overnum; }
+				if ( val >= 1000 ) { step = 500; }
+
+				let result = Util.checkExchange( resource, Util.getConsumption( materials, val ) );
+				if ( result == 0 ) { break; }
+				if ( result == 1 ) { color = '#c30'; }
+
+				options.push('<option value="' + val + '" style="color: ' + color + '">' + val + '</option>');
 			}
-			if ( val > overnum ) { val = overnum; }
-			if ( val >= 1000 ) { step = 500; }
+		}
+		else if ( $intype.hasClass('imc_solfinish') ) {
+			//時刻
+			basetime = facilities[ fname ].finish;
+			basetime = ( basetime ) ? basetime : Util.getServerTime() + 60;
+			starttime = Math.floor( basetime / 900 ) * 900 + 900;
 
-			let result = Util.checkExchange( resource, Util.getConsumption( materials, val ) );
-			if ( result == 0 ) { break; }
-			if ( result == 1 ) { color = '#c30'; }
+			options.push('<option value="0">-</option>');
+			for ( var i = 0; i <= 1440; i += 15 ) {
+				let val = starttime + ( i * 60 ),
+					num = Util.divide2( flist, soldata, val - basetime ).totalnum,
+					result = Util.checkExchange( resource, Util.getConsumption( materials, num ) );
 
-			options.push('<option value="' + val + '" style="color: ' + color + '">' + val + '</option>');
+				if ( num == 0 ) { continue; }
+				if ( num > freecapa ) { break; }
+				if ( result == 0 ) { break; }
+				if ( result == 1 ) { color = '#c30'; }
+
+				options.push('<option value="' + ( val - basetime ) + '" style="color: ' + color + '">' + val.toFormatDate('hh:mi') + '</option>');
+			}
+		}
+		else if ( $intype.hasClass('imc_soltime') ) {
+			//時間
+			options.push('<option value="0">00h00m</option>');
+			for ( var i = 15; i <= 1440; i += 15 ) {
+				let val = i * 60,
+					num = Util.divide2( flist, soldata, val ).totalnum,
+					result = Util.checkExchange( resource, Util.getConsumption( materials, num ) );
+
+				if ( num == 0 ) { continue; }
+				if ( num > freecapa ) { break; }
+				if ( result == 0 ) { break; }
+				if ( result == 1 ) { color = '#c30'; }
+
+				options.push('<option value="' + val + '" style="color: ' + color + '">' + val.toFormatTime('hhhmim') + '</option>');
+			}
 		}
 
-		$html.find('.imc_solnum[fname="' + fname + '"]')
-		.empty().append( options.join('') ).trigger('change');
+		$this.empty().append( options.join('') );
 
-		if ( overnum == 0 || facilities[ fname ].count == 10 ) {
-			$html.find('.imc_solnum[fname="' + fname + '"]').attr('disabled', true);
-			$html.find('.imc_create_count[fname="' + fname + '"]').attr('disabled', true);
+		//手入力の場合options.length == 0になる
+		if ( options.length == 0 ) {
+			disabled = ( overnum == 0 || facilities[ fname ].count == 10 );
+			$html.find('.imc_input_val').filter('[fname="' + fname + '"]')
+			.val( 0 ).trigger('change').attr('disabled', disabled);
 		}
+		else {
+			disabled = ( options.length == 1 || facilities[ fname ].count == 10 );
+			$html.find('.imc_input').filter('[fname="' + fname + '"]')
+			.trigger('change').attr('disabled', disabled);
+		}
+
+		$html.find('.imc_create_count').filter('[fname="' + fname + '"]').attr('disabled', disabled);
 	})
-	.on('change', '.imc_solnum', function() {
+	.on('change', '.imc_input', function() {
+		var $this = $(this);
+
+		$this.parent().find('.imc_input_val').val( $this.val() ).trigger('change');
+	})
+	.on('change', '.imc_input_val', function() {
 		var $this = $(this),
-			num   = $this.val(),
+			num   = $this.val().toInt(),
 			fname = $this.attr('fname'),
 			type  = $html.find('.imc_soltype[fname="' + fname + '"]').val(),
 			count = $html.find('.imc_create_count[fname="' + fname + '"]').val(),
-			soldata, list;
+			$intype = $this.parent().find('.imc_input_type'),
+			uranai = Util.getUranai(),
+			soldata, list, total;
+
+		if ( isNaN( num ) ) {
+			num = 0;
+			$this.val( 0 );
+		}
+		else {
+			$this.val( num );
+		}
 
 		soldata = facilities[ fname ].soldiers.filter(function( elem ) {
 			return ( elem.type == type );
 		})[ 0 ];
 
-		list = Util.divide( facilities[ fname ].list, type, num );
+		if ( $intype.is('.imc_solnum, .imc_solinput') ) {
+			list = Util.divide( facilities[ fname ].list, soldata, num );
+		}
+		else {
+			list = Util.divide2( facilities[ fname ].list, soldata, num );
+		}
+
+		total = 0;
 		list.forEach(function( elem ) {
 			elem.materials = Util.getConsumption( soldata.materials, elem.solnum );
-			elem.trainingtime = Math.ceil( elem.solnum * soldata.training * elem.mod );
+			elem.trainingtime = Math.ceil( elem.solnum * soldata.training * elem.mod * uranai[ 1 ] );
 			elem.create_count = count;
+			total += elem.solnum;
 
 			$html.find('TD[fname="' + fname + '"][vid="' + elem.id + '"]').data('plan', elem).trigger('update');
 		});
+		$html.find('TD.imc_total[fname="' + fname + '"]').text( total );
 
 		$this.parent().removeAttr('style');
 		if ( num > 0 ) { $this.parent().css('background-color', '#9f9'); }
@@ -2141,7 +2301,7 @@ dialogTraining: function() {
 		$html.find('.imc_result').trigger('update');
 	})
 	.on('change', '.imc_create_count', function() {
-		$(this).parent().find('.imc_solnum').trigger('change');
+		$(this).parent().find('.imc_input').trigger('change');
 	})
 	.on('update', '.imc_plan', function() {
 		var $this = $(this),
@@ -2166,8 +2326,8 @@ dialogTraining: function() {
 			return prev;
 		}, [ 0, 0, 0, 0 ]);
 
-		solnum = $html.find('.imc_solnum')
-		.map(function() { return $(this).val().toInt(); })
+		solnum = $html.find('.imc_plan')
+		.map(function() { return [ ( $(this).data('plan') || { solnum: 0 } ).solnum ]; })
 		.get()
 		.reduce(function( prev, curr ) { return prev + curr; }, 0);
 
@@ -2222,7 +2382,7 @@ dialogTraining: function() {
 
 	dialog = Display.dialog({
 		title: '一括兵士訓練',
-		width: 833, height: 480, top: 50,
+		width: 840, height: 505, top: 30,
 		content: $html,
 		buttons: {
 			'訓練開始': function() {
@@ -2691,6 +2851,12 @@ style: '' +
 /* 一括兵士訓練ダイアログ用 */
 '#imi_training_dialog .imc_surplus { color: #090; }' +
 '#imi_training_message { width: 350px; float: left; text-align: center; padding: 10px; font-size: 14px; font-weight: bold; color: #c00; }' +
+'#imi_training_dialog .imc_input_type { position: relative; display: inline-block; margin-right: 2px; padding: 2px 3px; cursor: pointer; -moz-user-select: none; background-color: #E0DCC1; border-radius: 3px; }' +
+'#imi_training_dialog .imc_input_type .imc_pulldown { position: absolute; margin-left: -4px; z-index: 2000; text-align: left; display: none; }' +
+'#imi_training_dialog .imc_input_type:hover .imc_pulldown { display: block; background-color: #F1F0DC; border: solid 1px #76601D; }' +
+'#imi_training_dialog .imc_input_type .imc_pulldown LI { width: 30px; height: 20px; text-align: center; line-height: 20px; }' +
+'#imi_training_dialog .imc_input_type .imc_pulldown LI:hover { background-color: #E0DCC1; }' +
+'#imi_training_dialog .imc_input_val { ime-mode: disabled; }' +
 
 /* 部隊作成ダイアログ用 */
 '#imi_unit_dialog #imi_card_container { padding: 3px 0px 2px 6px; border: solid 1px #b8860b; width: 550px; height: 149px; background-color: #000; float: left; }' +
@@ -10178,14 +10344,12 @@ trainingPulldown: function( $div ) {
 //. trainingDivide
 trainingDivide: function( e ) {
 	var $this = $(this),
-		solnum = $this.val(),
+		solnum = $this.val().toInt(),
 		{ type, training, materials } = $this.data(),
-		list = $(document).data('facilitylist');
-		facilities = Util.divide( list, type, solnum );
-
-	//表示
-	var html = '',
-		total_wood = total_stone = total_iron = total_rice = 0;
+		list = $(document).data('facilitylist'),
+		soldata = Soldier.getByType( type ),
+		facilities = Util.divide( list, soldata, solnum ),
+		html = '', total_wood = total_stone = total_iron = total_rice = 0;
 
 	$.each( facilities, function() {
 		var [ wood, stone, iron, rice ] = Util.getConsumption( materials, this.solnum ),
