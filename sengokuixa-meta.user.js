@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.1
+// @version        1.1.5.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -159,7 +159,7 @@ unique: function() {
 
 //■ jQueryプラグイン
 //. contextMenu
-(function($){var timer,defaults={class_menuitem:'imc_menuitem',class_title:'imc_menutitle',class_separater:'imc_separater',class_nothing:'imc_nothing',class_hover:'imc_hover',timeout:800},options=$.extend({},defaults);$.contextMenu=function(_options){options=$.extend({},defaults,_options);return this};$.extend($.contextMenu,{title:function(key){key=key||'';return $('<li/>').addClass(options.class_title).text(key)},separator:function(){return $('<li/>').addClass(options.class_separater)},nothing:function(key){key=key||'';return $('<li/>').addClass(options.class_nothing).text(key)}});$.fn.contextMenu=function(menu,live){if(live){this.live('contextmenu',collback)}else{this.on('contextmenu',collback)}return this;function collback(e){show.call(this,menu,e);return false}};function show(menu,e){var x=e.pageX,y=e.pageY,menuContainer,containerRight,containerBottom,documentRight,documentBottom;hide();if(typeof(menu)=='function'){menu=menu.call(this,e)}if(menu==null||menu.length==0){return}menuContainer=createMenuList.call(this,menu,e);if(!menuContainer){return}menuContainer.attr('id','imi_contextmenu').css({left:x,top:y}).appendTo('BODY');containerRight=menuContainer.offset().left+menuContainer.width()+10;containerBottom=menuContainer.offset().top+menuContainer.height()+10;documentRight=$(document).scrollLeft()+$(window).width();documentBottom=$(document).scrollTop()+$(window).height();if(containerRight>documentRight){x=x-(containerRight-documentRight);menuContainer.css({left:x})}if(containerBottom>documentBottom){y=y-(containerBottom-documentBottom);menuContainer.css({top:y})}(function(container){var self=arguments.callee;if(container.width()+10>documentRight-container.offset().left){container.css({left:-container.width()-2})}if(container.height()+10>documentBottom-container.offset().top){container.css({marginTop:-container.height()+13})}container.find('> LI > .imc_submenu').each(function(){self.call(self,$(this))})})(menuContainer)}function hide(){var $menu=$('#imi_contextmenu');if($menu.length==0){return}$menu.remove();clearTimeout(timer);timer=null};function createMenuList(menu,e,sub){var itemlist=[],$menu;for(key in menu){var menuitem=createMenuItem.call(this,key,menu[key],e);itemlist.push(menuitem.get(0))}if(itemlist.length==0){return null}$menu=$('<ul class="imc_menulist"/>').append(itemlist);if(sub){$menu.addClass('imc_submenu')}return $menu}function createMenuItem(key,menuitem,e){var self=this;if(menuitem===null||menuitem===undefined){return $.contextMenu.nothing(key)}else if(menuitem===$.contextMenu.title){return menuitem.call(self,key)}else if(menuitem===$.contextMenu.separator){return menuitem.call(self)}else if(menuitem===$.contextMenu.nothing){return menuitem.call(self,key)}else if(typeof(menuitem)=='string'){return $('<li/>').addClass(options.class_menuitem).text(menuitem)}else if(typeof(menuitem)=='function'){return $('<li/>').addClass(options.class_menuitem).text(key).click(function(){hide();menuitem.call(self,e)})}else if(menuitem.jquery){return $('<li/>').append(menuitem)}else{var submenu=createMenuList.call(this,menuitem,e,true);return $('<li/>').addClass(options.class_menuitem).append(submenu).append(key+'<span class="imc_submenu_mark">‣</span>')}}$(document).on('click',hide).on('contextmenu',hide).on('contextmenu','#imi_contextmenu',function(){return false}).on('mouseenter','#imi_contextmenu',function(){if(timer){clearTimeout(timer);timer=null}}).on('mouseleave','#imi_contextmenu',function(){if(options.timeout>0){timer=setTimeout(hide,options.timeout)}})})(jQuery);
+(function($){var timer,defaults={class_menuitem:'imc_menuitem',class_title:'imc_menutitle',class_separater:'imc_separater',class_nothing:'imc_nothing',class_hover:'imc_hover',timeout:800},options=$.extend({},defaults);$.contextMenu=function(_options){options=$.extend({},defaults,_options);return this};$.extend($.contextMenu,{title:function(key){key=key||'';return $('<li/>').addClass(options.class_title).text(key)},separator:function(){return $('<li/>').addClass(options.class_separater)},nothing:function(key){key=key||'';return $('<li/>').addClass(options.class_nothing).text(key)}});$.fn.contextMenu=function(menu,live){if(live){this.live('contextmenu',collback)}else{this.on('contextmenu',collback)}return this;function collback(e){show.call(this,menu,e);return false}};function show(menu,e){var x=e.pageX,y=e.pageY,menuContainer,containerRight,containerBottom,documentRight,documentBottom;hide();if(typeof(menu)=='function'){menu=menu.call(this,e)}if(menu==null||menu.length==0){return}menuContainer=createMenuList.call(this,menu,e);if(!menuContainer){return}menuContainer.attr('id','imi_contextmenu').css({left:x,top:y}).appendTo('BODY');containerRight=menuContainer.offset().left+menuContainer.width()+10;containerBottom=menuContainer.offset().top+menuContainer.height()+10;documentRight=$(document).scrollLeft()+$(window).width();documentBottom=$(document).scrollTop()+$(window).height();if(containerRight>documentRight){x=x-(containerRight-documentRight);menuContainer.css({left:x})}if(containerBottom>documentBottom){y=y-(containerBottom-documentBottom);menuContainer.css({top:y})}(function(container){var self=arguments.callee;if(container.width()+10>documentRight-container.offset().left){container.css({left:-container.width()-2})}if(container.height()+10>documentBottom-container.offset().top){container.css({marginTop:-container.height()+13})}container.find('> LI > .imc_submenu').each(function(){self.call(self,$(this))})})(menuContainer)}function hide(){var $menu=$('#imi_contextmenu');if($menu.length==0){return}$menu.remove();window.clearTimeout(timer);timer=null};function createMenuList(menu,e,sub){var itemlist=[],$menu;for(key in menu){var menuitem=createMenuItem.call(this,key,menu[key],e);itemlist.push(menuitem.get(0))}if(itemlist.length==0){return null}$menu=$('<ul class="imc_menulist"/>').append(itemlist);if(sub){$menu.addClass('imc_submenu')}return $menu}function createMenuItem(key,menuitem,e){var self=this;if(menuitem===null||menuitem===undefined){return $.contextMenu.nothing(key)}else if(menuitem===$.contextMenu.title){return menuitem.call(self,key)}else if(menuitem===$.contextMenu.separator){return menuitem.call(self)}else if(menuitem===$.contextMenu.nothing){return menuitem.call(self,key)}else if(typeof(menuitem)=='string'){return $('<li/>').addClass(options.class_menuitem).text(menuitem)}else if(typeof(menuitem)=='function'){return $('<li/>').addClass(options.class_menuitem).text(key).click(function(){hide();menuitem.call(self,e)})}else if(menuitem.jquery){return $('<li/>').append(menuitem)}else{var submenu=createMenuList.call(this,menuitem,e,true);return $('<li/>').addClass(options.class_menuitem).append(submenu).append(key+'<span class="imc_submenu_mark">‣</span>')}}$(document).on('click',hide).on('contextmenu',hide).on('contextmenu','#imi_contextmenu',function(){return false}).on('mouseenter','#imi_contextmenu',function(){if(timer){window.clearTimeout(timer);timer=null}}).on('mouseleave','#imi_contextmenu',function(){if(options.timeout>0){timer=window.setTimeout(hide,options.timeout)}})})(jQuery);
 //. autoPager
 (function($){var $window=$(window),$document=$(document),fetchPage={},nextPage,container,defaults={next:'',contants:'',container:'',load:function(page){return $.get(page)},loaded:function(html){},ended:function(){}},options=$.extend({},defaults);$.autoPager=function(_options){options=$.extend({},defaults,_options);nextPage=getNext(document);container=$(options.container);if(container.length!=0){$window.scroll(pageScroll)}return this};$.extend($.autoPager,{});function getNext(html){var nextPage;if($.isFunction(options.next)){nextPage=options.next(html)}else{nextPage=$(html).find(options.next).attr('href')}return nextPage}function pageScroll(){var containerBottom=container.offset().top+container.height(),documentBottm=$document.scrollTop()+$window.height();if(containerBottom<documentBottm){pageLoad()}};function pageLoad(){if(nextPage==undefined){return}if(fetchPage[nextPage]){return}fetchPage[nextPage]=true;var jqXhr=options.load(nextPage);jqXhr.pipe(function(html){nextPage=getNext(html);options.loaded(html);if(!nextPage){options.ended()}pageScroll()})}})(jQuery);
 //. keybind
@@ -575,7 +575,7 @@ getUnitStatusDelay: function() {
 
 	if ( delay < time ) {
 		MetaStorage('COUNTDOWN').set('delaytime', delay + 3);
-		setTimeout( Util.getUnitStatus, 3000 );
+		window.setTimeout( Util.getUnitStatus, 3000 );
 	}
 },
 
@@ -1329,7 +1329,7 @@ keyBindMap: function() {
 //. wait
 wait: function( ms ) {
 	var dfd = $.Deferred();
-	setTimeout( function() { dfd.resolve(); }, ms );
+	window.setTimeout( function() { dfd.resolve(); }, ms );
 	return dfd;
 },
 
@@ -1532,7 +1532,7 @@ function start() {
 	//event fire
 	$.each( event_list, function( key ) { $(EventListener).trigger( key, event_list[ key ] ); } );
 
-	timer = setTimeout( arguments.callee, 1000 );
+	timer = window.setTimeout( arguments.callee, 1000 );
 }
 
 $(EventListener)
@@ -1604,10 +1604,10 @@ $(EventListener)
 	Display.info( html, true );
 })
 .on('raidlistupdate', function() {
-	setTimeout( function() { $('#imi_raid_list').trigger('update'); }, 1000 );
+	window.setTimeout( function() { $('#imi_raid_list').trigger('update'); }, 1000 );
 })
 .on('raidlistupdate2', function() {
-	setTimeout( function() {
+	window.setTimeout( function() {
 		$('#imi_raid_list').trigger('update');
 
 		if ( Data.sounds.enemy_raid ) {
@@ -1627,7 +1627,7 @@ $(EventListener)
 
 //.. return
 return function() {
-	if ( timer ) { clearTimeout( timer ); }
+	if ( timer ) { window.clearTimeout( timer ); }
 	init();
 	start();
 };
@@ -1708,7 +1708,7 @@ function show( msg, sound, timeout, cssClass ) {
 	$span.width( $span.outerWidth() ).css('display', 'block').appendTo( $sysmessage );
 
 	timeout = timeout || 3000;
-	setTimeout(function() { remove( $span ); }, timeout);
+	window.setTimeout(function() { remove( $span ); }, timeout);
 
 	if ( sound && Data.sounds.info ) {
 		var audio = new Audio( Data.sounds.info );
@@ -2405,7 +2405,7 @@ dialogTraining: function() {
 						return Display.dialogExchange( resource, total );
 					}
 					else {
-						if ( !confirm('訓練を開始してよろしいですか？') ) {
+						if ( !window.confirm('訓練を開始してよろしいですか？') ) {
 							return $.Deferred().reject();
 						}
 					}
@@ -4700,7 +4700,7 @@ toCamp: function() {
 		href = '/facility/to_camp.php?' + search + '&mode=build&type=223',
 		result;
 
-	result = confirm('この領地を陣に変更します。\nよろしいですか？');
+	result = window.confirm('この領地を陣に変更します。\nよろしいですか？');
 	if ( !result ) { return; }
 
 	//陣建設
@@ -4741,13 +4741,13 @@ createUnitNearby: function( data, brigade ) {
 
 //.. breakUp
 breakUp: function( data ) {
-	if ( !confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
+	if ( !window.confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
 
 	Deck.breakUpAll( data.castle )
 	.always(function( ol ) {
 		Util.getUnitStatus();
 		if ( ol && ol.close ) {
-			setTimeout( ol.close, 500 );
+			window.setTimeout( ol.close, 500 );
 		}
 	});
 },
@@ -4891,7 +4891,7 @@ function showLabel() {
 	$map.find('#imi_mousemap').mousemove( mapMouseMove )
 	.mouseleave(function() {
 		if ( timer != null ) {
-			clearTimeout( timer );
+			window.clearTimeout( timer );
 			timer = null;
 		}
 	});
@@ -5096,11 +5096,11 @@ function mapMouseMove( e ) {
 	$('#imi_label').hide();
 
 	if ( timer != null ) {
-		clearTimeout( timer );
+		window.clearTimeout( timer );
 		timer = null;
 	}
 
-	timer = setTimeout(function() {
+	timer = window.setTimeout(function() {
 		var offset = $this.offset(),
 			x = e.pageX - offset.left,
 			y = e.pageY - offset.top;
@@ -6356,7 +6356,7 @@ Deck.dialog = function( village, brigade, coord ) {
 			Deck.updateDeckInfo();
 		})
 		.always(function( ol ) {
-			if ( ol && ol.close ) { setTimeout( ol.close, 500 ); }
+			if ( ol && ol.close ) { window.setTimeout( ol.close, 500 ); }
 		});
 	})
 	.on('mouseenter', '.ig_deck_smallcardarea', function() {
@@ -8504,7 +8504,7 @@ contextmenu: function() {
 
 	if ( $units.has('.imc_wait').length > 0 ) {
 		menu['拠点部隊解散'] = function() {
-			if ( !confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
+			if ( !window.confirm('この拠点の部隊を解散させます。\nよろしいですか？') ) { return; }
 
 			Deck.breakUpAll( village.name )
 			.always(function( ol ) {
@@ -8537,7 +8537,7 @@ contextmenu: function() {
 				},
 				'セパレーター': $.contextMenu.separator,
 				'部隊解散': function() {
-					if ( !confirm( '[' + name + ']部隊を解散させます。\nよろしいですか？') ) { return; }
+					if ( !window.confirm( '[' + name + ']部隊を解散させます。\nよろしいですか？') ) { return; }
 
 					Deck.breakUp( ano, name )
 					.always(function( ol ) {
@@ -8799,7 +8799,7 @@ post: function( url, data ) {
 
 //.. move
 move: function( url ) {
-	setTimeout( function() { location.href = url; }, 1000 );
+	window.setTimeout( function() { location.href = url; }, 1000 );
 },
 
 //.. action
@@ -9553,7 +9553,7 @@ receive: function() {
 		return false;
 	}
 
-	result = confirm('選択したプレゼントを受け取りますか？');
+	result = window.confirm('選択したプレゼントを受け取りますか？');
 	if ( !result ) { return false; }
 
 	//オーバーレイ表示
@@ -10223,7 +10223,7 @@ training: function( name ) {
 				return Display.dialogExchange( resource, total );
 			}
 			else {
-				if ( !confirm('訓練を開始してよろしいですか？') ) {
+				if ( !window.confirm('訓練を開始してよろしいですか？') ) {
 					return $.Deferred().reject();
 				}
 			}
@@ -10786,7 +10786,7 @@ sendAll: function() {
 		ol, tasks;
 
 	if ( $list.length == 0 ) { return; }
-	if ( !confirm('部隊を全て出陣させます。\nよろしいですか？') ) { return; }
+	if ( !window.confirm('部隊を全て出陣させます。\nよろしいですか？') ) { return; }
 
 	//オーバーレイ表示
 	ol = Display.dialog();
@@ -11129,7 +11129,7 @@ analyzeRaid: function() {
 		audio.play();
 	}
 
-	var timer = setTimeout(function() { clearTimeout(timer); location.reload(); }, 20 * 1000);
+	var timer = window.setTimeout(function() { window.clearTimeout(timer); location.reload(); }, 20 * 1000);
 }
 
 });
@@ -12288,7 +12288,7 @@ layouter: function() {
 
 //. unregistAll
 unregistAll: function() {
-	if ( !confirm('全部隊を解散させます。\nよろしいですか？') ) { return; }
+	if ( !window.confirm('全部隊を解散させます。\nよろしいですか？') ) { return; }
 
 	Deck.breakUpAll()
 	.always(function( ol ) {
@@ -13067,7 +13067,7 @@ layouterMapInfo: function() {
 	.find('INPUT[name="imn_alliance"]').val( settings.alliance ).end();
 
 	$('#imi_cache_delete').click(function() {
-		if ( !confirm( '本領陥落データを全て削除します。\nよろしいですか？') ) { return; }
+		if ( !window.confirm( '本領陥落データを全て削除します。\nよろしいですか？') ) { return; }
 
 		MetaStorage('USER_FALL').clear();
 	});
@@ -13100,7 +13100,7 @@ layouterCoord: function() {
 			name = { 20: '新合戦場１', 21: '新合戦場２' }[ country ];
 		}
 
-		if ( !confirm( name + 'の登録座標を全て削除します。\nよろしいですか？') ) { return; }
+		if ( !window.confirm( name + 'の登録座標を全て削除します。\nよろしいですか？') ) { return; }
 
 		MetaStorage('COORD.' + country).clear();
 		$('#imi_coord_list').empty();
