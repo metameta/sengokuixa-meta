@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.3
+// @version        1.1.5.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5883,6 +5883,77 @@ breakUpAll: function( villageName ) {
 	});
 },
 
+//.. infomation
+infomation: function() {
+	var list = Deck.targetList(),
+		data = Deck.getPoolSoldiers(),
+		solnum = {}, maxsolnum = {}, count = 0, html;
+
+	for ( var i = 0; i < list.length; i++ ) {
+		let card = list[ i ];
+
+		if ( !solnum[ card.solType ] ) { solnum[ card.solType ] = 0; }
+		solnum[ card.solType ] += card.solNum;
+
+		if ( !maxsolnum[ card.solType ] ) { maxsolnum[ card.solType ] = 0; }
+		maxsolnum[ card.solType ] += card.maxSolNum;
+	}
+
+	html = '' +
+	'<table class="imc_table">' +
+		'<tr><th width="55">兵種</th>' +
+		'<th>総指揮数</th>' +
+		'<th>指揮兵数</th>' +
+		'<th>待機兵数</th>' +
+		'<th>不足兵数</th></tr>';
+
+	$.each( Soldier.typeKeys, function( type ) {
+		var name = Soldier.getNameByType( type ),
+			pool = data.pool[ type ] || 0,
+			sol  = solnum[ type ] || 0,
+			max  = maxsolnum[ type ] || 0,
+			shortage = max - pool - sol;
+
+		if ( pool == 0 && sol == 0 ) { return; }
+
+		shortage = ( shortage > 0 ) ? shortage : 0;
+		if ( max == 0 ) { max = sol = shortage = '-'; }
+
+		html += '<tr>' +
+			'<th>' + name + '</th>' +
+			'<td>' + max + '</td>' +
+			'<td>' + sol + '</td>' +
+			'<td>' + pool + '</td>' +
+			'<td>' + shortage + '</td>' +
+		'</tr>';
+
+		count++;
+	});
+
+	if ( maxsolnum['null'] ) {
+		html += '<tr>' +
+			'<th>未編成</th>' +
+			'<td>' + maxsolnum[null] + '</td>' +
+			'<td>-</td>' +
+			'<td>-</td>' +
+			'<td>-</td>' +
+		'</tr>';
+
+		count++;
+	}
+
+	html += '</table>';
+
+	Display.dialog({
+		title: 'デッキ情報',
+		width: 350, height: ( 30 + count * 23 ),
+		content: html,
+		buttons: {
+			'閉じる': function() { this.close(); }
+		}
+	});
+},
+
 //.. contextmenu
 contextmenu: function() {
 	var $this = $(this),
@@ -6136,6 +6207,7 @@ Deck.dialog = function( village, brigade, coord ) {
 		'<div id="ig_deck_smallcardarea_out" style="border: solid 1px #b8860b; border-bottom: none; height: 351px; padding: 4px; background-color: #000; overflow: auto;" />' +
 		'<div id="imi_deck_bottom" style="height: 22px; padding: 4px 3px 3px 3px; background-color: #000; border: solid 1px #b8860b; border-top: none;">' +
 			'<ul class="imc_command_selecter">' +
+				'<li class="imc_deck_info">デッキ情報</li>' +
 				'<label>読込済</label>' +
 				'<li data-brigade="1" class="imc_brigade imc_brigade_1 imc_off" />' +
 				'<li data-brigade="2" class="imc_brigade imc_brigade_2 imc_off" />' +
@@ -6442,6 +6514,7 @@ Deck.dialog = function( village, brigade, coord ) {
 			}
 		}
 	})
+	.on('click', '.imc_deck_info', Deck.infomation )
 	.on('click', '.imc_brigade', function() {
 		var $this = $(this),
 			brigade = $this.data('brigade');
