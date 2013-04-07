@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.2
+// @version        1.1.5.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2301,7 +2301,7 @@ dialogTraining: function() {
 		$html.find('.imc_result').trigger('update');
 	})
 	.on('change', '.imc_create_count', function() {
-		$(this).parent().find('.imc_input').trigger('change');
+		$(this).parent().find('.imc_input_val').trigger('change');
 	})
 	.on('update', '.imc_plan', function() {
 		var $this = $(this),
