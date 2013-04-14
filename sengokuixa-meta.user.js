@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.5
+// @version        1.1.5.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8477,12 +8477,16 @@ loadEnemy: function() {
 	});
 
 	for( var i = 0, len = list.length; i < len; i++ ) {
-		let base = list[ i ];
+		let base = list[ i ],
+			village;
 
 		if ( base.type == '領地' ) { continue; }
 
-		if ( !result[ base.ebase ] ) { result[ base.ebase ] = []; }
-		result[ base.ebase ].push([ base.arrival, '■ 敵 襲 ■' ]);
+		village = Util.getVillageByCoord( base.ex, base.ey, base.ec );
+		if ( !village ) { continue; }
+
+		if ( !result[ village.name ] ) { result[ village.name ] = []; }
+		result[ village.name ].push([ base.arrival, '■ 敵 襲 ■' ]);
 	}
 
 	return result;
