@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.5.6
+// @version        1.1.5.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2005,7 +2005,12 @@ dialogTraining: function() {
 
 	$tr = $('<tr><th width="150">訓練数 ／ 登録数</th></tr>');
 	$.each( facilities, function( key, elem ) {
-		$tr.append('<th width="150" colspan="3">' + elem.total + ' ／ ' + elem.count + '</th>');
+		if ( elem.count == 10 ) {
+			$tr.append('<th width="150" colspan="3">' + elem.total + ' ／ <span style="color: #c03;">' + elem.count + '</span></th>');
+		}
+		else {
+			$tr.append('<th width="150" colspan="3">' + elem.total + ' ／ ' + elem.count + '</th>');
+		}
 	});
 	$table.append( $tr );
 
