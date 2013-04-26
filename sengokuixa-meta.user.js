@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.0
+// @version        1.1.6.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2756,6 +2756,10 @@ style: '' +
 '.imc_inner_bar.imc_iron  { background-color: #646; }' +
 '.imc_inner_bar.imc_rice  { background-color: #662; }' +
 '.imc_bar_contents { margin: 2px 4px; display: inline-block; }' +
+
+'#status .imc_pulldown { position: absolute; left: 0px; top: 100%; margin-top: -1px; width: 70px; z-index: 120; background-color: #000; border: solid 1px #b8860b; display: none; }' +
+'#status SPAN:hover .imc_pulldown { display: block; }' +
+'#status .imc_pulldown_item { margin: 5px; height: 15px;}' +
 
 /* プルダウンメニュー用 z-index: 2000 */
 '#gnavi { height: 33px; }' +
@@ -9049,7 +9053,15 @@ changeStatusBar: function() {
 	html = '<li class="sep">' +
 		'<a href="/facility/unit_status.php?dmo=all">全部隊</a>' +
 		'<span>&nbsp;</span>' +
+		'<span style="position: relative;">' +
 		'<a href="/facility/set_unit_list.php?show_num=100">全編成</a>' +
+		'<ul class="imc_pulldown">' +
+		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=1">【第一組】</a></li>' +
+		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=2">【第二組】</a></li>' +
+		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=3">【第三組】</a></li>' +
+		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=4">【第四組】</a></li>' +
+		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=5">【未設定】</a></li>' +
+		'</ul></span>' +
 	'</li>';
 
 	//メニュー追加
