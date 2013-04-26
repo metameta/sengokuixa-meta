@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.1
+// @version        1.1.6.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -11620,7 +11620,8 @@ layouter: function() {
 
 	createMenu( $('.imc_all'), [
 		{ title: '全て', selecter: '.imc_all', batch: 0 },
-		{ title: '無し', selecter: '.imc_none', batch: 0 }
+		{ title: '無し', selecter: '.imc_none', batch: 0 },
+		{ title: 'Lv20', selecter: '.imc_lv20', batch: 0 }
 	]);
 
 	createMenu( $('.imc_yari'), [
@@ -11985,6 +11986,11 @@ analyze: function( deck, edit ) {
 		//兵士数
 		if ( card.solNum == card.maxSolNum ) {
 			$this.find( '#unit_cnt_text_' + idx ).css({ backgroundColor: '#fbb' });
+		}
+
+		//Lv
+		if ( card.lv == 20 ) {
+			$this.addClass('imc_lv20');
 		}
 
 		if ( data ) {
