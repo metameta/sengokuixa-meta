@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.2
+// @version        1.1.6.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -14303,11 +14303,17 @@ main: function() {
 //■ /union/union_levelup
 Page.registerAction( 'union', 'union_levelup', {
 
+//. style
+style: '' +
+'.imc_caution { width: 400px; margin: auto; padding: 5px; border: 3px solid #f00; border-radius: 5px; background-color: #fcc; font-size: 16px; }' +
+'',
+
 //. main
 main: function() {
 	$('INPUT:radio:enabled').first().attr('checked', true);
 
 	this.layouter();
+	this.checkCard();
 },
 
 //. layouter
@@ -14323,6 +14329,31 @@ layouter: function() {
 
 		$(this).find('INPUT').attr('checked', true);
 	});
+},
+
+//. checkCard
+checkCard: function() {
+	var cards = [], result, $div;
+
+	cards.push( new LargeCard( $('.ig_deck_subcardarea:last') ) );
+	$('.common_table1 DIV[id^="cardWindow_"]').each(function() {
+		cards.push( new LargeCard( this ) );
+	});
+
+	result = cards.some(function( card ) {
+		return ( card.rank >= 3 || card.rarity == '天' || card.rarity == '極' );
+	});
+
+	if ( !result ) { return; }
+
+	$div = $('<div class="imc_caution">素材に「天」「極」「ランク３以上」のカードが含まれています。<br/>続行しますか？　<button>続行する</button></div>');
+	$div.find('BUTTON').click(function() {
+		$('.imc_caution').remove();
+		$('.common_box3bottom').children('P').show();
+	});
+
+	$('.common_box3bottom').prepend( $div )
+	.children('P').hide();
 }
 
 });
