@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.3
+// @version        1.1.6.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -10925,7 +10925,7 @@ sendAll: function() {
 		ol.message('全出陣処理失敗').message('処理を中断します。');
 	})
 	.always(function() {
-		Page.move( '/facility/unit_status.php?dmo=all' );
+		Page.move( '/map.php' );
 	});
 
 	function sendData() {
