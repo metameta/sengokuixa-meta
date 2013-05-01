@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.5
+// @version        1.1.6.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -174,6 +174,9 @@ var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener
 });
 '1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
 	MetaStorage.registerStorageName( 'COORD.' + value );
+});
+'UNION_CARD'.split(' ').forEach(function( value ) {
+	MetaStorage.registerSessionName( value );
 });
 
 MetaStorage.change( 'UNIT_STATUS', function( event, storageEvent ) {
@@ -1225,6 +1228,20 @@ searchTradeCardNo: function( card_no ) {
 searchTradeSkill: function( name ) {
 	name = encodeURIComponent( name );
 	location.href = '/card/trade.php?t=skill&k=' + name + '&s=price&o=a';
+},
+
+//. unionCardParam
+unionCardParam: function( card ) {
+	return {
+		id: card.cardId,
+		name: card.name,
+		rarity: card.rarity,
+		rank: card.rank,
+		lv: card.lv,
+		rankup: card.canRankup(),
+		skilllvup: card.canSkillLvup(),
+		skilladd: card.canSkillAdd()
+	};
 },
 
 //. keyBindCallback
@@ -2562,6 +2579,108 @@ dialogRename: function( village ) {
 	});
 
 	$('#imi_village_name').focus();
+},
+
+//. panelUnionSlot
+panelUnionSlot: function( $panel ) {
+	var storage = MetaStorage('UNION_CARD'),
+		slot1 = storage.get('slot1'),
+		slot2 = storage.get('slot2'),
+		materials = storage.get('materials') || [];
+
+	$panel
+	.on('update', function() {
+		var $this = $(this),
+			html;
+
+		html = '' +
+		'<table class="imc_table" style="width: 225px;">' +
+		'<tr><th colspan="3">スロット１</th></tr>' +
+		'<tr>' +
+			'<td style="width: 14px;">' + slot1.rarity + '</td>' +
+			'<td style="width: 85px;">' + slot1.name + '</td>' +
+			'<td>★ ' + slot1.rank + '　Lv ' + slot1.lv + '</td>' +
+		'</tr>' +
+		'<tr><th colspan="3">スロット２</th></tr>' +
+		'<tr>' +
+			'<td>' + slot2.rarity + '</td>' +
+			'<td>' + slot2.name + '</td>' +
+			'<td>★ ' + slot2.rank + '　Lv ' + slot2.lv + '</td>' +
+		'</tr>' +
+		'<tr><th colspan="3">追加スロット</th></tr>';
+
+		materials.forEach(function( elem, idx ) {
+			if ( idx >= 5 ) {
+				html += '<tr data-id="' + elem.id + '" style="background-color: #fdc;">';
+			}
+			else {
+				html += '<tr data-id="' + elem.id + '">';
+			}
+
+			html += '' +
+			'<td>' + elem.rarity + '</td>' +
+			'<td>' + elem.name + '</td>' +
+			'<td style="padding: 2px 0px;"><button class="imc_slot2">スロット２</button><button class="imc_remove">解除</button></td>' +
+			'</tr>';
+		});
+
+		html += '<tr><td colspan="3">';
+		if ( slot1.rank < 5 && slot2.rank >= slot1.rank && slot1.lv == 20 && slot2.lv == 20 ) {
+			html += '<button class="imc_rankup">ランクアップ</button>';
+		}
+		if ( slot1.skilllvup ) {
+			html += '<button class="imc_skill_levelup">強化合成</button>';
+		}
+		if ( slot1.skilladd ) {
+			html += '<button class="imc_skill_add">追加合成</button>';
+		}
+		html += '</td></tr></table>';
+
+		$this.empty().append( html );
+	})
+	.on('click', '.imc_remove', function() {
+		var id;
+
+		id = $(this).closest('TR').data('id'),
+
+		materials = materials.filter(function( elem ) { return elem.id != id; });
+
+		storage.set('materials', materials);
+		$panel.trigger('update');
+
+		$('FORM + A').focus();
+	})
+	.on('click', '.imc_slot2', function() {
+		var id, card;
+
+		id = $(this).closest('TR').data('id'),
+		card = materials.filter(function( elem ) { return elem.id == id; })[ 0 ];
+
+		materials = materials.filter(function( elem ) { return elem.id != id; });
+		materials.push( slot2 );
+
+		slot2 = card;
+
+		storage.set('slot2', slot2);
+		storage.set('materials', materials);
+		$panel.trigger('update');
+
+		$('FORM + A').focus();
+	})
+	.one('click', '.imc_skill_levelup', function() {
+		var cid_list = materials.map(function( elem ) { return elem.id });
+
+		Card.skillLevelup( slot1.id, slot2.id, cid_list );
+	})
+	.one('click', '.imc_skill_add', function() {
+		Card.skillAdd( slot1.id, slot2.id );
+	})
+	.one('click', '.imc_rankup', function() {
+		var cid_list = materials.map(function( elem ) { return elem.id });
+
+		Card.rankup( slot1.id, slot2.id, cid_list );
+	})
+	.trigger('update');
 }
 
 });
@@ -6153,6 +6272,31 @@ contextmenu: function() {
 	if ( card.canUnion() && !( union_mode && selected ) ) {
 		submenu = {};
 
+		if ( card.canRankup() || card.canSkillLvup() || card.canSkillAdd() ) {
+			submenu['選択状態を保存しクジへ'] = function() {
+				var storage = MetaStorage('UNION_CARD'),
+					materials;
+
+				storage.set('slot1', Util.unionCardParam( card ) );
+				if ( added_card ) {
+					storage.set('slot2', Util.unionCardParam( added_card ) );
+				}
+				else {
+					storage.remove('slot2');
+				}
+				materials = material_cid.map(function( value ) {
+					var card = Deck.analyzedData[ value ];
+					return Util.unionCardParam( card );
+				});
+				storage.set('materials', materials);
+
+				location.href = '/senkuji/senkuji.php';
+			};
+		}
+		else {
+			submenu['選択状態を保存しクジへ'] = $.contextMenu.nothing;
+		}
+
 		if ( card.canRankup() ) {
 			//素材カードが指定されている場合、ランクとレベルチェック
 			if ( added_card && ( added_card.lv < 20 || added_card.rank < card.rank ) ) {
@@ -7233,8 +7377,9 @@ unionLevelup: function( type, card_id, added_cid, material ) {
 		data.base_cid = card_id;
 		data.added_cid = added_cid;
 
-		if ( $.isArray( material ) && material.length > 0 && material.length <= 5 ) {
+		if ( $.isArray( material ) && material.length > 0 ) {
 			//追加素材ガードが指定されている場合はセット
+			if ( material.length > 5 ) { material.length = 5; }
 			data['material_cid[]'] = material;
 		}
 
@@ -12031,6 +12176,30 @@ contextmenu: function() {
 
 	//合成可能な場合のメニュー
 	if ( card.canUnion() && !selected ) {
+		if ( card.canRankup() || card.canSkillLvup() || card.canSkillAdd() ) {
+			menu['選択状態を保存しクジへ'] = function() {
+				var storage = MetaStorage('UNION_CARD'),
+					materials;
+
+				storage.set('slot1', Util.unionCardParam( card ) );
+				if ( added_card ) {
+					storage.set('slot2', Util.unionCardParam( added_card) );
+				}
+				else {
+					storage.remove('slot2');
+				}
+				materials = $.map( $('TR.imc_selected'), function( value ) {
+					if ( $(value).hasClass('imc_added') ) { return null; }
+
+					var card = $(value).data();
+					return Util.unionCardParam( card );
+				});
+				storage.set('materials', materials);
+
+				location.href = '/senkuji/senkuji.php';
+			};
+			separator = true;
+		}
 		if ( card.canRankup() ) {
 			//素材カードが指定されている場合、ランクとレベルチェック
 			if ( added_card && ( added_card.lv < 20 || added_card.rank < card.rank ) ) {
@@ -14314,6 +14483,7 @@ main: function() {
 
 	this.layouter();
 	this.checkCard();
+	this.slot();
 },
 
 //. layouter
@@ -14354,6 +14524,31 @@ checkCard: function() {
 
 	$('.common_box3bottom').prepend( $div )
 	.children('P').hide();
+},
+
+//. slot
+slot: function() {
+	var storage = MetaStorage('UNION_CARD'),
+		$panel, card, materials;
+
+	card = new LargeCard( $('.ig_deck_subcardarea:first') );
+	storage.set('slot1', Util.unionCardParam( card ) );
+	card = new LargeCard( $('.ig_deck_subcardarea:last') );
+	storage.set('slot2', Util.unionCardParam( card ) );
+
+	materials = $('.common_table1 DIV[id^="cardWindow_"]').map(function() {
+		var card = new LargeCard( this );
+		return Util.unionCardParam( card );
+	}).get();
+
+	if ( $('#select_skill_form INPUT[name="union_type"]').val() != '2' ) {
+		storage.set('materials', materials);
+	}
+
+	$panel = $('<div>■仮想スロット表示■</div>')
+	.css({ width: '225px', margin: '0px auto', textAlign: 'center' })
+	.one('click', function() { Display.panelUnionSlot( $panel ); })
+	.prependTo( $('.common_box3bottom') );
 }
 
 });
@@ -14376,17 +14571,45 @@ Page.registerAction( 'union', 'result', {
 
 //. main
 main: function() {
-	var search = location.search,
+	var storage = MetaStorage('UNION_CARD'),
+		search = location.search,
 		cid = search.match(/cid=(\d+)/)[ 1 ],
-		type = search.match(/ut=(\d)/)[ 1 ];
+		type = search.match(/ut=(\d)/)[ 1 ],
+		card = new LargeCard( $('.cardslot_table') );
 
+	storage.set('slot1', Util.unionCardParam( card ) );
+	storage.remove('slot2');
+	storage.remove('materials');
+
+	this.layouter();
 	if ( type == '4' ) {
-		this.layouter( cid );
+		this.rankup( cid );
 	}
 },
 
 //. layouter
-layouter: function( cid ) {
+layouter: function() {
+	var $img;
+
+	$img = $('<IMG/>')
+	.attr('src', Env.externalFilePath + '/img/lot/lot_icon/img_lot_white_icon.jpg')
+	.css({ marginLeft: '10px', cursor: 'pointer' })
+	.click(function() {
+		var result;
+
+		result = window.confirm('戦国くじ【白】を引いてよろしいですか？');
+		if ( !result ) { return; }
+
+		Page.form('/senkuji/senkuji.php', {
+			send: 'send',
+			got_type: 0
+		});
+	});
+
+	$('FORM P').append( $img );
+},
+
+rankup: function( cid ) {
 	if ( $('IMG[src$="hd_success.jpg"]').length == 0 ) { return; }
 
 	var html = '<span class="rankup_btn"><a href="/card/lead_info.php?cid=' + cid + '&p=1&ano=0&dmo=nomal">指揮力強化</a></span>';
@@ -14421,7 +14644,38 @@ Page.registerAction( 'senkuji', 'senkuji_result', {
 
 //. main
 main: function() {
+	this.union();
 	$('FORM + A').focus();
+},
+
+//. union
+union: function() {
+	var storage = MetaStorage('UNION_CARD'),
+		slot1 = storage.get('slot1'),
+		slot2 = storage.get('slot2'),
+		materials = storage.get('materials') || [],
+		card = new LargeCard( $('.cardstatus') ),
+		$panel;
+
+	//ベースカード情報がない場合
+	if ( !slot1 ) { return; }
+
+	if ( !slot2 ) {
+		//スロット２が空
+		slot2 = Util.unionCardParam( card );
+		storage.set('slot2', slot2 );
+	}
+	else if ( slot2.id != card.cardId ) {
+		if ( materials.every(function( elem ) { return elem.id != card.cardId; }) ) {
+			materials.push( Util.unionCardParam( card ) );
+			storage.set('materials', materials);
+		}
+	}
+
+	$panel = $('.cardmachine.result .center')
+	.css({ marginLeft: '-27px', padding: '10px 0px' });
+
+	Display.panelUnionSlot( $panel );
 }
 
 });
