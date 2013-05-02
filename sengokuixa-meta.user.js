@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.6
+// @version        1.1.6.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -13794,7 +13794,7 @@ layouterKagemusha: function() {
 		}
 	);
 
-	$('#imi_tab_container').append('<li target="imi_kagemusha">影武者</li>');
+	$('#imi_tab_container').append('<li target="imi_kagemusha" style="color: #00f; font-weight: bold;">影武者</li>');
 	$('#imi_container').append( $div );
 },
 
