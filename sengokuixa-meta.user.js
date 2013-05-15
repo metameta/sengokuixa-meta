@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.8
+// @version        1.1.6.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2586,7 +2586,8 @@ panelUnionSlot: function( $panel ) {
 	var storage = MetaStorage('UNION_CARD'),
 		slot1 = storage.get('slot1'),
 		slot2 = storage.get('slot2'),
-		materials = storage.get('materials') || [];
+		materials = storage.get('materials') || [],
+		cssClass = { '天': 'imc_ten', '極': 'imc_goku', '特': 'imc_toku', '上': 'imc_jyou', '序': 'imc_jyo', '祝': 'imc_iwai', '雅': 'imc_miyabi' };
 
 	$panel
 	.on('update', function() {
@@ -2597,13 +2598,13 @@ panelUnionSlot: function( $panel ) {
 		'<table class="imc_table" style="width: 225px;">' +
 		'<tr><th colspan="3">スロット１</th></tr>' +
 		'<tr>' +
-			'<td style="width: 14px;">' + slot1.rarity + '</td>' +
+			'<td style="width: 14px;" class="' + cssClass[ slot1.rarity ] + '">' + slot1.rarity + '</td>' +
 			'<td style="width: 85px;">' + slot1.name + '</td>' +
 			'<td>★ ' + slot1.rank + '　Lv ' + slot1.lv + '</td>' +
 		'</tr>' +
 		'<tr><th colspan="3">スロット２</th></tr>' +
 		'<tr>' +
-			'<td>' + slot2.rarity + '</td>' +
+			'<td class="' + cssClass[ slot2.rarity ] + '">' + slot2.rarity + '</td>' +
 			'<td>' + slot2.name + '</td>' +
 			'<td>★ ' + slot2.rank + '　Lv ' + slot2.lv + '</td>' +
 		'</tr>' +
@@ -2618,7 +2619,7 @@ panelUnionSlot: function( $panel ) {
 			}
 
 			html += '' +
-			'<td>' + elem.rarity + '</td>' +
+			'<td class="' + cssClass[ elem.rarity ] + '">' + elem.rarity + '</td>' +
 			'<td>' + elem.name + '</td>' +
 			'<td style="padding: 2px 0px;"><button class="imc_slot2">スロット２</button><button class="imc_remove">解除</button></td>' +
 			'</tr>';
@@ -2912,6 +2913,15 @@ style: '' +
 '.lv_d, .graylv_d { background-position: -147px 0px; width: 19px; }' +
 '.lv_e, .graylv_e { background-position: -168px 0px; width: 20px; }' +
 '.lv_f, .graylv_f { background-position: -190px 0px; width: 17px; }' +
+
+/* レアリティ */
+'.imc_ten  { color: #999; background-color: #fff; font-weight: bold; }' +
+'.imc_goku { color: #fff; background-color: #666; font-weight: bold; }' +
+'.imc_toku { color: #fff; background-color: #c00; font-weight: bold; }' +
+'.imc_jyou { color: #fff; background-color: #cc0; font-weight: bold; }' +
+'.imc_jyo  { color: #fff; background-color: #06c; font-weight: bold; }' +
+'.imc_iwai,' +
+'.imc_miyabi { color: #fff; background-color: #f90; font-weight: bold; }' +
 
 /* カーソル行用 */
 '.imc_current { background-color: #f9dea1 !important; }' +
@@ -14537,8 +14547,10 @@ slot: function() {
 	card = new LargeCard( $('.ig_deck_subcardarea:last') );
 	storage.set('slot2', Util.unionCardParam( card ) );
 
-	materials = $('.common_table1 DIV[id^="cardWindow_"]').map(function() {
-		var card = new LargeCard( this );
+	materials = $('.common_table1 A').map(function() {
+		var id = $(this).attr('href').match(/cardWindow_\d+/)[ 0 ],
+			card = new LargeCard( $('#' + id) );
+
 		return Util.unionCardParam( card );
 	}).get();
 
