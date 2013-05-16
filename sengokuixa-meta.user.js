@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.1.6.9
+// @version        1.2.0.0
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1394,7 +1394,7 @@ tb_show: function( j, b, h ) {
 	//仮想の兵数セット
 	card.solNum = card.maxSolNum;
 
-	type = '長槍足軽 武士 国人衆 長弓兵 弓騎馬 海賊衆 精鋭騎馬 赤備え 母衣衆 騎馬鉄砲 雑賀衆 鉄砲足軽'.split(' ');
+	type = '長槍足軽 武士 長弓兵 弓騎馬 雑賀衆 精鋭騎馬 赤備え 騎馬鉄砲 焙烙火矢 鉄砲足軽'.split(' ');
 	$.each( type, function( idx, key ) {
 		//仮想の兵種セット
 		card.solName = key;
@@ -1409,8 +1409,8 @@ tb_show: function( j, b, h ) {
 	})
 
 	html = '<table class="imc_table td_right" style="width: 483px; margin: 0px;">' +
-		'<tr><th width="14%">兵種</th><th width="12%">攻撃力</th><th width="12%">防御力</th><th width="12%">防御力<BR/>/ Cost</th>' +
-		'<th width="14%">兵種</th><th width="12%">攻撃力</th><th width="12%">防御力</th><th width="12%">防御力<BR/>/ Cost</th></tr>';
+		'<tr><th width="14%">兵種</th><th width="12%">攻撃力</th><th width="12%">防御力</th><th width="12%">防 / C</th>' +
+		'<th width="14%">兵種</th><th width="12%">攻撃力</th><th width="12%">防御力</th><th width="12%">防 / C</th></tr>';
 
 	for ( var i = 0, len = Math.ceil( list.length / 2 ); i < len; i++ ) {
 		var left = list[ i ],
@@ -2689,37 +2689,77 @@ panelUnionSlot: function( $panel ) {
 //■ Soldier
 var Soldier = (function() {
 
-var data = {
-	//槍
-	'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
-	'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
-	'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
-	'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
-	//弓
-	'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
-	'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
-	'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
-	'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
-	//馬
-	'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
-	'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
-	'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
-	'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
-	//器
-	'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-	'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-	'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
-	'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
-	'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
-	'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
-	//NPC用
-	'浪人':     { defend:  12, command: '槍' },
-	'抜け忍':   { defend:  12, command: '弓' },
-	'野盗':     { defend:  12, command: '馬' },
-	'農民':     { defend:   5, command: '他' },
-	'鬼':       { defend:  88, command: '他' },
-	'天狗':     { defend: 112, command: '他' }
-};
+var data;
+
+if ( Env.chapter <= 5 ) {
+	//５章以前
+	data = {
+		//槍
+		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
+		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
+		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
+		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
+		//弓
+		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
+		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
+		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
+		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
+		//馬
+		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
+		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
+		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
+		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
+		//器
+		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
+		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
+		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
+		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
+		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器']},
+		//NPC用
+		'浪人':     { defend:  12, command: '槍' },
+		'抜け忍':   { defend:  12, command: '弓' },
+		'野盗':     { defend:  12, command: '馬' },
+		'農民':     { defend:   5, command: '他' },
+		'鬼':       { defend:  88, command: '他' },
+		'天狗':     { defend: 112, command: '他' }
+	};
+}
+else {
+	data = {
+		//槍
+		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training:  90, dou:   0, require: ['槍', '槍']},
+		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 105, dou:  10, require: ['槍', '槍']},
+		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  3, command: '槍', skillType: '槍', training: 120, dou: 200, require: ['槍', '弓']},
+		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 17, speed: 19, destroy:  4, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
+		//弓
+		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training:  95, dou:   0, require: ['弓', '弓']},
+		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 110, dou:  10, require: ['弓', '弓']},
+		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 125, dou: 200, require: ['弓', '馬']},
+		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
+		//馬
+		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 100, dou:   0, require: ['馬', '馬']},
+		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 115, dou:  10, require: ['馬', '馬']},
+		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 130, dou: 200, require: ['馬', '槍']},
+		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
+		//器
+		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
+		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
+		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 270, dou: 300, require: ['弓', '器']},
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 180, dou:  10, require: ['槍', '器']},
+		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 250, dou: 300, require: ['馬', '器']},
+		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
+		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器']},
+		//NPC用
+		'浪人':     { defend:  12, command: '槍' },
+		'抜け忍':   { defend:  12, command: '弓' },
+		'野盗':     { defend:  12, command: '馬' },
+		'農民':     { defend:   5, command: '他' },
+		'鬼':       { defend:  88, command: '他' },
+		'天狗':     { defend: 112, command: '他' }
+	};
+}
 
 var rankRate = {
 	'SSS': 120,
@@ -3153,7 +3193,7 @@ fortresses: (function() {
 		[108,108], [132, 84], [108,132], [132,108], [132,132]
 	]];
 
-	return [ [], data[0], data[0], data[0], data[0], data[1] ][ Env.chapter ] || [];
+	return [ [], data[0], data[0], data[0], data[0], data[1], data[1] ][ Env.chapter ] || [];
 })(),
 
 //. countries
@@ -3170,6 +3210,8 @@ countries: (function() {
 		['dummy', '織田家', '足利家', '武田家', '上杉家', '徳川家', '毛利家', '浅井家', '北条家', '長宗我部家', '島津家', '大友家', '最上家'],
 		//第５章
 		['dummy', '織田家', '足利家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
+		//第６章
+		['dummy', '織田家', '黒田家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '今川家', '長宗我部家', '島津家', '豊臣家', '石田家'],
 	][ Env.chapter ] || [];
 })(),
 
@@ -3332,7 +3374,7 @@ getNpcPower: function() {
 		'8-33342': { '鬼': 905, '天狗': 455 }
 	}];
 
-	data = [ {}, data[0], data[0], data[1], data[1], data[2] ][ Env.chapter ] || {};
+	data = [ {}, data[0], data[0], data[1], data[1], data[2], data[2] ][ Env.chapter ] || {};
 
 	if ( Env.chapter <= 4 ) {
 		Data.npcPower = data;
@@ -3845,6 +3887,7 @@ analyzeImg: function( $img_list ) {
 
 		switch( png[0] ) {
 			case 'fall'      : type = '陥落'; png.shift(); break;
+			case 'castle'    : type = '城'; break;
 			case 'capital'   : type = '城'; break;
 			case 'fort'      : type = '砦'; break;
 			case 'village'   : type = '村'; break;
@@ -3859,6 +3902,7 @@ analyzeImg: function( $img_list ) {
 			scale = png[2].toUpperCase();
 		}
 
+		if ( type == '城' && Env.chapter >= 6 ) { png[1] = png[2]; }
 		switch( png[1] ) {
 			case 'b' : discriminant = '自分'; break;
 			case 'ga': discriminant = '同盟'; break;
@@ -5537,8 +5581,9 @@ filterMenu: function( container, up ) {
 			{ title: '母衣衆',   selecter: [ 'soltype', [ 332 ] ] }
 		],
 		[
-			{ title: '兵器',     selecter: [ 'soltype', [ 333, 334, 335, 336, 337, 338 ] ] },
+			{ title: '兵器',     selecter: [ 'soltype', [ 333, 334, 335, 336, 337, 338, 345 ] ] },
 			{ title: '騎馬鉄砲', selecter: [ 'soltype', [ 337 ] ] },
+			{ title: '焙烙火矢', selecter: [ 'soltype', [ 345 ] ] },
 			{ title: '雑賀衆',   selecter: [ 'soltype', [ 338 ] ] },
 			{ title: '鉄砲足軽', selecter: [ 'soltype', [ 336 ] ] },
 			{ title: '大筒兵',   selecter: [ 'soltype', [ 335 ] ] },
@@ -7742,8 +7787,11 @@ getRecoveryTime: function() {
 	if ( this.job == '剣' ) {
 		time = ( this.rank * Data.hpRecovery['剣'][ 20 ] + Data.hpRecovery['剣'][ this.lv ] ) * 60;
 	}
+	else if ( this.rank >= 1 ) {
+		time = 6 * Data.hpRecovery[ this.rarity ];
+	}
 	else {
-		time = ( 1 + this.lv / 4 + this.rank * 6 ) * Data.hpRecovery[ this.rarity ];
+		time = ( 1 + this.lv / 4 ) * Data.hpRecovery[ this.rarity ];
 	}
 
 	return Math.ceil( time * ( this.maxHp - this.hp ) / 100 );
@@ -9533,10 +9581,17 @@ main: function() {
 
 serverSelected: function() {
 	var $this = $(this),
-		world = ( $this.attr('href').match(/wd=(.\d{3})/) || [,''] )[1],
-		season = ( $this.find('IMG:last').attr('src').match(/flag_.(\d{2})/) || [,''] )[1],
-		chapter = ( $this.children('DIV').attr('class').match(/(?:main|sub)server_.(\d)/) || [,''] )[1],
-		time = Util.getLocalTime();
+		time = Util.getLocalTime(),
+		$server, world, season, chapter;
+
+	$server = $this;
+	if ( $this.children().length == 0 ) {
+		$server = $this.closest('.mainserver_world_box');
+	}
+
+	world = ( $this.attr('href').match(/wd=(.\d{3})/) || [,''] )[ 1 ];
+	season = ( $server.find('IMG:last').attr('src').match(/flag_.(\d{2})/) || [,''] )[ 1 ];
+	chapter = ( $server.children('DIV').attr('class').match(/(?:main|sub)server_.(\d)/) || [,''] )[ 1 ];
 
 	if ( world ) {
 		document.cookie = world + '_st=' + time + '; domain=.sengokuixa.jp; path=/;';
@@ -10094,7 +10149,11 @@ contextmenu: function() {
 			result.href = '/facility/' + $useCp.attr('href').replace('&mode=cp', '');
 			result.buildid = ( result.href.match(/\?id=(\d+)&/) || [] )[ 1 ];
 
-			if ( result.buildid && lv >= 16 && $.inArray( text, [ '木工所', '機織り場', 'たたら場', '水田' ] ) != -1 ) { return; }
+			//５章まではLv16から、６章からはLv15から上位施設使用可
+			if ( result.buildid && ( ( Env.chapter <= 5 && lv >= 16 ) || ( Env.chapter >= 6 && lv >= 15 ) )
+					&& $.inArray( text, [ '木工所', '機織り場', 'たたら場', '水田' ] ) != -1 ) {
+				return;
+			}
 
 			result.execflg = $this.find('.ig_tilesection_btnarea_left > A').length;
 			result.delflg = $this.find('.ig_tilesection_btnarea_left:contains("削除中")').length;
@@ -10776,7 +10835,9 @@ Page.registerAction( 'facility', 'select_facility', {
 main: function() {
 	var lv = ( $('#lordLV').text().match(/LV.(\d+)/) || [,0] )[1].toInt();
 
-	if ( lv < 16 ) { return; }
+	//５章まではLv16から、６章からはLv15から上位施設使用可
+	if ( Env.chapter <= 5 && lv < 16 ) { return; }
+	if ( Env.chapter >= 6 && lv < 15 ) { return; }
 
 	var $top = $('.ig_tilesection_innertop, .ig_tilesection_innertop2'),
 		$mid = $('.ig_tilesection_innermid, .ig_tilesection_innermid2'),
@@ -10807,12 +10868,6 @@ main: function() {
 
 //■ /facility/dungeon
 Page.registerAction( 'facility', 'dungeon', {
-
-//. style
-style: '' +
-'.table_waigintunit TH ~ TD { min-width: 110px; }' +
-'',
-
 
 //. main
 main: function() {
@@ -10855,23 +10910,28 @@ layouter: function() {
 showSoldier: function() {
 	$('.table_waigintunit').each(function() {
 		var $this = $(this),
-			$tr = $this.find('TR'),
-			$tr2 = $tr.eq( 2 ),
-			$tr3 = $tr.eq( 3 );
+			$tr = $('<tr><td></td><th class="subhead"><img src="' + Env.externalFilePath + '/img/unit_list/bt_th_txt_01.png' + '"></th></tr>');
 
-		$tr2.find('TH').css({ fontSize: '14px' }).text('HP／討伐');
-		$tr3.find('TH').css({ fontSize: '14px' }).text('指揮兵');
+		$this.find('.radio_frame').attr('rowspan', 4);
+		$this.append( $tr );
 
-		$this.find('A.thickbox').each(function( idx ) {
-			var href = $(this).attr('href') || '',
+		$this.find('.busho_name').each(function() {
+			var $a = $(this).find('A'),
+				$td1, $td2;
+
+			$td1 = $('<td/>').addClass('param_left_value').text('-'),
+			$td2 = $('<td/>').addClass('param_right_value').text('-');
+			$tr.append( $td1, $td2 );
+
+			if ( $a.length == 0 ) { return; }
+
+			var href = $a.attr('href') || '',
 				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
 				$card = $( '#' + id ),
-				card = new LargeCard( $card ),
-				hp = $tr2.find('TD').eq( idx ).text().trim(),
-				gage = $tr3.find('TD').eq( idx ).text().trim();
+				card = new LargeCard( $card );
 
-			$tr2.find('TD').eq( idx ).text( hp + ' / ' + gage );
-			$tr3.find('TD').eq( idx ).text( card.solName + ' (' + card.solNum + ')' );
+			$td1.text( card.solName );
+			$td2.text( card.solNum );
 		});
 	});
 }
@@ -10889,8 +10949,8 @@ style: '' +
 '.ig_decksection_bottom { height: 15px; }' +
 
 /* 待機武将一覧 */
-'.table_waigintunit { width: 620px; margin: 10px auto; }' +
-'.table_waigintunit TH ~ TD { min-width: 110px; }' +
+'.table_waigintunit { width: 700px; margin: 10px auto; }' +
+'.table_waigintunit .busho_name { min-width: 110px; }' +
 '.table_waigintunit TD.imc_command { width: 50px; }' +
 '.imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }' +
 '.imc_command_button.imc_backup:hover  { background-color: #09c; color: #fff; }' +
@@ -10900,7 +10960,7 @@ style: '' +
 '.imc_command_button.imc_meeting:hover { background-color: #6cf; }' +
 
 /* 出陣確認画面 */
-'TH.imc_speed { font-size: 12px; }' +
+'TH.imc_speed { font-size: 12px; border: solid 1px #808080; }' +
 '.imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }' +
 '.imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }' +
 '.imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }' +
@@ -10937,8 +10997,6 @@ main: function() {
 layouter: function() {
 	//部隊がない場合、全出陣は表示しない
 	if ( $('#input_troop :radio[name="unit_select"]').length == 0 ) { return; }
-
-	$('#ig_gofightboxtitle P.mb10').addClass('imc_move_type');
 
 	//ボタンエリアを上部に複製、非表示項目は削除する
 	$('.btnarea').clone().prependTo('#input_troop').find('INPUT:hidden, SPAN, BR').remove();
@@ -10982,20 +11040,20 @@ showSpeed: function() {
 		time = Math.floor( 3600 * dist / speed );
 
 		if ( x == '' || y == '' ) {
-			html = '<th colspan="2" class="imc_speed">目的地不明</th>';
+			html = '<th colspan="4" class="imc_speed">目的地不明</th>';
 		}
 		else {
-			html = '<th colspan="2" class="imc_speed">速度：' + speed.toRound( 1 ) + '　時間：' + time.toFormatTime() + '</th>';
+			html = '<th colspan="4" class="imc_speed">速度：' + speed.toRound( 1 ) + '　時間：' + time.toFormatTime() + '</th>';
 		}
 
-		$this.find('TH').first().attr('colspan', 4).after( html );
+		$this.find('TH').first().attr('colspan', 6).after( html );
 	});
 },
 
 //. commandButton
 commandButton: function() {
 	//行動タイプ
-	var commands = $('.imc_move_type INPUT').map(function() {
+	var commands = $('.select_act INPUT').map(function() {
 		var type = $(this).val();
 
 		switch ( type ) {
@@ -11805,8 +11863,9 @@ layouter: function() {
 	]);
 
 	createMenu( $('.imc_heiki'), [
-		{ title: '兵器', selecter: '.heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6', batch: 0 },
+		{ title: '兵器', selecter: '.heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6, .heiki7', batch: 0 },
 		{ title: '騎馬鉄砲', selecter: '.heiki5', batch: 337 },
+		{ title: '焙烙火矢', selecter: '.heiki7', batch: 345 },
 		{ title: '雑賀衆', selecter: '.heiki6', batch: 338 },
 		{ title: '鉄砲足軽', selecter: '.heiki4', batch: 336 },
 		{ title: '大筒兵', selecter: '.heiki3', batch: 335 },
