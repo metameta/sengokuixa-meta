@@ -1016,8 +1016,11 @@ getResource: function() {
 
 //. getUranai
 getUranai: function() {
-	return $('#status .rightF IMG')
-	.map(function() {
+	var $img = $('#status .rightF IMG');
+
+	if ( $img.length == 0 ) { return [ 1, 1, 1 ]; }
+
+	return $img.map(function() {
 		return ( 100 - $(this).attr('src').match(/_(\d)s/)[ 1 ].toInt() ) / 100;
 	});
 },
@@ -3889,6 +3892,7 @@ analyzeImg: function( $img_list ) {
 			case 'fall'      : type = '陥落'; png.shift(); break;
 			case 'castle'    : type = '城'; break;
 			case 'capital'   : type = '城'; break;
+			case 'branch'    : type = '支城'; break;
 			case 'fort'      : type = '砦'; break;
 			case 'village'   : type = '村'; break;
 			case 'stronghold': type = '出城'; break;
@@ -11028,7 +11032,7 @@ showSpeed: function() {
 		var $this = $(this),
 			cards = [], speed, time, html;
 
-		$this.find('A.thickbox').each(function() {
+		$this.find('.busho_name A.thickbox').each(function() {
 			var href = $(this).attr('href') || '',
 				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
 				$card = $( '#' + id );
@@ -11095,7 +11099,7 @@ commandButton: function() {
 			type = $this.data('type');
 
 		$table.find('INPUt:radio').attr('checked', true);
-		$('.imc_move_type').find('INPUT[value=' + type + ']').attr('checked', 'true');
+		$('.select_act').find('INPUT[value=' + type + ']').attr('checked', 'true');
 		$('.btnarea A:first').click();
 	});
 },
@@ -13362,7 +13366,7 @@ layouterMapInfo: function() {
 		'<th>種別</th>' +
 		'<td style="text-align: left">' +
 			'<label><input type="checkbox" name="imn_type" value="|城|" />本領</label>' +
-			'<label><input type="checkbox" name="imn_type" value="|砦|村|" />所領</label>' +
+			'<label><input type="checkbox" name="imn_type" value="|砦|村|支城|" />所領</label>' +
 			'<label><input type="checkbox" name="imn_type" value="|出城|" />出城</label>' +
 			'<label><input type="checkbox" name="imn_type" value="|陣|" />陣</label>' +
 			'<label><input type="checkbox" name="imn_type" value="|陥落|" />陥落</label>' +
@@ -14019,7 +14023,7 @@ style: '' +
 '.ig_battle_pagelist UL { padding: 0px; margin: 0px; }' +
 '#imi_list { width: 668px; height: 210px; margin-bottom: 15px; overflow-y: scroll; }' +
 '#imi_list .imc_selected { background-color: #f9dea1; }' +
-'#imi_war_detail { width: 668px; height: 480px; overflow: auto; }' +
+'#imi_war_detail { width: 668px; height: 550px; overflow: auto; }' +
 'TABLE.ig_battle_table { position: relative; }' +
 'TABLE.ig_battle_table TD { height: 18px; padding: 2px 8px; line-height: 18px; }' +
 'TABLE.ig_battle_table TD A { line-height: 18px; }' +
