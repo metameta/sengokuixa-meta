@@ -2983,9 +2983,9 @@ style: '' +
 '.imc_countdown .imc_countdown_display { font-weight: bold; padding: 0px 1px; }' +
 '.imc_countdown.imc_countdown_alert .imc_countdown_display { color: #c03; }' +
 /* タイムアウト */
-( ( Env.chapter >= 5 ) ?
-'#header #lordNameBox #lordSiteArea { height: 19px; width: 240px; margin: 4px 2px 0px 0px; padding: 0px 0px 0px 3px; line-height: 19px; }' :
-'#header #lordNameBox #lordSiteArea { height: 19px; margin-top: 5px; padding-top: 0px; line-height: 19px; }' ) +
+( ( Env.chapter < 5 ) ?
+'#header #lordNameBox #lordSiteArea { height: 19px; margin-top: 5px; padding-top: 0px; line-height: 19px; }' :
+'#header #lordNameBox #lordSiteArea { height: 19px; width: 240px; margin: 4px 2px 0px 0px; padding: 0px 0px 0px 3px; line-height: 19px; }' ) +
 '#lordSiteArea.imc_countdown { background-color: #15b; }' +
 '#lordSiteArea.imc_countdown_alert { background-color: #c03; }' +
 '#lordSiteArea.imc_countdown_alert .imc_countdown_display { color: #fff; }' +
@@ -3331,12 +3331,12 @@ getNpcPower: function() {
 		'8-33310': [124800, 124800, 124800, 124800]
 	},
 	{
-		//５章
+		//５章、６章
 		//★１
-		'1-10000': [245, 185, 430, 370],
+		'1-10000': [245, 185, 155, 203],
 		'1-01000': [155, 245, 185, 173],
 		//★２
-		'2-00201': [370, 550, 155, 203],
+		'2-00201': [370, 550, 430, 370],
 		'2-11020': [520, 520, 520, 448],
 		//★３
 		'3-11101': [ 735, 2265, 1245, 1041],
@@ -3384,6 +3384,7 @@ getNpcPower: function() {
 		return data;
 	}
 
+	//５章以降は期によって変動
 	var soldata = Soldier();
 	var paneldata = {};
 
@@ -3408,6 +3409,9 @@ getNpcPower: function() {
 			else if ( 7 <= rank && rank <= 8 ) {
 				mod = 1 + ( Env.season - 1 ) / 10;
 			}
+
+			//最大補正1.4倍のような気がする
+			if ( mod > 1.4 ) { mod = 1.4; }
 
 			solnum = Math.floor( solnum * mod / 5 ) * 5;
 			command = ( command == '他' ) ? '器' : command;
@@ -5050,7 +5054,7 @@ coordInfo: function( type, data ) {
 var CounteryMap = (function() {
 
 var options = {
-		size: ( Env.chapter >= 5 ) ? 150 : 180,
+		size: ( Env.chapter < 5 ) ? 180 : 150,
 		pxsize: 1,
 		pointsize: 3,
 		fortresssize: 1,
@@ -5587,9 +5591,9 @@ filterMenu: function( container, up ) {
 		[
 			{ title: '兵器',     selecter: [ 'soltype', [ 333, 334, 335, 336, 337, 338, 345 ] ] },
 			{ title: '騎馬鉄砲', selecter: [ 'soltype', [ 337 ] ] },
+			{ title: '鉄砲足軽', selecter: [ 'soltype', [ 336 ] ] },
 			{ title: '焙烙火矢', selecter: [ 'soltype', [ 345 ] ] },
 			{ title: '雑賀衆',   selecter: [ 'soltype', [ 338 ] ] },
-			{ title: '鉄砲足軽', selecter: [ 'soltype', [ 336 ] ] },
 			{ title: '大筒兵',   selecter: [ 'soltype', [ 335 ] ] },
 			{ title: '攻城櫓',   selecter: [ 'soltype', [ 334 ] ] },
 			{ title: '破城鎚',   selecter: [ 'soltype', [ 333 ] ] }
@@ -11869,9 +11873,9 @@ layouter: function() {
 	createMenu( $('.imc_heiki'), [
 		{ title: '兵器', selecter: '.heiki1, .heiki2, .heiki3, .heiki4, .heiki5, .heiki6, .heiki7', batch: 0 },
 		{ title: '騎馬鉄砲', selecter: '.heiki5', batch: 337 },
+		{ title: '鉄砲足軽', selecter: '.heiki4', batch: 336 },
 		{ title: '焙烙火矢', selecter: '.heiki7', batch: 345 },
 		{ title: '雑賀衆', selecter: '.heiki6', batch: 338 },
-		{ title: '鉄砲足軽', selecter: '.heiki4', batch: 336 },
 		{ title: '大筒兵', selecter: '.heiki3', batch: 335 },
 		{ title: '攻城櫓', selecter: '.heiki2', batch: 334 },
 		{ title: '破城鎚', selecter: '.heiki1', batch: 333 }
@@ -13207,11 +13211,11 @@ style: '' +
 '.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
 '.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }' +
 
-( ( Env.chapter >= 5 ) ?
-'#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
-'#imi_mapcontainer { border-width: 5px; }' :
+( ( Env.chapter < 5 ) ?
 '#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
-'#imi_mapcontainer { border-width: 3px; }' ) +
+'#imi_mapcontainer { border-width: 3px; }' :
+'#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
+'#imi_mapcontainer { border-width: 5px; }' ) +
 
 /* style調整 */
 '#material { line-height: 14px; }' +
