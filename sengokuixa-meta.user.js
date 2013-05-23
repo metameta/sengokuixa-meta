@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.0.0
+// @version        1.2.0.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9409,12 +9409,18 @@ switchCardParameter: function() {
 
 //.. showTimeoutTimer
 showTimeoutTimer: function() {
+	var html;
+
 	if ( !Env.endtime ) { return; }
+
+	html = '' +
+	'【' + ( Env.season || '?' ) + '期 ' + ( Env.chapter || '?' ) + '章】 ' +
+	'タイムアウトまで <span class="imc_countdown_display" />';
 
 	$('#lordSiteArea').empty()
 	.addClass('imc_countdown')
 	.data({ endtime: Env.endtime, alert: 300, alertevent: 'sessionalert' })
-	.append( 'タイムアウトまで <span class="imc_countdown_display" />' );
+	.append( html );
 },
 
 //.. escapeSpecialCharacters
