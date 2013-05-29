@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.0.1
+// @version        1.2.0.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -10319,6 +10319,7 @@ getBuildStatus: function() {
 		else if ( name.indexOf('陣') != -1 ) { name = '陣'; }
 		else if ( name.indexOf('砦') != -1 ) { name = '砦'; }
 		else if ( name.indexOf('村落') != -1 ) { name = '村落'; }
+		else if ( name.indexOf('支城') != -1 ) { name = '支城'; }
 		else { name = '？'; }
 
 		list.push( [ Util.getTargetDate( time, clock ), name ] );
