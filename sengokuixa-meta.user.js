@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.0.2
+// @version        1.2.0.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -10427,6 +10427,9 @@ style: '' +
 'TR.imc_facility TD { text-align: center; }' +
 'TR.imc_facility TD ~ TD { border-left: solid 1px #fff; }' +
 'BUTTON { position: relative; top: 1px; }' +
+/* 市用 */
+'.table_tile_market TD IMG { border: solid 2px black; border-radius: 2px; padding: 2px; margin-right: 5px; cursor: pointer; }' +
+'.table_tile_market TD IMG.imc_selected { border-color: #f80; background-color: #860; }' +
 /* 学舎用 */
 'TR.im_dou TD { padding: 0px; }' +
 'TR.im_dou TD .money_b { padding: 5px 5px 4px 24px; margin: 0px 5px; background-position: 0px 0px; }' +
@@ -10794,8 +10797,30 @@ trainingExecute: function( facilities, create_count, current, ol ) {
 
 //. dealings
 dealings: function() {
+	var html;
+
 	//施設情報を下へ移動
 	$('#ig_tileheadmenu').nextUntil('DIV:not([class])').insertBefore('.ig_paneloutbtn');
+
+	html = '' +
+	'<img data-type="101" src="' + Env.externalFilePath + '/img/common/ico_wood.gif" />' +
+	'<img data-type="102" src="' + Env.externalFilePath + '/img/common/ico_wool.gif" />' +
+	'<img data-type="103" src="' + Env.externalFilePath + '/img/common/ico_ingot.gif" />' +
+	'<img data-type="104" src="' + Env.externalFilePath + '/img/common/ico_grain.gif" />';
+
+	$('#select, #select2').hide().before( html );
+
+	$('.table_tile_market')
+	.on('click', 'TD IMG', function() {
+		var $this = $(this),
+			$parent = $this.parent(),
+			type = $this.data('type');
+
+		$parent.find('IMG').removeClass('imc_selected');
+		$this.addClass('imc_selected');
+
+		$parent.find('SELECT').val( type );
+	});
 },
 
 //. research
