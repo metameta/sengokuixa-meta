@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.0.3
+// @version        1.2.0.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4042,10 +4042,10 @@ analyzeArea: function( $area_list, img_list ) {
 	for ( var i = 0; i < list.length; i++ ) {
 		let data = list[ i ];
 
-		if ( data.discriminant == '敵' && $.inArray( data.type, [ '城', '村', '砦' ] ) != -1 ) {
+		if ( data.discriminant == '敵' && $.inArray( data.type, [ '城', '村', '砦', '支城' ] ) != -1 ) {
 			data.fallmain = storage.get( data.userId );
 
-			if ( data.fallmain === true && ( data.type == '村' || data.type == '砦' ) ) {
+			if ( data.fallmain === true && ( data.type == '村' || data.type == '砦' || data.type == '支城' ) ) {
 				let $img = $( '.' + data.class ).not('.imc_mark');
 
 				$img.attr('defaultsrc', $img.attr('src') )
@@ -4760,7 +4760,7 @@ checkFall: function() {
 		for ( var i = 0, len = Map.analyzedData.length; i < len; i++ ) {
 			let areadata = Map.analyzedData[ i ];
 			if ( areadata.userId != data.userId ) { continue; }
-			if ( $.inArray( areadata.type, [ '城', '村', '砦' ] ) == -1 ) { continue; }
+			if ( $.inArray( areadata.type, [ '城', '村', '砦', '支城' ] ) == -1 ) { continue; }
 
 			let $img = $( '.' + areadata.class ).not('.imc_mark'),
 				src = $img.attr('defaultsrc');
@@ -4770,7 +4770,7 @@ checkFall: function() {
 
 				areadata.fallmain = false;
 			}
-			else if ( areadata.type == '村' || areadata.type == '砦' ) {
+			else if ( areadata.type == '村' || areadata.type == '砦' || areadata.type == '支城' ) {
 				if ( src ) { $img.attr('defaultsrc', src ); }
 
 				$img.attr('src', Env.externalFilePath + '/img/panel/fall_capital_r_l.png');
