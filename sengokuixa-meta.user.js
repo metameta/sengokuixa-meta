@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.0.4
+// @version        1.2.0.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6654,23 +6654,20 @@ Deck.dialog = function( village, brigade, coord ) {
 		.done(function() {
 			var cardlist = Deck.analyzedData,
 				assignlist = Deck.currentUnit.assignList,
-				free_cost = Deck.freeCost - Deck.currentUnit.cost,
-				namelist = {};
+				free_cost = Deck.freeCost - Deck.currentUnit.cost;
 
 			for ( var i = 0, len = assignlist.length; i < len; i++ ) {
 				let card = assignlist[ i ];
 
 				card.element.remove();
 				card.element = null;
-
-				namelist[ card.name ] = 1;
 				delete cardlist[ card.cardId ];
 			}
 
 			for ( var card_id in cardlist ) {
 				let card = cardlist[ card_id ];
 
-				if ( namelist[ card.name ] ) {
+				if ( !card.checkAssign( assignlist ) ) {
 					card.gounit = '0';
 					card.update();
 				}
@@ -7258,11 +7255,9 @@ addCard: function( card ) {
 		return false;
 	}
 
-	for ( var i = 0, len = list.length; i < len; i++ ) {
-		if ( card.name == list[ i ].name ) {
-			Display.alert('武将名が重複しています。');
-			return false;
-		}
+	if ( !card.checkAssign( list ) ) {
+		Display.alert('武将名が重複しています。');
+		return false;
 	}
 
 	this.assignList.push( card );
@@ -7819,6 +7814,27 @@ getRecoveryTime: function() {
 //.. canAssign
 canAssign: function() {
 	return ( this.gounit == '1' && this.solNum > 0 );
+},
+
+//.. checkAssign
+checkAssign: function( cards ) {
+	var result = true,
+		list = {
+			1004: 'm', 1021: 'm', 4118: 'm', 2005: 'f', //上杉謙信
+			2071: 'm', 3004: 'm', 3040: 'f', //風魔小太郎
+			3100: 'm', 4056: 'm', 4057: 'f', //猿飛佐助
+		};
+
+	for ( var i = 0, len = cards.length; i < len; i++ ) {
+		let card = cards[ i ];
+
+		if ( this.name != card.name ) { continue; }
+		if ( list[ this.cardNo ] != list[ card.cardNo ] ) { continue; }
+
+		result = false;
+	}
+
+	return result;
 },
 
 //.. canUnion
