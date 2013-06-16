@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.0
+// @version        1.2.1.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -10194,6 +10194,7 @@ contextmenu: function() {
 				result = {}, facility;
 
 			if ( $useCp.length == 0 ) { return; }
+			if ( $useCp.text().match('建て替え') ) { return; }
 
 			result.label = text;
 			result.href = '/facility/' + $useCp.attr('href').replace('&mode=cp', '');
