@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.1
+// @version        1.2.1.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -10088,7 +10088,7 @@ getBuildStatus: function() {
 	//削除中
 	data = storage.get('削除') || {};
 	list = data[ village.id ] || [];
-	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' ) ? [ ary ] : null; });
+	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' || ary[ 1 ] == '支城' ) ? [ ary ] : null; });
 
 	$('#actionLog UL LI:contains("削除")').each(function() {
 		var $this = $(this),
@@ -10386,7 +10386,7 @@ main: function() {
 		text, list;
 
 	list = data[ village.id ] || [];
-	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' ) ? null : [ ary ]; });
+	list = $.map( list, function( ary ) { return ( ary[ 1 ] == '村落' || ary[ 1 ] == '砦' || ary[ 1 ] == '支城' ) ? null : [ ary ]; });
 
 	text = $('.ig_tilesection_btnarea_left:contains("削除中")').text();
 	text = ( text.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/) || [] )[ 0 ];
