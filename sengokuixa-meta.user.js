@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.3
+// @version        1.2.1.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6613,6 +6613,7 @@ Deck.dialog = function( village, brigade, coord ) {
 	})
 	.on( 'click', '#imi_all_assign', function() {
 		var dfd = $.Deferred(),
+			option2 = ( $('.imc_info9').text() != '' ),
 			html, $html;
 
 		html = '' +
@@ -6623,7 +6624,20 @@ Deck.dialog = function( village, brigade, coord ) {
 			'<tr><th colspan="4">部隊毎の武将数指定</th></tr>' +
 			'<tr><td class="imc_selected" data-unitnum="4">４武将</td><td data-unitnum="3">３武将</td><td data-unitnum="2">２武将</td><td data-unitnum="1">１武将</td></tr>' +
 		'</table>' +
-		'<div style="margin: 8px 0px 2px 0px;"><label><input id="imi_dungeon" type="checkbox" /> 登録完了後に秘境探索画面へ</label></div>';
+		'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
+		'<legend>登録完了後</legend>' +
+		'<label><input name="imn_all_assign_option" type="radio" value="1" /> 秘境探索画面へ</label><br/>';
+
+		if ( option2 ) {
+			html += '<label><input name="imn_all_assign_option" type="radio" value="2" /> 目的地へ出陣</label><br/>';
+		}
+		else {
+			html += '<label style="color: #999;"><input name="imn_all_assign_option" type="radio" value="2" disabled /> 目的地へ出陣</label><br/>';
+		}
+
+		html += '' +
+		'<label><input name="imn_all_assign_option" type="radio" value="0" checked /> 部隊作成ダイアログを閉じる</label><br/>' +
+		'</fieldset>';
 
 		$html = $( html );
 		$html.find('TD')
@@ -6640,10 +6654,10 @@ Deck.dialog = function( village, brigade, coord ) {
 			buttons: {
 				'決定': function() {
 					var unitnum = $('#imi_unitnum .imc_selected').data('unitnum').toInt(),
-						dungeon = $('#imi_dungeon').attr('checked');
+						option = $('INPUT[name="imn_all_assign_option"]:checked').val();
 
 					this.close();
-					dfd.resolve( unitnum, dungeon );
+					dfd.resolve( unitnum, option );
 				},
 				'キャンセル': function() {
 					this.close();
@@ -6653,7 +6667,7 @@ Deck.dialog = function( village, brigade, coord ) {
 		});
 
 		dfd
-		.pipe(function( unitnum, dungeon ) {
+		.pipe(function( unitnum, option ) {
 			var cardlist = Deck.targetList(),
 				assignlist = [],
 				namelist = {},
@@ -6682,17 +6696,21 @@ Deck.dialog = function( village, brigade, coord ) {
 				return $.Deferred().reject();
 			}
 
-			return [ assignlist, unitnum, dungeon ];
+			return [ assignlist, unitnum, option ];
 		})
 		.pipe(function( param ) {
 			var self = arguments.callee,
-				[ assignlist, unitnum, dungeon ] = param,
+				[ assignlist, unitnum, option ] = param,
 				unit;
 
 			if ( assignlist.length == 0 ) {
-				if ( dungeon ) {
+				if ( option == "1" ) {
 					Display.dialog().message('ページを更新します...');
 					location.href = Util.getVillageChangeUrl( village.id, '/facility/dungeon.php' );
+				}
+				else if ( option == "2" ) {
+					Display.dialog().message('ページを更新します...');
+					Map.send( target_x, target_y, village.country, village );
 				}
 				else {
 					Util.getUnitStatusCD();
