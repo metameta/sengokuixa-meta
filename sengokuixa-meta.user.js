@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.2
+// @version        1.2.1.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1344,6 +1344,62 @@ keyBindMap: function() {
 		'a': Util.keyBindCallback(function() {
 			$('#ig_cur04_w').click();
 		})
+	});
+},
+
+//. senkuji
+senkuji: function( count, ol ) {
+	if ( !ol ) { ol = Display.dialog({ height: 350 }); }
+	ol.message('クジを引いています...');
+
+	if ( count <= 1 ) {
+		Page.form('/senkuji/senkuji.php', {
+			send: 'send',
+			got_type: 0
+		});
+		return;
+	}
+
+	$.post('/senkuji/senkuji.php', {
+		send: 'send',
+		got_type: 0
+	})
+	.pipe(function( html ) {
+		var $html = $(html),
+			storage = MetaStorage('UNION_CARD'),
+			slot1 = storage.get('slot1'),
+			slot2 = storage.get('slot2'),
+			materials = storage.get('materials') || [],
+			$card, card;
+
+		$card = $html.find('.cardstatus');
+		if ( $card.length == 0 ) {
+			ol.message('クジ結果を取得できませんでした。');
+			return;
+		}
+		card = new LargeCard( $card );
+		ol.message( '<img width="112" height="158" src="' + Env.externalFilePath + '/img/card/lineup/' + card.image + '" />' );
+		ol.message( card.cardNo + ' 「' + card.name + '」を引きました。').message('<br />');
+
+		//ベースカード情報がない場合
+		if ( !slot1 ) { return; }
+
+		if ( !slot2 ) {
+			//スロット２が空
+			slot2 = Util.unionCardParam( card );
+			storage.set('slot2', slot2 );
+		}
+		else if ( slot2.id != card.cardId ) {
+			if ( materials.every(function( elem ) { return elem.id != card.cardId; }) ) {
+				materials.push( Util.unionCardParam( card ) );
+				storage.set('materials', materials);
+			}
+		}
+	})
+	.pipe(function() { return Util.wait( 500 ); })
+	.always(function() {
+		count--;
+		Util.senkuji( count, ol );
 	});
 },
 
@@ -3137,6 +3193,9 @@ style: '' +
 '#imi_unitedit TD { width: 40px; cursor: pointer; }' +
 '#imi_unitedit TD.imc_disabled { background-color: #ccc; cursor: auto; }' +
 '#imi_unitedit .imc_selected { background-color: #f9dea1; }' +
+
+/* クジ */
+'.imc_senkuji { margin-left: 10px; width: 70px; height: 85px; font-size: 30px; font-weight: bold; color: #090; line-height: 120px; text-align: center; display: inline-block; vertical-align: bottom; cursor: pointer; background-image: url(\'' + Env.externalFilePath + '/img/lot/lot_icon/img_lot_white_icon.jpg\'); }' +
 '',
 
 //. images
@@ -14738,24 +14797,26 @@ main: function() {
 
 //. layouter
 layouter: function() {
-	var $img;
+	var html, $span;
 
-	$img = $('<IMG/>')
-	.attr('src', Env.externalFilePath + '/img/lot/lot_icon/img_lot_white_icon.jpg')
-	.css({ marginLeft: '10px', cursor: 'pointer' })
-	.click(function() {
-		var result;
+	html = '' +
+	'<span>' +
+		'<span class="imc_senkuji" data-num="1">1枚</span>' +
+		'<span class="imc_senkuji" data-num="6">6枚</span>' +
+	'<span>';
 
-		result = window.confirm('戦国くじ【白】を引いてよろしいですか？');
-		if ( !result ) { return; }
+	$span = $( html )
+	.on( 'click', 'SPAN', function() {
+		var $this = $(this),
+			label = $this.text(),
+			num = $this.data('num').toInt();
 
-		Page.form('/senkuji/senkuji.php', {
-			send: 'send',
-			got_type: 0
-		});
+		if ( !window.confirm('戦国くじ【白】を' + label + '引いてよろしいですか？') ) { return; }
+
+		Util.senkuji( num );
 	});
 
-	$('FORM P').append( $img );
+	$('FORM P').append( $span );
 },
 
 rankup: function( cid ) {
@@ -14775,7 +14836,7 @@ main: function() {
 	var $menu = $('#lotMenu LI'),
 		$item = $menu.find('IMG'),
 		$container = $('#cardmachineInner'),
-		$kuji, array1, array2;
+		$kuji, array1, array2, html, free, dou, max, $div;
 
 	array1 = $item.not('[src$="img_lot_silver_icon.jpg"], [src$="img_lot_gold_icon.jpg"]').get();
 	array2 = $item.filter('[src$="img_lot_silver_icon.jpg"], [src$="img_lot_gold_icon.jpg"]').get();
@@ -14784,6 +14845,38 @@ main: function() {
 
 	$kuji = $container.find('.cardmachine').has('INPUT[src$="img_lot_silver.jpg"], INPUT[src$="img_lot_gold.jpg"]');
 	$container.append( $kuji );
+
+	free = $('.l_cardstock').text().match(/(\d+) \/ (\d+)/);
+	free = free[ 2 ].toInt() - free[ 1 ].toInt();
+	dou = $('.money_b:first').text().toInt();
+	dou = Math.floor( dou / 100 );
+	max = Math.min( free, dou, 30 );
+
+	html = '' +
+	'<div style="text-align: center; border-top: 1px solid #AD9953; border-bottom: 1px solid #AD9953; margin: -50px 20px 40px 20px; padding: 5px 0px; position: relative; z-index: 2;">' +
+		'<span class="imc_senkuji" data-num="6">6枚</span>';
+
+	if ( max >= 10 ) {
+		html += '<span class="imc_senkuji" data-num="10">10枚</span>';
+	}
+	if ( max > 10 ) {
+		html += '<span class="imc_senkuji" data-num="' + max + '">' + max + '枚</span>';
+	}
+
+	html += '</div>';
+
+	$div = $( html )
+	.on( 'click', 'SPAN', function() {
+		var $this = $(this),
+			label = $this.text(),
+			num = $this.data('num').toInt();
+
+		if ( !window.confirm('戦国くじ【白】を' + label + '引いてよろしいですか？') ) { return; }
+
+		Util.senkuji( num );
+	});
+
+	$('.cardsmachines').after( $div );
 }
 
 });
