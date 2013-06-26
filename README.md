@@ -8,5 +8,10 @@ sengokuixa-meta
 動作確認
 --------
 
-* FireFox13 + Scriptish
+* FireFox21 + Scriptish
 * （確か・・・FireFox9以上必須）
+
+更新履歴
+--------
+
+* [Version History](https://github.com/metameta/sengokuixa-meta/wiki/Version-History)
