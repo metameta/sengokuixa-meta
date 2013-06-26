@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.4
+// @version        1.2.1.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4131,12 +4131,13 @@ analyzeReport: function() {
 		$table  = $('#imi_base_conditions'),
 		discriminant = $table.find('INPUT[name="imn_discriminant"]:checked').val(),
 		alliance = $table.find('INPUT[name="imn_alliance"]').val(),
+		user = $table.find('INPUT[name="imn_user"]').val(),
 		rank = $table.find('SELECT[name="imn_rank"]').val().toInt(),
 		type = '';
 
 	$table.find('INPUT[name="imn_type"]').filter(':checked').each(function() { type += $(this).val(); });
 
-	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance, rank: rank });
+	MetaStorage('SETTINGS').set('mapinfo', { type: type, discriminant: discriminant, alliance: alliance, user: user, rank: rank });
 
 	var list = Map.analyzedData.filter(function( value ) {
 		//出城エリアは非表示
@@ -4144,6 +4145,7 @@ analyzeReport: function() {
 		//条件にあてはまるものを表示
 		if ( discriminant != '' && discriminant.indexOf('|' + value.discriminant + '|') == -1 ) { return false; }
 		if ( alliance != '' && alliance != value.alliance ) { return false; }
+		if ( user != '' && user != value.user ) { return false; }
 		if ( type == '' ) {
 			return true;
 		}
@@ -4184,8 +4186,8 @@ analyzeReport: function() {
 		}
 
 		return '<tr style="cursor: pointer;" idx="' + obj.idx + '" areaid="' + obj.id + '">' +
-			'<td>' + obj.alliance + '</td>' +
-			'<td>' + obj.user + '</td>' +
+			'<td target="imn_alliance">' + obj.alliance + '</td>' +
+			'<td target="imn_user">' + obj.user + '</td>' +
 			'<td>' + obj.castle + '</td>' +
 			'<td>' + obj.type + ( ( obj.fallmain === true ) ? '×' : ( obj.fallmain === false ) ? '○' : '' ) + '</td>' +
 			'<td>' + obj.scale + '</td>' +
@@ -13505,16 +13507,17 @@ layouter: function() {
 
 //. layouterMapInfo
 layouterMapInfo: function() {
-	var settings = MetaStorage('SETTINGS').get('mapinfo') || { type: '|城||砦|村||出城|', discriminant: '', alliance: '', rank: 0 },
-		type = settings.type,
+	var settings = MetaStorage('SETTINGS').get('mapinfo'),
 		html;
+
+	settings = $.extend( { type: '|城||砦|村|支城||出城|', discriminant: '', alliance: '', user: '', rank: 0 }, settings );
 
 	//拠点情報
 	html = '' +
 	'<table id="imi_base_conditions" class="imc_table" style="float: left; margin-right: 20px;">' +
 	'<tr/>' +
 		'<th>種別</th>' +
-		'<td style="text-align: left">' +
+		'<td colspan="3" style="text-align: left">' +
 			'<label><input type="checkbox" name="imn_type" value="|城|" />本領</label>' +
 			'<label><input type="checkbox" name="imn_type" value="|砦|村|支城|" />所領</label>' +
 			'<label><input type="checkbox" name="imn_type" value="|出城|" />出城</label>' +
@@ -13537,7 +13540,7 @@ layouterMapInfo: function() {
 	'</tr>' +
 	'<tr>' +
 		'<th>識別</th>' +
-		'<td style="text-align: left">' +
+		'<td colspan="3" style="text-align: left">' +
 			'<label><input type="radio" name="imn_discriminant" value="" />全て</label>' +
 			'<label><input type="radio" name="imn_discriminant" value="|自分|" />自分</label>' +
 			'<label><input type="radio" name="imn_discriminant" value="|自分|同盟|" />同盟</label>' +
@@ -13550,6 +13553,10 @@ layouterMapInfo: function() {
 		'<th>同盟名</th>' +
 		'<td style="text-align: left">' +
 			'<input type="text" name="imn_alliance" value="" />' +
+		'</td>' +
+		'<th>城主名</th>' +
+		'<td style="text-align: left">' +
+			'<input type="text" name="imn_user" value="" />' +
 		'</td>' +
 	'</tr>' +
 	'</table>' +
@@ -13577,13 +13584,33 @@ layouterMapInfo: function() {
 	.find('INPUT[name="imn_type"]').each(function() {
 		var $this = $(this);
 
-		if ( type.indexOf( $this.val() ) != -1 ) {
+		if ( settings.type.indexOf( $this.val() ) != -1 ) {
 			$this.attr('checked', true);
 		}
 	}).end()
 	.find('SELECT[name="imn_rank"]').val( settings.rank ).end()
 	.find('INPUT[value="' + settings.discriminant + '"]').attr('checked', true).end()
-	.find('INPUT[name="imn_alliance"]').val( settings.alliance ).end();
+	.find('INPUT[name="imn_alliance"]').val( settings.alliance ).end()
+	.find('INPUT[name="imn_user"]').val( settings.user ).end();
+
+	$('#imi_base_list')
+	.on('click', 'TD', function() {
+		var $this = $(this),
+			text = $this.text(),
+			target = $this.attr('target'),
+			$input = $('INPUT[name="' + target + '"]');
+
+		if ( $input.length == 0 ) { return; }
+
+		if ( text == $input.val() ) {
+			$input.val('');
+		}
+		else {
+			$input.val( text );
+		}
+
+		$('#imi_base_conditions').trigger('change');
+	});
 
 	$('#imi_cache_delete').click(function() {
 		if ( !window.confirm( '本領陥落データを全て削除します。\nよろしいですか？') ) { return; }
