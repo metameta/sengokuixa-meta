@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.5
+// @version        1.2.1.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -2628,7 +2628,7 @@ dialogRename: function( village ) {
 
 					MetaStorage('VILLAGE').set('list', list);
 				})
-				.done( location.reload )
+				.done(function() { location.reload(); })
 				.fail(function() {
 					Display.alert('変更に失敗しました。');
 					self.close();
@@ -10978,7 +10978,7 @@ research: function() {
 			village = Util.getVillageCurrent();
 
 		Display.dialogExchange( resource, materials, village )
-		.pipe( location.reload );
+		.pipe(function() { location.reload(); });
 	});
 }
 
