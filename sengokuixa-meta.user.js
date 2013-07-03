@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.6
+// @version        1.2.1.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4007,25 +4007,27 @@ analyzeImg: function( $img_list ) {
 //. analyzeArea
 analyzeArea: function( $area_list, img_list ) {
 	var source_reg = /'.*?'/g,
-		search_reg = /map\.php\?x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
 		storage = MetaStorage('USER_FALL'),
 		list = [];
 
 	$area_list.each(function( idx ) {
 		var $this    = $(this),
 			source   = ( $this.attr('onMouseOver') || '' ).split('; overOperation')[ 0 ],
-			array    = source.match( source_reg ),
 			source2  = $this.attr('onClick') || '',
-			array2   = source2.match( source_reg ),
-			search   = array2[ 2 ].match( search_reg ) || [],
 			img_data = img_list[ idx ],
-			data     = { idx: idx };
+			data     = { idx: idx },
+			array, array2;
 
 		if ( !img_data ) { return; }
 
+		array = source.match( source_reg );
 		array.forEach(function( value, idx, ary ) {
 			ary[ idx ] = value.replace(/'/g, '');
 		});
+
+		source2 = source2.replace('displayMenu(', '');
+		source2 = source2.replace('); return false ;', '');
+		array2 = source2.split(', ');
 
 		//通常マップと新合戦場でパラメータ数が違う
 		//0:城名 1:城主名 2:人口 3:座標 4:同盟名 5:価値 6:距離 7:木 8:綿 9:鉄 10:糧 11:池 12:NPCフラグ 13:画像
@@ -4060,10 +4062,10 @@ analyzeArea: function( $area_list, img_list ) {
 			data.rank = array[5].length;
 		}
 
-		data.id      = 'imi_area_' + search[1] + '_' + search[2];
-		data.x       = search[1];
-		data.y       = search[2];
-		data.country = search[3];
+		data.id      = 'imi_area_' + array2[ 5 ] + '_' + array2[ 6 ];
+		data.x       = array2[ 5 ];
+		data.y       = array2[ 6 ];
+		data.country = array2[ 7 ];
 		data.type    = img_data.type;
 		data.discriminant = img_data.discriminant;
 		data.scale   = img_data.scale;
@@ -4074,8 +4076,8 @@ analyzeArea: function( $area_list, img_list ) {
 			data.alliId = ( $('.gMenu07 > A').attr('href').match(/\d+/) || [] )[ 0 ];
 		}
 		else {
-			data.userId = ( array2[ 3 ].match(/\d+/) || [] )[ 0 ];
-			data.alliId = ( array2[ 5 ].match(/\d+/) || [] )[ 0 ];
+			data.userId = array2[ 11 ];
+			data.alliId = array2[ 13 ];
 		}
 
 		$this.attr({ id: data.id, idx: idx });
@@ -4812,13 +4814,15 @@ checkFall: function() {
 	Page.get( '/user/?user_id=' + data.userId )
 	.pipe(function( html ) {
 		var $tr = $( html ).find('.common_table1').eq( 0 ).find('TR:contains("本領")'),
-			land = $tr.find('A').eq( 1 ).attr('href'),
-			map = land.replace('land', 'map');
+			$a = $tr.find('A').eq( 1 ),
+			land = $a.attr('href'),
+			map = land.replace('land', 'map'),
+			coord = $a.text();
 
 		return $.get( map )
 		.pipe(function( html ) {
 			var $html = $( html ),
-				idx = $html.find('#mapOverlayMap > AREA[onclick*="' + land + '"]').index(),
+				idx = $html.find('#mapOverlayMap > AREA[onmouseover*="' + coord + '"]').index(),
 				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
 
 			return ( $img.attr('src').indexOf('fall') != -1 );
@@ -9870,13 +9874,15 @@ checkFall: function() {
 
 	$tr.each(function() {
 		var $this = $(this),
-			map = $this.find('A').eq( 1 ).attr('href'),
-			land = map.replace('map', 'land');
+			$a = $tr.find('A').eq( 1 ),
+			land = $a.attr('href'),
+			map = land.replace('land', 'map'),
+			coord = $a.text();
 
 		$.get( map )
 		.pipe(function( html ) {
 			var $html = $( html ),
-				idx = $html.find('#mapOverlayMap > AREA[onclick*="' + land + '"]').index(),
+				idx = $html.find('#mapOverlayMap > AREA[onmouseover*="' + coord + '"]').index(),
 				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
 
 			if ( $img.attr('src').indexOf('fall') != -1 ) {
