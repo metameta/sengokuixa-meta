@@ -8,7 +8,7 @@ sengokuixa-meta
 動作確認
 --------
 
-* FireFox21 + Scriptish
+* FireFox22 + Scriptish
 * （確か・・・FireFox9以上必須）
 
 更新履歴
