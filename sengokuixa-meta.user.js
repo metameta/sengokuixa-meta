@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.8
+// @version        1.2.1.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4007,6 +4007,7 @@ analyzeImg: function( $img_list ) {
 //. analyzeArea
 analyzeArea: function( $area_list, img_list ) {
 	var source_reg = /'.*?'/g,
+		search_reg = /map\.php\?x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
 		storage = MetaStorage('USER_FALL'),
 		list = [];
 
@@ -4016,7 +4017,7 @@ analyzeArea: function( $area_list, img_list ) {
 			source2  = $this.attr('onClick') || '',
 			img_data = img_list[ idx ],
 			data     = { idx: idx },
-			array, array2;
+			array, array2, search, x, y, c, uid, aid;
 
 		if ( !img_data ) { return; }
 
@@ -4025,9 +4026,25 @@ analyzeArea: function( $area_list, img_list ) {
 			ary[ idx ] = value.replace(/'/g, '');
 		});
 
-		source2 = source2.replace('displayMenu(', '');
-		source2 = source2.replace('); return false ;', '');
-		array2 = source2.split(', ');
+		if ( source2.indexOf( 'displayMenu' ) != -1 ) {
+			source2 = source2.replace('displayMenu(', '');
+			source2 = source2.replace('); return false ;', '');
+			array2 = source2.split(', ');
+			x = array2[ 5 ];
+			y = array2[ 6 ];
+			c = array2[ 7 ];
+			uid = array2[ 11 ];
+			aid = array2[ 13 ];
+		}
+		else {
+			array2 = source2.match( source_reg );
+			search = array2[ 2 ].match( search_reg ) || [];
+			x = search[ 1 ];
+			y = search[ 2 ];
+			c = search[ 3 ];
+			uid = ( array2[ 3 ].match(/\d+/) || [] )[ 0 ];
+			aid = ( array2[ 5 ].match(/\d+/) || [] )[ 0 ];
+		}
 
 		//通常マップと新合戦場でパラメータ数が違う
 		//0:城名 1:城主名 2:人口 3:座標 4:同盟名 5:価値 6:距離 7:木 8:綿 9:鉄 10:糧 11:池 12:NPCフラグ 13:画像
@@ -4062,10 +4079,10 @@ analyzeArea: function( $area_list, img_list ) {
 			data.rank = array[5].length;
 		}
 
-		data.id      = 'imi_area_' + array2[ 5 ] + '_' + array2[ 6 ];
-		data.x       = array2[ 5 ];
-		data.y       = array2[ 6 ];
-		data.country = array2[ 7 ];
+		data.id      = 'imi_area_' + x + '_' + y;
+		data.x       = x;
+		data.y       = y;
+		data.country = c;
 		data.type    = img_data.type;
 		data.discriminant = img_data.discriminant;
 		data.scale   = img_data.scale;
@@ -4076,8 +4093,8 @@ analyzeArea: function( $area_list, img_list ) {
 			data.alliId = ( $('.gMenu07 > A').attr('href').match(/\d+/) || [] )[ 0 ];
 		}
 		else {
-			data.userId = array2[ 11 ];
-			data.alliId = array2[ 13 ];
+			data.userId = uid;
+			data.alliId = aid;
 		}
 
 		$this.attr({ id: data.id, idx: idx });
