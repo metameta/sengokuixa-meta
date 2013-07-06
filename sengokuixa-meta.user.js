@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.1.7
+// @version        1.2.1.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9874,7 +9874,7 @@ checkFall: function() {
 
 	$tr.each(function() {
 		var $this = $(this),
-			$a = $tr.find('A').eq( 1 ),
+			$a = $this.find('A').eq( 1 ),
 			land = $a.attr('href'),
 			map = land.replace('land', 'map'),
 			coord = $a.text();
