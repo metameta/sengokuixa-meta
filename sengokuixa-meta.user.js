@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.0
+// @version        1.2.2.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -13350,6 +13350,8 @@ style: '' +
 /* 拠点情報 */
 '#imi_base_conditions { margin-bottom: 10px; }' +
 '#imi_base_conditions SELECT { position: relative; top: -1px; margin: -2px; }' +
+'.imc_clear { display: inline-block; width: 15px; height: 15px; text-align: center; line-height: 15px; font-size: 12px; background-color: #E0DCC1; border-radius: 7px; cursor: pointer; }' +
+'.imc_clear:hover { background-color: #f9dea1; }' +
 
 /* 座標情報 */
 '.imc_fort TD { width: 50px; }' +
@@ -13576,10 +13578,12 @@ layouterMapInfo: function() {
 		'<th>同盟名</th>' +
 		'<td style="text-align: left">' +
 			'<input type="text" name="imn_alliance" value="" />' +
+			'<span class="imc_clear">&times;</span>' +
 		'</td>' +
 		'<th>城主名</th>' +
 		'<td style="text-align: left">' +
 			'<input type="text" name="imn_user" value="" />' +
+			'<span class="imc_clear">&times;</span>' +
 		'</td>' +
 	'</tr>' +
 	'</table>' +
@@ -13603,7 +13607,10 @@ layouterMapInfo: function() {
 	'';
 
 	$( html ).appendTo('#imi_base')
-	.change( Map.analyzeReport )
+	.on('change', Map.analyzeReport )
+	.on('click', '.imc_clear', function() {
+		$(this).parent().find('INPUT').val('').trigger('change');
+	})
 	.find('INPUT[name="imn_type"]').each(function() {
 		var $this = $(this);
 
