@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.1
+// @version        1.2.2.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3174,13 +3174,13 @@ style: '' +
 '#imi_unit_dialog #imi_card_container .imc_sc_panel { padding: 1px 2px; }' +
 
 /* 読み込み組表示 */
-'#imi_unit_dialog .imc_brigade { width: 50px; height: 22px; margin-right: 0px; border: none; background-position: -1px 0px; cursor: default; }' +
+'#imi_unit_dialog .imc_brigade { width: 50px; height: 22px; margin-right: 0px; border: none; background-position: -1px 0px; cursor: pointer; }' +
 '#imi_unit_dialog .imc_brigade.imc_brigade_1 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_01.png\'); }' +
 '#imi_unit_dialog .imc_brigade.imc_brigade_2 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_02.png\'); }' +
 '#imi_unit_dialog .imc_brigade.imc_brigade_3 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_03.png\'); }' +
 '#imi_unit_dialog .imc_brigade.imc_brigade_4 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_04.png\'); }' +
 '#imi_unit_dialog .imc_brigade.imc_brigade_5 { background-image: url(\'' + Env.externalFilePath + '/img/deck/bt_group_05.png\'); margin-right: 8px; }' +
-'#imi_unit_dialog .imc_brigade.imc_off { opacity: 0.3; cursor: pointer; }' +
+'#imi_unit_dialog .imc_brigade.imc_off { opacity: 0.3; }' +
 '#imi_unit_dialog .imc_brigade.imc_off:hover { opacity: 0.7; }' +
 
 /* 全部隊登録 */
@@ -6872,6 +6872,9 @@ Deck.dialog = function( village, brigade, coord ) {
 			if ( Deck.dialog.loaded & ( 0x01 << i ) ) {
 				$content.find('.imc_brigade_' + i).removeClass('imc_off');
 			}
+			else {
+				$content.find('.imc_brigade_' + i).addClass('imc_off');
+			}
 		}
 	})
 	.on('click', '.imc_deck_info', Deck.infomation )
@@ -6879,13 +6882,33 @@ Deck.dialog = function( village, brigade, coord ) {
 		var $this = $(this),
 			brigade = $this.data('brigade');
 
-		if ( !$this.hasClass('imc_off') ) { return; }
+		if ( $this.hasClass('imc_off') ) {
+			Deck.dialog.loadCard( brigade )
+			.done(function() {
+				Deck.update();
+				$('#imi_deck_bottom').trigger('update');
+			});
+		}
+		else {
+			var label = [ '', '第一組', '第二組', '第三組', '第四組', '未設定' ][ brigade ];
+			if ( !window.confirm( label + 'のキャッシュデータを削除します。\nよろしいですか？' ) ) { return; }
 
-		Deck.dialog.loadCard( brigade )
-		.done(function() {
-			Deck.update();
+			for ( var cardId in Deck.analyzedData ) {
+				let card = Deck.analyzedData[ cardId ];
+				if ( card.brigade != brigade ) { continue; }
+
+				if ( card.element.hasClass('imc_selected') ) {
+					card.element.trigger('click');
+				}
+
+				card.element.remove();
+				card.element = null;
+				delete Deck.analyzedData[ cardId ];
+			}
+
+			Deck.dialog.loaded &= ~( 0x01 << brigade );
 			$('#imi_deck_bottom').trigger('update');
-		});
+		}
 	})
 	.on('click', '.imc_batch_gather', function() {
 		var list = Deck.targetList();
