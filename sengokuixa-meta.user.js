@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.5
+// @version        1.2.2.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3078,8 +3078,6 @@ style: '' +
 
 /* 全体地図用 */
 '#imi_mapcontainer { position: relative; color: #000; background-color: #000; border: solid 30px #e0dcc1; }' +
-'#imi_mapcontainer CANVAS { position: absolute; top: 0px; left: 0px; }' +
-'#imi_mousemap { position: absolute; width: 100%; height: 100%; z-index: 2; }' +
 /* 全体地図座標表示用 */
 '#imi_label { position: absolute; width: 60px; height: 12px; padding-left: 3px; color: #fff; background-color: #666; border: solid 1px #fff; display: none; z-index: 3; }' +
 
@@ -4309,23 +4307,22 @@ coordList: function( country ) {
 	Map.showMark();
 },
 
-//. showCountryMap
-showCountryMap: function( country ) {
+//. showMiniMap
+showMiniMap: function( country ) {
 	var list = BaseList.all( country );
 
-	CounteryMap.create( country, {
+	MiniMap.create( country, {
 		pxsize: 0.5,
 		pointsize: 2,
 		fortresssize: 1,
-		label: false,
 		fortress: !Map.info.isBattleMap
 	}).appendTo('#imi_map');
-	CounteryMap.showBasePoint( 'user', list );
-	CounteryMap.showViewArea( Map.info );
+	MiniMap.showBasePoint( 'user', list );
+	MiniMap.showViewArea( Map.info );
 
 	if ( Map.info.isBattleMap ) {
 		list = Map.baseList;
-		CounteryMap.showBasePoint( 'fortress', list );
+		MiniMap.showBasePoint( 'fortress', list );
 	}
 
 	//登録座標表示
@@ -4343,7 +4340,7 @@ showCoord: function( country ) {
 		return { x: array[0].toInt(), y: array[1].toInt(), color: '#ff0' };
 	});
 
-	CounteryMap.showBasePoint( 'coord', coordList );
+	MiniMap.showBasePoint( 'coord', coordList );
 },
 
 //. showMark
@@ -4387,7 +4384,7 @@ showMark: function() {
 		movelist.push({ sx: sx, sy: sy, ex: ex, ey: ey, color: movecolors[ '敵襲' ] });
 	};
 
-	CounteryMap.showRoute( movelist );
+	MiniMap.showRoute( movelist );
 
 	function mark( x, y, mode ) {
 		var id = 'imi_area_' + x + '_' + y,
@@ -4494,7 +4491,7 @@ moveUrl: function( url ) {
 		//移動したので情報更新
 		Map.info = Map.mapInfo();
 		Map.analyze();
-		Map.showCountryMap( Map.info.country );
+		Map.showMiniMap( Map.info.country );
 		Map.showMark();
 	})
 	.always(function() {
@@ -5163,35 +5160,100 @@ coordInfo: function( type, data ) {
 
 });
 
-//■ CounteryMap
-var CounteryMap = (function() {
+//■ MiniMap
+var MiniMap = (function() {
 
 var options = {
 		size: ( Env.chapter < 5 ) ? 180 : 150,
 		pxsize: 1,
 		pointsize: 3,
 		fortresssize: 1,
-		label: true,
-		fortress: true
+		fortress: true,
+		label: false,
+		zoom: false
 	},
-	layer = {},
-	$map, timer;
+	layerdata = {},
+	$map, context, timer;
 
 //. create
 function create( country, _options ) {
+	var $canvas;
+
 	if ( $map ) { return $map; }
 
 	options = $.extend( options, _options );
 	options.mapsize = Math.ceil( ( options.size * 2 + 1 ) * options.pxsize );
 
-	$map = $('<div id="imi_mapcontainer"><div id="imi_mousemap" /></div>');
-	$map.css({ width: options.mapsize, height: options.mapsize, backgroundColor: '#000', zIndex: 201 });
-	$map.find('#imi_mousemap').attr('country', country).click( mapClick );
+	$map = $('<div id="imi_mapcontainer"><canvas /></div>')
+	.css({ width: options.mapsize, height: options.mapsize, zIndex: 201 });
 
-	if ( options['label'] ) { showLabel(); }
-	if ( options['fortress'] ) { showFortress(); }
+	$canvas = $map.find('CANVAS')
+	.data( 'options', options )
+	.attr({ width: options.mapsize, height: options.mapsize, country: country })
+	.on('click' , mapClick );
+
+	context = $canvas.get( 0 ).getContext('2d');
+	drowMap( context, options );
+
+	if ( options.label ) { showLabel(); }
+	if ( options.zoom ) { showZoom(); }
 
 	return $map;
+}
+
+//. showZoom
+function showZoom() {
+	var $select, $button;
+
+	$select = $('<select id="imi_map_scale"><option value="2">&times;2</option><option value="3">&times;3</option><option value="4">&times;4</option></select>');
+	$button = $('<button>拡大</button>')
+	.on('click' ,function() {
+		var pxsize = 0.5 * $('#imi_map_scale').val().toInt(),
+			pointsize = Math.floor( pxsize ) + 1,
+			fortresssize = Math.floor( pointsize / 2 ),
+			$map;
+
+		$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
+
+		Display.dialog({
+			top: 50, width: $map.width() + 16, height: 'auto',
+			content: $map,
+			buttons: {
+				'閉じる': function() { this.close(); }
+			}
+		});
+	});
+
+	$map
+	.css({ borderBottomWidth: '25px' })
+	.append( $select, $button );
+}
+
+//. zoom
+function zoom( _options ) {
+	var _$map, _context, $canvas;
+
+	_options = $.extend( {}, options, _options );
+	_options.mapsize = Math.ceil( ( _options.size * 2 + 1 ) * _options.pxsize );
+
+	_$map = $('<div><canvas class="imc_map_zoom" /></div>')
+	.css({ width: _options.mapsize, height: _options.mapsize, zIndex: 201 });
+
+	$canvas = _$map.find('CANVAS')
+	.data( 'options', _options )
+	.attr({ width: _options.mapsize, height: _options.mapsize })
+	.on('click' , mapClick )
+	.on('update', function() {
+		var context = this.getContext('2d'),
+			options = $(this).data('options');
+
+		drowMap( context, options, true );
+	});
+
+	_context = $canvas.get( 0 ).getContext('2d');
+	drowMap( _context, _options, true );
+
+	return _$map;
 }
 
 //. showLabel
@@ -5218,7 +5280,7 @@ function showLabel() {
 
 	//座標表示用
 	$map.append('<div id="imi_label"/>');
-	$map.find('#imi_mousemap').mousemove( mapMouseMove )
+	$map.find('CANVAS').mousemove( mapMouseMove )
 	.mouseleave(function() {
 		if ( timer != null ) {
 			window.clearTimeout( timer );
@@ -5227,41 +5289,106 @@ function showLabel() {
 	});
 }
 
+//. appendLabel
+function appendLabel( top, left, text ) {
+	$('<span>' + text + '</span>').css({ position: 'absolute', top: top, left: left })
+	.appendTo( $map );
+}
+
+//. showViewArea
+function showViewArea( mapinfo ) {
+	layerdata.viewarea = { x: mapinfo.x, y: mapinfo.y, size: mapinfo.size };
+	drowMap( context, options );
+}
+
+//. showBasePoint
+function showBasePoint( name, list, pointsize ) {
+	layerdata[ 'base_' + name ] = { list: list, pointsize: pointsize };
+	drowMap( context, options );
+}
+
+//. showRoute
+function showRoute( list ) {
+	layerdata.route = list;
+	drowMap( context, options );
+}
+
+//. showPointer
+function showPointer( x, y ) {
+	if ( x === undefined || y === undefined ) {
+		delete layerdata.pointer;
+	}
+	else {
+		layerdata.pointer = { x: x, y: y };
+	}
+	drowMap( context, options );
+}
+
 //. getCanvasX
-function getCanvasX( x ) {
-	return ( options.size + x ) * options.pxsize;
+function getCanvasX( x, size, pxsize ) {
+	return ( size + x ) * pxsize;
 }
 
 //. getCanvasY
-function getCanvasY( y ) {
-	return ( options.size - y ) * options.pxsize;
+function getCanvasY( y, size, pxsize ) {
+	return ( size - y ) * pxsize;
 }
 
 //. getCanvasPointX
-function getCanvasPointX( x, size ) {
-	var modsize = ( size - options.pxsize ) / 2;
+function getCanvasPointX( x, ptsize, size, pxsize ) {
+	var modsize = ( ptsize - pxsize ) / 2;
 
-	return Math.ceil( getCanvasX( x ) - modsize );
+	return Math.ceil( getCanvasX( x, size, pxsize ) - modsize );
 }
 
 //. getCanvasPointY
-function getCanvasPointY( y, size ) {
-	var modsize = ( size - options.pxsize ) / 2;
+function getCanvasPointY( y, ptsize, size, pxsize ) {
+	var modsize = ( ptsize - pxsize ) / 2;
 
-	return Math.ceil( getCanvasY( y ) - modsize );
+	return Math.ceil( getCanvasY( y, size, pxsize ) - modsize );
 }
 
-//. showFortress
-function showFortress() {
-	var $canvas = newLayer( 'fortress', options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d'),
-		compass = Data.compass,
+//. drowMap
+function drowMap( context, options, zoom ) {
+	clear( context, options.mapsize );
+	context.globalCompositeOperation = 'destination-over';
+
+	drowViewArea( context, options );
+	drowRoute( context, options );
+	if ( options.fortress ) { drowFortress( context, options ); }
+	drowBase( context, options, 'fortress' );
+	drowBase( context, options, 'user' );
+	drowBase( context, options, 'target' );
+	drowBase( context, options, 'coord' );
+	drowPointer( context, options );
+
+	drowBackground( context, options.mapsize );
+
+	if ( !zoom ) { $('.imc_map_zoom').trigger('update'); }
+}
+
+//. drowViewArea
+function drowViewArea( context, options ) {
+	var data = layerdata.viewarea;
+	if ( !data ) { return; }
+
+	var x = getCanvasX( data.x - ( Math.ceil( data.size / 2 ) - 1 ), options.size, options.pxsize ),
+		y = getCanvasY( data.y + ( Math.ceil( data.size / 2 ) - 1 ), options.size, options.pxsize ),
+		w = Math.ceil( data.size * options.pxsize ),
+		h = Math.ceil( data.size * options.pxsize );
+
+	drowArea( context, x, y, w, h );
+}
+
+//. drowFortress
+function drowFortress( context, options ) {
+	var compass = Data.compass,
 		fortresses = Data.fortresses,
 		x, y, canvasx, canvasy;
 
 	//大殿
-	canvasx = getCanvasPointX( 0, options.pointsize );
-	canvasy = getCanvasPointY( 0, options.pointsize );
+	canvasx = getCanvasPointX( 0, options.pointsize, options.size, options.pxsize );
+	canvasy = getCanvasPointY( 0, options.pointsize, options.size, options.pxsize );
 	drowPoint( context, canvasx, canvasy, options.pointsize, options.pointsize, '#f00' );
 
 	//各砦
@@ -5270,109 +5397,72 @@ function showFortress() {
 		y = compass[ i ].y;
 
 		for ( var j = 1, f_len = fortresses.length; j < f_len; j++ ) {
-			canvasx = getCanvasPointX( x * fortresses[ j ][ 0 ], options.fortresssize );
-			canvasy = getCanvasPointY( y * fortresses[ j ][ 1 ], options.fortresssize );
+			canvasx = getCanvasPointX( x * fortresses[ j ][ 0 ], options.fortresssize, options.size, options.pxsize );
+			canvasy = getCanvasPointY( y * fortresses[ j ][ 1 ], options.fortresssize, options.size, options.pxsize );
 
 			drowPoint( context, canvasx, canvasy, options.fortresssize, options.fortresssize, '#fff' );
 		}
 	}
 }
 
-//. showViewArea
-function showViewArea( mapinfo ) {
-	var $canvas = newLayer( 'viewarea', options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d'),
-		startx  = mapinfo.x - ( Math.ceil( mapinfo.size / 2 ) - 1 ),
-		starty  = mapinfo.y + ( Math.ceil( mapinfo.size / 2 ) - 1 ),
-		canvasx = getCanvasX( startx ),
-		canvasy = getCanvasY( starty ),
-		width   = Math.ceil( mapinfo.size * options.pxsize ),
-		height  = Math.ceil( mapinfo.size * options.pxsize );
+//. drowBase
+function drowBase( context, options, name ) {
+	var data = layerdata[ 'base_' + name ];
+	if ( !data ) { return; }
 
-	clear( context );
-	drowArea( context, canvasx, canvasy, width, height );
-}
-
-//. showBasePoint
-function showBasePoint( name, list, pointsize ) {
-	var $canvas = newLayer( 'baselist' + name, options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d'),
-		canvasx, canvasy;
-
-	pointsize = pointsize || options.pointsize;
-
-	clear( context );
+	var pointsize = data.pointsize || options.pointsize,
+		list = data.list;
 
 	//拠点
 	for ( var i = 0, len = list.length; i < len; i++ ) {
-		canvasx = getCanvasPointX( list[ i ].x, options.pointsize );
-		canvasy = getCanvasPointY( list[ i ].y, options.pointsize );
+		let { x, y, color } = list[ i ],
+			canvasx, canvasy;
 
-		drowPoint( context, canvasx, canvasy, pointsize, pointsize, list[ i ].color );
+		canvasx = getCanvasPointX( x, options.pointsize, options.size, options.pxsize );
+		canvasy = getCanvasPointY( y, options.pointsize, options.size, options.pxsize );
+
+		drowPoint( context, canvasx, canvasy, pointsize, pointsize, color );
 	}
 }
 
-//. showRoute
-function showRoute( list ) {
-	var $canvas = newLayer( 'rute', options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d');
-
-	clear( context );
+//. drowRoute
+function drowRoute( context, options ) {
+	var list = layerdata.route;
+	if ( !list ) { return; }
 
 	for ( var i = 0, len = list.length; i < len; i++ ) {
-		var { sx, sy, ex, ey, color } = list[ i ];
+		let { sx, sy, ex, ey, color } = list[ i ];
 
-		sx = getCanvasX( sx );
-		sy = getCanvasY( sy );
-		ex = getCanvasX( ex );
-		ey = getCanvasY( ey );
+		sx = getCanvasX( sx, options.size, options.pxsize );
+		sy = getCanvasY( sy, options.size, options.pxsize );
+		ex = getCanvasX( ex, options.size, options.pxsize );
+		ey = getCanvasY( ey, options.size, options.pxsize );
 
 		drowLine( context, sx, sy, ex, ey, color );
 	}
 }
 
-//. showPointer
-function showPointer( x, y ) {
-	var $canvas = newLayer( 'pointer', options.mapsize, options.mapsize ),
-		context = $canvas.get(0).getContext('2d'),
-		radius = options.pointsize + 1;
+//. drowPointer
+function drowPointer( context, options ) {
+	var data = layerdata.pointer;
+	if ( !data ) { return; }
 
-	clear( context );
-	if ( x === undefined || y === undefined ) { return; }
+	var radius = options.pointsize + 1,
+		x = getCanvasX( data.x, options.size, options.pxsize ),
+		y = getCanvasY( data.y, options.size, options.pxsize );
 
-	drowCircle( context, getCanvasX( x ), getCanvasY( y ), radius, '#fff' );
-}
-
-//. removeLayer
-function removeLayer( name ) {
-	if ( layer[ name ] ) { layer[ name ].remove(); }
-
-	delete layer[ name ];
-}
-
-//. newLayer
-function newLayer( name, width, height ) {
-	var $canvas = layer[ name ];
-
-	if ( $canvas ) { return $canvas; }
-
-	$canvas = $('<canvas />').attr({ width: width, height: height });
-	layer[ name ] = $canvas;
-
-	$map.append( $canvas );
-
-	return $canvas;
+	drowCircle( context, x, y, radius, '#fff' );
 }
 
 //. clear
-function clear( context ) {
-	context.clearRect( 0, 0, options.mapsize, options.mapsize );
+function clear( context, mapsize ) {
+	context.clearRect( 0, 0, mapsize, mapsize );
 }
 
-//. drowPoint
-function drowPoint( context, x, y, width, height, color ) {
-	context.fillStyle = color;
-	context.fillRect( x, y, width, height );
+//. drowBackground
+function drowBackground( context, mapsize ) {
+	context.fillStyle = '#000';
+	context.fillRect( 0, 0, mapsize, mapsize );
 }
 
 //. drowArea
@@ -5380,6 +5470,12 @@ function drowArea( context, x, y, width, height ) {
 	context.fillStyle = '#66f';
 	context.fillRect( x - 1, y - 1, width + 2, height + 2 );
 	context.clearRect( x, y, width, height );
+}
+
+//. drowPoint
+function drowPoint( context, x, y, width, height, color ) {
+	context.fillStyle = color;
+	context.fillRect( x, y, width, height );
 }
 
 //. drowLine
@@ -5396,6 +5492,8 @@ function drowLine( context, startx, starty, endx, endy, color ) {
 	context.fillRect( startx - 1, starty - 1, 3, 3 );
 	context.fill();
 	//着弾点
+	endx += 0.5;
+	endy += 0.5;
 	context.beginPath();
 	context.arc( endx, endy, 2, 0, 360, false );
 	context.fill();
@@ -5411,12 +5509,6 @@ function drowCircle( context, x, y, radius, color ) {
 	context.beginPath();
 	context.arc( x, y, radius, 0, 360, false );
 	context.stroke();
-}
-
-//. appendLabel
-function appendLabel( top, left, text ) {
-	$('<span>' + text + '</span>').css({ position: 'absolute', top: top, left: left })
-	.appendTo( $map );
 }
 
 //. mapMouseMove
@@ -5452,6 +5544,7 @@ function mapMouseMove( e ) {
 function mapClick( e ) {
 	var $this = $(this),
 		offset = $this.offset(),
+		options = $this.data('options'),
 		country = $this.attr('country'),
 		x = Math.floor( ( e.pageX - offset.left ) / options.pxsize ),
 		y = Math.floor( ( e.pageY - offset.top ) / options.pxsize );
@@ -9841,8 +9934,8 @@ baseMap: function() {
 	if ( country == -1 ) { return; }
 
 	list = this.userBaseList();
-	$map = CounteryMap.create( country );
-	CounteryMap.showBasePoint( 'user', list );
+	$map = MiniMap.create( country, { label: true } );
+	MiniMap.showBasePoint( 'user', list );
 
 	$map.css({ margin: '0px auto 10px auto' })
 	.prependTo('DIV.common_box3bottom:eq(1)');
@@ -9852,11 +9945,11 @@ baseMap: function() {
 		function() {
 			var { x, y } = $(this).data();
 
-			CounteryMap.showPointer( x, y );
+			MiniMap.showPointer( x, y );
 			Util.enter.call( this );
 		},
 		function() {
-			CounteryMap.showPointer();
+			MiniMap.showPointer();
 			Util.leave.call( this );
 		}
 	)
@@ -9905,9 +9998,6 @@ userBaseList: function() {
 			list.push({ x: x, y: y, color: colors[ type ] });
 		}
 	});
-
-	//本領が所領より後に描画されるように
-	list.push( list.shift() );
 
 	return list;
 },
@@ -13439,6 +13529,8 @@ style: '' +
 '#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 5px; }' ) +
 
+'#imi_map_scale { margin-right: 5px; }' +
+
 /* style調整 */
 '#material { line-height: 14px; }' +
 '#material IMG { margin-top: -3px; }' +
@@ -13576,7 +13668,7 @@ layouter: function() {
 
 	//小マップ
 	$('<div id="imi_map" />').appendTo('#ig_mapbox')
-	Map.showCountryMap( Map.info.country );
+	Map.showMiniMap( Map.info.country );
 },
 
 //. layouterMapInfo
@@ -14115,11 +14207,11 @@ layouterKagemusha: function() {
 		function() {
 			var { x, y } = $(this).data();
 
-			CounteryMap.showPointer( x, y );
+			MiniMap.showPointer( x, y );
 			Util.enter.call( this );
 		},
 		function() {
-			CounteryMap.showPointer();
+			MiniMap.showPointer();
 			Util.leave.call( this );
 		}
 	);
