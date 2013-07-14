@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.2
+// @version        1.2.2.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3141,6 +3141,7 @@ style: '' +
 '#imi_unit_dialog .imc_card_status TH { width: 45px; }' +
 '#imi_unit_dialog .imc_card_status .emphasis { background-color: #808080; }' +
 '#imi_unit_dialog .imc_card_status .imc_solmax { background-color: #642; }' +
+'#imi_unit_dialog .imc_card_status .imc_emphasis { background-color: #886; }' +
 '#imi_unit_dialog .imc_card_status .imc_power { background-color: #246; }' +
 '#imi_unit_dialog .imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
 '#imi_unit_dialog .imc_card_param { }' +
@@ -6281,7 +6282,7 @@ contextmenu: function() {
 		card = Deck.analyzedData[ card_id ],
 		data = Deck.getPoolSoldiers(),
 		deck = $this.closest('#imi_card_container').length,
-		menu = {}, pool = [], submenu, num;
+		menu = {}, pool = [], submenu, label, num, max;
 
 	if ( !card ) {
 		card = Deck.currentUnit.list.filter(function( elem ) { return elem.cardId == card_id; })[ 0 ];
@@ -6321,14 +6322,19 @@ contextmenu: function() {
 
 	if ( card.solType ) {
 		num = data.pool[ card.solType ] || 0;
+		max = Math.min( card.solNum + num, card.maxSolNum );
 		submenu = {};
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
-			submenu['最大補充'] = function() {
+			label = ( max == card.maxSolNum ) ? 'MAX' : max;
+			submenu['兵数最大 ( ' + label + ' )'] = function() {
 				card.setUnitMax()
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
 			};
+		}
+		else {
+			submenu['兵数最大'] = $.contextMenu.nothng;
 		}
 
 		[ 1, 10, 250, 500 ].forEach(function( value ) {
@@ -6350,15 +6356,9 @@ contextmenu: function() {
 			};
 		}
 
-		if ( $.isEmptyObject( submenu ) ) {
-			menu['兵数変更'] = $.contextMenu.nothing;
-		}
-		else {
-			menu['兵数変更'] = submenu;
-		}
-	}
-	else {
-		menu['兵数変更'] = $.contextMenu.nothing;
+		if ( $.isEmptyObject( submenu ) ) { submenu = $.contextMenu.nothing; }
+		menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = submenu;
+		menu['セパレーター0'] = $.contextMenu.separator;
 	}
 
 	$.each( Soldier.typeKeys, function( type ) {
@@ -6374,38 +6374,28 @@ contextmenu: function() {
 		submenu = {};
 
 		pool.forEach(function( poolSol ) {
-			var menu = {}, base, max;
+			var max = Math.min( poolSol.num, card.maxSolNum ),
+				submenu = {};
 
-			base = Math.min( poolSol.num, card.solNum );
-			max = Math.min( poolSol.num, card.maxSolNum );
-
-			if ( max >= base ) {
-				menu['兵数最大 ( ' + max + ' )'] = function() {
-					card.setUnit( max, poolSol.type )
-					.done( Deck.update )
-					.fail(function() { Display.alert('編成できませんでした。'); });
-				}
-			}
-			if ( base != max && base >= 2 ) {
-				menu['現状維持 ( ' + base + ' )'] = function() {
-					card.setUnit( base, poolSol.type )
-					.done( Deck.update )
-					.fail(function() { Display.alert('編成できませんでした。'); });
-				}
-			}
-			menu['兵数 1'] = function() {
-				card.setUnit( 1, poolSol.type )
+			label = ( max == card.maxSolNum ) ? 'MAX' : max;
+			submenu['兵数最大 ( ' + label + ' )'] = function() {
+				card.setUnit( max, poolSol.type )
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
-			}
+			};
 
-			submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = menu;
+			[ 1, 10, 250, 500 ].forEach(function( value ) {
+				if ( value >= poolSol.num + card.solNum ) { return; }
+
+				submenu[ '兵数 ' + value + ' セット' ] = function() {
+					card.setUnit( value, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				};
+			});
+
+			menu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = submenu;
 		});
-
-		menu['兵種変更'] = submenu;
-	}
-	else {
-		menu['兵種変更'] = $.contextMenu.nothing;
 	}
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
@@ -7107,7 +7097,7 @@ contextmenu: function() {
 		card_id = $this.attr('card_id'),
 		card = Deck.analyzedData[ card_id ],
 		data = Deck.getPoolSoldiers(),
-		menu = {}, pool = [], submenu, num, max;
+		menu = {}, pool = [], submenu, label, num, max;
 
 	menu[ card.name ] = $.contextMenu.title;
 
@@ -7123,7 +7113,8 @@ contextmenu: function() {
 		submenu = {};
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
-			submenu['兵数最大 ( ' + max + ' )'] = function() {
+			label = ( max == card.maxSolNum ) ? 'MAX' : max;
+			submenu['兵数最大 ( ' + label + ' )'] = function() {
 				card.setUnitMax()
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
@@ -7152,13 +7143,8 @@ contextmenu: function() {
 			};
 		}
 
-		if ( $.isEmptyObject( submenu ) ) {
-			menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = $.contextMenu.nothing;
-		}
-		else {
-			menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = submenu;
-		}
-
+		if ( $.isEmptyObject( submenu ) ) { submenu = $.contextMenu.nothing; }
+		menu[ card.solName + ' ( ' + ( card.solNum + num ) + ' )' ] = submenu;
 		menu['セパレーター0'] = $.contextMenu.separator;
 	}
 
@@ -7173,30 +7159,25 @@ contextmenu: function() {
 
 	if ( pool.length > 0 ) {
 		pool.forEach(function( poolSol ) {
-			var submenu = {}, base, max;
+			var max = Math.min( poolSol.num, card.maxSolNum ),
+				submenu = {};
 
-			base = Math.min( poolSol.num, card.solNum );
-			max = Math.min( poolSol.num, card.maxSolNum );
-
-			if ( max >= base ) {
-				submenu['兵数最大 ( ' + max + ' )'] = function() {
-					card.setUnit( max, poolSol.type )
-					.done( Deck.update )
-					.fail(function() { Display.alert('編成できませんでした。'); });
-				}
-			}
-			if ( base != max && base >= 2 ) {
-				submenu['現状維持 ( ' + base + ' )'] = function() {
-					card.setUnit( base, poolSol.type )
-					.done( Deck.update )
-					.fail(function() { Display.alert('編成できませんでした。'); });
-				}
-			}
-			submenu['兵数 1'] = function() {
-				card.setUnit( 1, poolSol.type )
+			label = ( max == card.maxSolNum ) ? 'MAX' : max;
+			submenu['兵数最大 ( ' + label + ' )'] = function() {
+				card.setUnit( max, poolSol.type )
 				.done( Deck.update )
 				.fail(function() { Display.alert('編成できませんでした。'); });
-			}
+			};
+
+			[ 1, 10, 250, 500 ].forEach(function( value ) {
+				if ( value >= poolSol.num + card.solNum ) { return; }
+
+				submenu[ '兵数 ' + value + ' セット' ] = function() {
+					card.setUnit( value, poolSol.type )
+					.done( Deck.update )
+					.fail(function() { Display.alert('編成できませんでした。'); });
+				};
+			});
 
 			menu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = submenu;
 		});
@@ -8177,6 +8158,9 @@ layouter: function() {
 		//兵士満載の場合
 		cssClass = 'class="imc_solmax"';
 	}
+	else if ( this.solNum > 1 ) {
+		cssClass = 'class="imc_emphasis"';
+	}
 	else if ( this.solNum > 0 ) {
 		cssClass = 'class="emphasis"';
 	}
@@ -8255,10 +8239,13 @@ update: function() {
 		$tr = $elem.find('.imc_card_status TR');
 
 	if ( this.solNum == this.maxSolNum ) {
-		$tr.slice( 0, 2 ).removeClass('emphasis').addClass('imc_solmax');
+		$tr.slice( 0, 2 ).removeClass('imc_emphasis emphasis').addClass('imc_solmax');
+	}
+	else if ( this.solNum > 1 ) {
+		$tr.slice( 0, 2 ).removeClass('imc_solmax emphasis').addClass('imc_emphasis');
 	}
 	else if ( this.solNum > 0 ) {
-		$tr.slice( 0, 2 ).addClass('emphasis').removeClass('imc_solmax');
+		$tr.slice( 0, 2 ).removeClass('imc_solmax imc_emphasis').addClass('emphasis');
 	}
 	else {
 		$tr.slice( 0, 2 ).removeAttr('class');
@@ -8383,6 +8370,9 @@ layouter: function() {
 		//兵士満載の場合
 		cssClass = 'class="imc_solmax"';
 	}
+	else if ( this.solNum > 1 ) {
+		cssClass = 'class="imc_emphasis"';
+	}
 	else if ( this.solNum > 0 ) {
 		cssClass = 'class="emphasis"';
 	}
@@ -8473,10 +8463,13 @@ update: function() {
 		$tr = $elem.find('.imc_card_status TR');
 
 	if ( this.solNum == this.maxSolNum ) {
-		$tr.slice( 0, 2 ).removeClass('emphasis').addClass('imc_solmax');
+		$tr.slice( 0, 2 ).removeClass('imc_emphasis emphasis').addClass('imc_solmax');
+	}
+	else if ( this.solNum > 1 ) {
+		$tr.slice( 0, 2 ).removeClass('imc_solmax emphasis').addClass('imc_emphasis');
 	}
 	else if ( this.solNum > 0 ) {
-		$tr.slice( 0, 2 ).addClass('emphasis').removeClass('imc_solmax');
+		$tr.slice( 0, 2 ).removeClass('imc_solmax imc_emphasis').addClass('emphasis');
 	}
 	else {
 		$tr.slice( 0, 2 ).removeAttr('class');
@@ -8561,6 +8554,9 @@ layouter: function() {
 	if ( this.solNum == this.maxSolNum ) {
 		//兵士満載の場合
 		cssClass = 'class="imc_solmax"';
+	}
+	else if ( this.solNum > 2 ) {
+		cssClass = 'class="imc_emphasis"';
 	}
 	else if ( this.solNum > 0 ) {
 		cssClass = 'class="emphasis"';
@@ -12553,6 +12549,7 @@ style: '' +
 '.imc_card_skill TH { width: 20px; }' +
 '.imc_card_status TH { width: 45px; }' +
 '.imc_card_status .imc_solmax { background-color: #642; }' +
+'.imc_card_status .imc_emphasis { background-color: #886; }' +
 '.imc_card_status .imc_power { background-color: #246; }' +
 '.imc_card_status .imc_power TD { text-align: right; padding-right: 5px; }' +
 /* HP・討伐ゲージ用バー */
