@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.6
+// @version        1.2.2.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4258,7 +4258,7 @@ coordList: function( country ) {
 
 		$tbody
 		.append(
-			$('<tr style="cursor: pointer;" />').data({ user: this.user, castle: this.castle, x: point[1], y: point[2] })
+			$('<tr class="ime_coord" style="cursor: pointer;" />').data({ user: this.user, castle: this.castle }).attr({ x: point[1], y: point[2] })
 			.append(
 				'<td>' + ( this.user || '-' ) + '</td>' +
 				'<td>' + ( this.castle || '-' ) + '</td>' +
@@ -4270,13 +4270,18 @@ coordList: function( country ) {
 
 	$tbody.find('tr')
 	.click(function() {
-		var { x, y } = $(this).data();
+		var $this = $(this),
+			x = $this.attr('x'),
+			y = $this.attr('y');
+
 		Map.move( x, y );
 	})
 	.contextMenu(function() {
 		//user情報には資源情報が入っている場合があるためplayer判定には使えない
 		var $this = $(this),
-			{ user, castle, x, y } = $this.data(),
+			{ user, castle } = $this.data(),
+			x = $this.attr('x'),
+			y = $this.attr('y'),
 			type = $this.find('TD').eq( 3 ).text(),
 			title = ( castle || type + ' (' + x + ',' + y + ')' ),
 			menu = {};
@@ -8875,7 +8880,7 @@ countDown: function( type ) {
 				$div.find('.imc_countdown_display').removeAttr('class').text( ' ' + mode + ' ' );
 
 				if ( mode == '加待' ) {
-					$base.children('SPAN').first().addClass('imc_coord').attr({ x: x, y: y, c: c });
+					$base.children('SPAN').first().addClass('ime_coord imc_coord').attr({ x: x, y: y, c: c });
 				}
 			}
 			else if ( type == '部隊' && location.pathname != '/map.php' ) {
@@ -9016,7 +9021,7 @@ contextmenu: function() {
 	if ( other ) {
 		menu[ name ] = $.contextMenu.title;
 
-		var $coord = $this.find('.imc_coord');
+		var $coord = $this.find('.ime_coord');
 		if ( $coord.length ) {
 			var x = $coord.attr('x'),
 				y = $coord.attr('y'),
@@ -9604,13 +9609,13 @@ createCoordLink: function() {
 
 		for ( var i = 0, len = array.length; i < len; i++ ) {
 			point = array[ i ].match( pointReg );
-			html = '<span class="imc_coord" x="' + point[0] + '" y="' + point[1] + '">' + array[ i ] + '</span>';
+			html = '<span class="ime_coord imc_coord" x="' + point[0] + '" y="' + point[1] + '">' + array[ i ] + '</span>';
 			text = text.replace( array[ i ], html );
 			$this.html( text );
 		}
 	});
 
-	$('.imc_coord').live('click', function() {
+	$('.ime_coord').live('click', function() {
 		var $this = $(this),
 			x = $this.attr('x'),
 			y = $this.attr('y'),
@@ -9624,6 +9629,7 @@ createCoordLink: function() {
 			y = $this.attr('y'),
 			areaid = 'imi_area_' + x + '_' + y;
 
+		MiniMap.showPointer( x.toInt(), y.toInt() );
 		$('#' + areaid).mouseover();
 	})
 	.live('mouseleave', function() {
@@ -9632,6 +9638,7 @@ createCoordLink: function() {
 			y = $this.attr('y'),
 			areaid = 'imi_area_' + x + '_' + y;
 
+		MiniMap.showPointer();
 		$('#' + areaid).mouseout();
 	});
 },
@@ -13493,6 +13500,7 @@ style: '' +
 '.imc_clear:hover { background-color: #f9dea1; }' +
 
 /* 座標情報 */
+'.imc_fort, .imc_fort2 { margin-bottom: 10px; }' +
 '.imc_fort TD { width: 50px; }' +
 '.imc_fort2 TD { width: 42px; }' +
 
@@ -14133,7 +14141,7 @@ layouterUnitStatus: function() {
 				html = target;
 			}
 			else {
-				html = '<span class="imc_coord" x="' + ex + '" y="' + ey + '" c="' + ec + '">' +
+				html = '<span class="ime_coord imc_coord" x="' + ex + '" y="' + ey + '" c="' + ec + '">' +
 					target + ' (' + ex + ',' + ey + ')</span>';
 			}
 
@@ -14282,7 +14290,7 @@ fortressLink: function() {
 				y = base_y * compass[ value ].y,
 				name = compass[ value ].name + idx;
 
-			return '<td data-x="' + x + '" data-y="' + y + '">' + name + '</td>';
+			return '<td class="ime_coord" x="' + x + '" y="' + y + '">' + name + '</td>';
 		}).join('');
 
 		return '<tr style="cursor: pointer">' + html + '</tr>';
@@ -14291,12 +14299,8 @@ fortressLink: function() {
 	html += '</table>';
 
 	$( html ).appendTo('#imi_coord')
-	.find('TR:gt(0) TD')
-	.hover( Util.enter, Util.leave )
-	.click(function() {
-		var { x, y } = $(this).data();
-		Map.move( x, y );
-	});
+	.find('.ime_coord')
+	.hover( Util.enter, Util.leave );
 },
 
 //. fortressLink2
