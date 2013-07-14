@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.4
+// @version        1.2.2.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1012,6 +1012,16 @@ getResource: function() {
 		$('#stone').text().toInt(),
 		$('#iron').text().toInt(),
 		$('#rice').text().toInt()
+	];
+},
+
+//. getProduction
+getProduction: function() {
+	return [
+		$('#output_wood').text().toInt(),
+		$('#output_stone').text().toInt(),
+		$('#output_iron').text().toInt(),
+		$('#output_rice').text().toInt()
 	];
 },
 
@@ -2807,7 +2817,7 @@ else {
 		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
 		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
 		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 270, dou: 300, require: ['弓', '器']},
-		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 180, dou:  10, require: ['槍', '器']},
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 180, dou: 200, require: ['槍', '器']},
 		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 250, dou: 300, require: ['馬', '器']},
 		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
 		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器']},
@@ -10525,26 +10535,36 @@ main: function() {
 
 //. checkResource
 checkResource: function() {
-	var resource = Util.getResource();
+	var resource = Util.getResource(),
+		production = Util.getProduction();
 
 	$('.ig_tilesection_innermid, .ig_tilesection_innermid2')
 	.each(function() {
 		var $this = $(this),
-			$useCp = $this.find('.ig_tilesection_pay_text A');
+			$useCp = $this.find('.ig_tilesection_pay_text A'),
+			maxtime = 0;
 
 		if ( $useCp.length == 0 ) { return; }
 
 		'wood cotton iron food'.split(' ').forEach(function( key, idx ) {
-				$td = $this.find('.paneltable .icon_' + key),
-				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt();
+			var $td = $this.find('.paneltable .icon_' + key),
+				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt(),
+				time;
 
 			if ( resource[ idx ] > value ) {
 				$td.addClass('imc_surplus');
 			}
 			else {
 				$td.addClass('imc_shortage');
+				time = Math.ceil( ( value - resource[ idx ] ) / production[ idx ] * 3600 );
+				if ( time > maxtime ) { maxtime = time; }
 			}
 		});
+
+		if ( maxtime > 0 ) {
+			$this.find('TABLE TR:last TD')
+			.append('<span>【実行可能 ' + maxtime.toFormatTime() + ' 後】</span>');
+		}
 	});
 }
 
@@ -10973,7 +10993,8 @@ dealings: function() {
 //. research
 research: function() {
 	var market = Util.getMarket(),
-		resource = Util.getResource();
+		resource = Util.getResource(),
+		production = Util.getProduction();
 
 	//施設情報を下へ移動
 	$('#facilityPartForm').insertBefore('.ig_paneloutbtn:last');
@@ -10983,28 +11004,36 @@ research: function() {
 		var $this = $(this),
 			name = $this.find('H3:last').text().slice(1, -1),
 			data = Soldier.getByName( name ),
-			materials, $tr, $clone;
+			maxtime = 0, materials, $tr, $clone;
 
 		if ( !data ) { return; }
 
+		maxtime = 0;
 		materials = 'wood cotton iron food'.split(' ').map(function( key, idx ) {
-				$td = $this.find('.paneltable .icon_' + key),
-				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt();
+			var $td = $this.find('.paneltable .icon_' + key),
+				value = ( $td.text() || '0' ).match(/\d+/)[ 0 ].toInt(),
+				time;
 
 			if ( resource[ idx ] > value ) {
 				$td.addClass('imc_surplus');
 			}
 			else {
 				$td.addClass('imc_shortage');
+				time = Math.ceil( ( value - resource[ idx ] ) / production[ idx ] * 3600 );
+				if ( time > maxtime ) { maxtime = time; }
 			}
 
 			return value;
 		});
 
+		if ( maxtime > 0 ) {
+			$this.find('TABLE TR:last TD')
+			.append('<span>【実行可能 ' + maxtime.toFormatTime() + ' 後】</span>');
+		}
+
 		$tr = $this.find('TABLE TR:first');
 		$clone = $tr.clone().addClass('im_dou');
-		$clone.find('TD').empty()
-		.append( '<span class="money_b">' + data.dou + '</span>' );
+		$clone.find('TD').empty().append( '<span class="money_b">' + data.dou + '</span>' );
 		$tr.after( $clone );
 
 		if ( $this.find('.ig_tilesection_btnarea A').length == 1 ) { return; }
