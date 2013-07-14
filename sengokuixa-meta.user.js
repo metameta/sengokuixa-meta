@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.2.3
+// @version        1.2.2.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -13323,7 +13323,7 @@ style: '' +
 '.ig_map_movepanel_btnarea { top: 20px; }' +
 '.ig_map_movepanel_btnarea INPUT ~ INPUT { display: none; }' +
 
-'#village_name { width: 400px; }' +
+'#village_name { width: 400px; padding-top: 4px; }' +
 '#mapSubmenu { z-index: 300; }' +
 
 /* 表示国セレクタ */
@@ -13331,7 +13331,7 @@ style: '' +
 '#imi_country_selecter SELECT { margin: 0px 5px; }' +
 
 /* 部隊状況 */
-'#imi_unitstatus { position: absolute; top: 110px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }' +
+'#imi_unitstatus { position: absolute; top: 105px; left: 5px; width: 250px; font-size: 11px; height: 80px; background-color: #F1F0DC; z-index: 2; }' +
 '#imi_unitstatus TABLE { width: 100%; height: 100%; }' +
 '#imi_unitstatus TR { height: 16px; }' +
 '#imi_unitstatus TD { padding: 0px; }' +
@@ -13416,7 +13416,7 @@ style: '' +
 '#map_effect_atc { line-height: 14px; }' +
 '#map_effect_atc IMG { vertical-align: middle; margin-top: -3px; padding-right: 2px; }' +
 '.ig_mappanel_maindataarea { height: auto !important; }' +
-'.ig_mappanel_dataarea{ height: auto !important; width: 600px; }' +
+'.ig_mappanel_dataarea{ padding: 2px 8px; height: auto !important; width: 600px; }' +
 '.ig_mappanel_dataarea > TABLE { width: 616px; }' +
 'P.areaDir { top: 202px; left: 536px; }' +
 '',
@@ -13508,7 +13508,7 @@ layouter: function() {
 
 	//NPC空き地必要攻撃力表示エリア
 	html = '<tr>' +
-		'<th style="color: #ff0">攻撃力</th>' +
+		'<th style="color: #ff0; line-height: 20px;">攻撃力</th>' +
 		'<td colspan="7"><span id="imi_npc_attack"/></td>' +
 	'</tr>';
 
