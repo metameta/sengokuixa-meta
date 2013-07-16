@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.1
+// @version        1.2.3.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6593,7 +6593,7 @@ contextmenu: function() {
 			};
 
 			[ 1, 10, 250, 500 ].forEach(function( value ) {
-				if ( value >= poolSol.num + card.solNum ) { return; }
+				if ( value >= poolSol.num ) { return; }
 
 				submenu[ '兵数 ' + value + ' セット' ] = function() {
 					card.setUnit( value, poolSol.type )
@@ -7378,7 +7378,7 @@ contextmenu: function() {
 			};
 
 			[ 1, 10, 250, 500 ].forEach(function( value ) {
-				if ( value >= poolSol.num + card.solNum ) { return; }
+				if ( value >= poolSol.num ) { return; }
 
 				submenu[ '兵数 ' + value + ' セット' ] = function() {
 					card.setUnit( value, poolSol.type )
