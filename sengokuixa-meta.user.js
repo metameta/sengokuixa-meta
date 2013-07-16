@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.0
+// @version        1.2.3.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1175,9 +1175,9 @@ getMaxTraining: function( resource, requirements, rate, max, min ) {
 
 //. divide
 divide: function( list, soldata, solnum ) {
-	var facilities = [], maxidx = 0, total = 0, soltotal = 0;
+	var uranai = Util.getUranai(),
+		facilities = [], maxidx = 0, total = 0, soltotal = 0;
 
-	total = 0;
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		let facility = $.extend( { type: soldata.type }, list[ i ] );
 
@@ -1209,6 +1209,19 @@ divide: function( list, soldata, solnum ) {
 		}
 	}
 
+	for ( var i = 0, len = facilities.length; i < len; i++ ) {
+		let facility = facilities[ i ];
+
+		facility.materials = Util.getConsumption( soldata.materials, facility.solnum );
+
+		if ( Env.chapter <= 5 ) {
+			facility.trainingtime = Math.ceil( facility.solnum * soldata.training * facility.mod * uranai[ 1 ] );
+		}
+		else {
+			facility.trainingtime = Math.floor( facility.solnum * soldata.training[ facility.lv - 1 ] * uranai[ 1 ] );
+		}
+	}
+
 	return facilities;
 },
 
@@ -1217,14 +1230,22 @@ divide2: function( list, soldata, time ) {
 	var uranai = Util.getUranai(),
 		facilities = [], total = 0;
 
-	total = 0;
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		let facility = $.extend( { type: soldata.type }, list[ i ] );
 
-		facility.mod  = Math.pow( 0.8, facility.lv - 1 );
-		facility.solnum = Math.floor( time / facility.mod / soldata.training / uranai[ 1 ] );
-		total += facility.solnum;
+		if ( Env.chapter <= 5 ) {
+			facility.mod  = Math.pow( 0.8, facility.lv - 1 );
+			facility.solnum = Math.floor( time / facility.mod / soldata.training / uranai[ 1 ] );
+			facility.trainingtime = Math.ceil( facility.solnum * soldata.training * facility.mod * uranai[ 1 ] );
+		}
+		else {
+			facility.solnum = Math.floor( time / soldata.training[ facility.lv - 1 ] / uranai[ 1 ] );
+			facility.trainingtime = Math.floor( facility.solnum * soldata.training[ facility.lv - 1 ] * uranai[ 1 ] );
+		}
 
+		facility.materials = Util.getConsumption( soldata.materials, facility.solnum );
+
+		total += facility.solnum;
 		facilities.push( facility );
 	}
 
@@ -2378,8 +2399,6 @@ dialogTraining: function() {
 
 		total = 0;
 		list.forEach(function( elem ) {
-			elem.materials = Util.getConsumption( soldata.materials, elem.solnum );
-			elem.trainingtime = Math.ceil( elem.solnum * soldata.training * elem.mod * uranai[ 1 ] );
 			elem.create_count = count;
 			total += elem.solnum;
 
@@ -2799,28 +2818,28 @@ if ( Env.chapter <= 5 ) {
 else {
 	data = {
 		//槍
-		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training:  90, dou:   0, require: ['槍', '槍']},
-		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 105, dou:  10, require: ['槍', '槍']},
-		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  3, command: '槍', skillType: '槍', training: 120, dou: 200, require: ['槍', '弓']},
-		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 17, speed: 19, destroy:  4, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
+		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: [  90, 73, 59, 48, 39, 32, 26, 22, 18, 15, 13, 11,  9, 8, 7 ], dou:   0, require: ['槍', '槍']},//14
+		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: [ 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 11, 9, 8 ], dou:  10, require: ['槍', '槍']},//14
+		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  3, command: '槍', skillType: '槍', training: [ 120, 97, 78, 63, 51, 42, 34, 28, 23, 19, 16, 13, 11, 9, 8 ], dou: 200, require: ['槍', '弓']},//11
+		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 17, speed: 19, destroy:  4, command: '槍', skillType: '槍', training: [], dou:   0, require: ['槍', '槍']},
 		//弓
-		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training:  95, dou:   0, require: ['弓', '弓']},
-		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 110, dou:  10, require: ['弓', '弓']},
-		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 125, dou: 200, require: ['弓', '馬']},
-		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
+		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: [  95,  77, 62, 51, 41, 34, 28, 23, 19, 16, 13, 11,  9,  8, 7 ], dou:   0, require: ['弓', '弓']},//12
+		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: [ 110,  89, 72, 58, 47, 39, 32, 26, 21, 18, 15, 13, 11,  9, 8 ], dou:  10, require: ['弓', '弓']},//12
+		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: [ 125, 101, 82, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10, 9 ], dou: 200, require: ['弓', '馬']},//11
+		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training: [], dou:   0, require: ['弓', '弓']},
 		//馬
-		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 100, dou:   0, require: ['馬', '馬']},
-		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 115, dou:  10, require: ['馬', '馬']},
-		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 130, dou: 200, require: ['馬', '槍']},
-		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
+		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: [ 100,  81, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10,  9, 8 ], dou:   0, require: ['馬', '馬']},//13
+		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: [ 115,  93, 75, 61, 49, 40, 33, 27, 22, 19, 16, 13, 11,  9, 8 ], dou:  10, require: ['馬', '馬']},//11
+		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: [ 130, 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 10, 9 ], dou: 200, require: ['馬', '槍']},//13
+		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training: [], dou:   0, require: ['馬', '馬']},
 		//器
-		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
-		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 195, dou:  10, require: ['器', '器']},
-		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 270, dou: 300, require: ['弓', '器']},
-		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 180, dou: 200, require: ['槍', '器']},
-		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 250, dou: 300, require: ['馬', '器']},
-		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
-		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器']},
+		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器']},//11
+		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器']},//11
+		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: [ 270, 217, 174, 140, 113, 91, 73, 59, 48, 39, 32, 26, 21, 17, 14 ], dou: 300, require: ['弓', '器']},//11
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: [ 180, 145, 117,  94,  76, 61, 50, 41, 33, 27, 23, 19, 16, 13, 11 ], dou: 200, require: ['槍', '器']},//13
+		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou: 300, require: ['馬', '器']},//13
+		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training: [], dou:   0, require: ['槍', '器']},
+		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou:  10, require: ['弓', '器']},//11
 		//NPC用
 		'浪人':     { defend:  12, command: '槍' },
 		'抜け忍':   { defend:  12, command: '弓' },
@@ -11045,7 +11064,7 @@ trainingPulldown: function( $div ) {
 		$input.parent().next().remove();
 		$input.replaceWith( $select );
 
-		$select.data({ type: data.type, training: data.training, materials: materials })
+		$select.data({ type: data.type, materials: materials })
 		.change( self.trainingDivide ).trigger('change');
 	});
 },
@@ -11054,29 +11073,28 @@ trainingPulldown: function( $div ) {
 trainingDivide: function( e ) {
 	var $this = $(this),
 		solnum = $this.val().toInt(),
-		{ type, training, materials } = $this.data(),
+		{ type, materials } = $this.data(),
 		list = $(document).data('facilitylist'),
 		soldata = Soldier.getByType( type ),
-		facilities = Util.divide( list, soldata, solnum ),
-		html = '', total_wood = total_stone = total_iron = total_rice = 0;
+		html = '', total_wood = total_stone = total_iron = total_rice = 0,
+		facilities;
+
+	soldata.materials = materials;
+	facilities = Util.divide( list, soldata, solnum ),
 
 	$.each( facilities, function() {
-		var [ wood, stone, iron, rice ] = Util.getConsumption( materials, this.solnum ),
-			time;
+		var [ wood, stone, iron, rice ] = this.materials;
 
 		total_wood  += wood;
 		total_stone += stone;
 		total_iron  += iron;
 		total_rice  += rice;
 
-		time = this.solnum * training;
-		time = Math.ceil( time * Math.pow( 0.8, this.lv - 1 ) );
-
 		html += '<tr class="imc_facility">' +
 			'<th>' + this.name + '</th>' +
 			'<td>' + this.lv + '</td>' +
 			'<td>' + this.solnum + '</td>' +
-			'<td>' + time.toFormatTime(); + '</td>' +
+			'<td>' + this.trainingtime.toFormatTime(); + '</td>' +
 		'</tr>';
 	});
 
