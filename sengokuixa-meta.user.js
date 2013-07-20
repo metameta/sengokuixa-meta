@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.2
+// @version        1.2.3.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5420,12 +5420,15 @@ function showRoute( list ) {
 
 //. showPointer
 function showPointer( x, y ) {
+	if ( !$map ) { return; }
+
 	if ( x === undefined || y === undefined ) {
 		delete layerdata.pointer;
 	}
 	else {
 		layerdata.pointer = { x: x, y: y };
 	}
+
 	drowMap( context, options );
 }
 
