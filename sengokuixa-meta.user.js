@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.3
+// @version        1.2.3.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1181,8 +1181,13 @@ divide: function( list, soldata, solnum ) {
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		let facility = $.extend( { type: soldata.type }, list[ i ] );
 
-		facility.mod  = Math.pow( 0.8, facility.lv - 1 );
-		facility.rate = Math.pow( 1 / 0.8, facility.lv - 1 );
+		if ( Env.chapter <= 5 ) {
+			facility.mod  = Math.pow( 0.8, facility.lv - 1 );
+			facility.rate = Math.pow( 1 / 0.8, facility.lv - 1 );
+		}
+		else {
+			facility.rate = soldata.training[ 0 ] / soldata.training[ facility.lv - 1 ];
+		}
 		total += facility.rate;
 
 		facilities.push( facility );
