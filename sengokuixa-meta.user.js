@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.5
+// @version        1.2.3.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -170,7 +170,7 @@ unique: function() {
 //■ MetaStorage
 var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener=new Object(),propNames='expires'.split(' ');function MetaStorage(name){var storageName=storagePrefix+name,storage,storageArea;storageArea=MetaStorage.keys[storageName];if(!storageArea){throw new Error('「'+storageName+'」このストレージ名は存在しません。');}storage=storageList[storageName];if(storage==undefined){storage=new Storage(storageArea,storageName);loadData.call(storage);storageList[storageName]=storage}return storage}$.extend(MetaStorage,{keys:{},registerStorageName:function(storageName){storageName=storagePrefix+storageName;MetaStorage.keys[storageName]='local'},registerSessionName:function(storageName){storageName=storagePrefix+storageName;MetaStorage.keys[storageName]='session'},clearAll:function(){$.each(MetaStorage.keys,function(key,value){localStorage.removeItem(key)});storageList={}},import:function(string){var importData=JSON.parse(string),keys=MetaStorage.keys;this.clearAll();$.each(importData,function(key,value){if(keys[key]){localStorage.setItem(key,importData[key])}})},export:function(){var exportData={};$.each(MetaStorage.keys,function(key,value){var stringData=localStorage.getItem(key);if(stringData){exportData[value]=stringData}});return JSON.stringify(exportData)},change:function(name,callback){var storageName=storagePrefix+name;$(eventListener).on(storageName,callback)}});function Storage(storageArea,storageName){this.storageArea=storageArea;this.storageName=storageName;this.data={};return this}$.extend(Storage.prototype,{clear:function(){this.data={};clearData.call(this)},get:function(key){return this.data[key]},set:function(key,value){this.data[key]=value;saveData.call(this)},remove:function(key){delete this.data[key];saveData.call(this)},begin:function(){this.transaction=true;this.tranData=$.extend({},this.data)},commit:function(){var trans=this.transaction;delete this.transaction;delete this.tranData;if(trans){saveData.call(this)}},rollback:function(){delete this.transaction;this.data=this.tranData;delete this.tranData},toJSON:function(){return JSON.stringify(this.data)}});function loadData(){this.data=load(this.storageArea,this.storageName)}function saveData(){if(this.transaction){return}save(this.storageArea,this.storageName,this.data)}function clearData(){var storageArea;if(this.transaction){return}if(this.storageArea=='local'){storageArea=localStorage}else if(this.storageArea=='session'){storageArea=sessionStorage}storageArea.removeItem(this.storageName)}function load(storageArea,storageName){var parseData={},stringData,storage;if(storageArea=='local'){storage=localStorage}else if(storageArea=='session'){storage=sessionStorage}stringData=storage.getItem(storageName);if(stringData){try{parseData=JSON.parse(stringData)}catch(e){}}return parseData}function save(storageArea,storageName,data){var stringData=JSON.stringify(data),storage;if(storageArea=='local'){storage=localStorage}else if(storageArea=='session'){storage=sessionStorage}if($.isEmptyObject(data)){storage.removeItem(storageName)}else{storage.setItem(storageName,stringData)}}$(window).on('storage',function(event){var storageName=event.originalEvent.key,storage;if(!MetaStorage.keys[storageName]){return}storage=storageList[storageName];if(storage!==undefined){loadData.call(storage)}$(eventListener).trigger(storageName,event)});return MetaStorage})();
 
-'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL'.split(' ').forEach(function( value ) {
+'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO'.split(' ').forEach(function( value ) {
 	MetaStorage.registerStorageName( value );
 });
 '1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -237,7 +237,7 @@ var Env = (function() {
 
 		if ( newseason !== season ) {
 			//期が変わった場合
-			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL'.split(' ').forEach(function( value ) {
+			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO'.split(' ').forEach(function( value ) {
 				MetaStorage( value ).clear();
 			});
 			'1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -256,6 +256,11 @@ var Env = (function() {
 	}
 	else {
 		war = 0;
+	}
+
+	if ( login ) {
+		MetaStorage('USER_FALL').clear();
+		MetaStorage('USER_INFO').clear();
 	}
 
 	return {
@@ -332,6 +337,166 @@ getTargetDate: function( time, clock ) {
 	date.setTime( ( Util.getServerTime() + sec ) * 1000 );
 
 	return ~~( date.getTime() / 1000 );
+},
+
+//. getUserInfo
+getUserInfo: function( userid, receive ) {
+	var storage = MetaStorage('USER_INFO'),
+		key = 'U' + userid,
+		info, url;
+
+	info = storage.get( key );
+	if ( info ) { return info; }
+
+	if ( receive === false ) { return null; }
+
+	info = {};
+	url = '/user/';
+	if ( userid ) { url += '?user_id=' + userid; }
+
+	$.ajax({ type: 'get', url: url, async: false })
+	.done(function( html ) {
+		var $html = $(html),
+			$profile = $html.find('.profile'),
+			$table = $html.find('TABLE.common_table1'),
+			base = [], camp = [], territory = 0, campc, text;
+
+		info.userId = userid;
+		info.name = $profile.find('.para:first').text().trim();
+		info.lv = $profile.find('.pro1 .para').text().match(/\d+/)[ 0 ].toInt();
+		info.pop = $profile.find('.pro3 .ranking').remove().end().find('.pro3 .para').text().toInt();
+		text = $profile.find('.family_name .name').text();
+		info.country = $.inArray( text, Data.countries );
+		info.alliance = $profile.find('A[href^="/alliance/info.php"]').text();
+		info.allianceId = $profile.find('A[href^="/alliance/info.php"]').attr('href').match(/id=(\d+)/)[ 1 ].toInt();
+		info.managerial = $profile.find('.pro5 .para').text().trim();
+		info.scale = $profile.find('.pro6 .ranking').remove().end().find('.pro6 .para').text().match(/\d+/)[ 0 ].toInt();
+
+		$table.find('TR.fs14').each(function() {
+			var $this = $(this),
+				type  = $this.find('TD').eq( 0 ).text(),
+				pop   = $this.find('TD').eq( 3 ).text().toInt() || '-',
+				$a    = $this.find('A'),
+				name  = $a.eq( 0 ).text().trim(),
+				point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
+				x     = point[ 1 ].toInt(),
+				y     = point[ 2 ].toInt(),
+				c     = point[ 3 ].toInt();
+
+			if ( type == '本領' || type == '所領' || type == '出城' ) {
+				base.push({ type: type, name: name, x: x, y: y, c: c, pop: pop });
+			}
+			else if ( type == '陣' ) {
+				camp.push([ x, y ]);
+				campc = c;
+			}
+			else if ( type == '領地' ) {
+				territory++;
+			}
+		});
+
+		info.base = base;
+		info.camp = camp;
+		info.campc = campc;
+		info.territory = territory;
+	});
+
+	info.ranking = [ info.pop, '-', '-', '-', '-', '-', '-' ];
+	info.warRanking = [ '-', '-', '-', '-' ];
+
+	storage.set( key, info );
+
+	return info;
+},
+
+//. getUserRanking
+getUserRanking: function( userid ) {
+	var storage = MetaStorage('USER_INFO'),
+		key = 'U' + userid,
+		info = storage.get( key ),
+		url;
+
+	url = '/user/ranking.php?m=total&find_rank=&find_name=' + encodeURIComponent( info.name ) + '&c=0';
+	$.ajax({ type: 'get', url: url, async: false })
+	.done(function( html ) {
+		var $html = $(html),
+			$td = $html.find('TR.now TD');
+
+		info.ranking = [
+			info.pop,
+			$td.eq( 4 ).text().toInt() || 0,
+			$td.eq( 5 ).text().toInt() || 0,
+			$td.eq( 6 ).text().toInt() || 0,
+			$td.eq( 8 ).text().toInt() || 0
+		];
+	});
+
+	url = '/user/ranking.php?m=attack_score&find_rank=&find_name=' + encodeURIComponent( info.name ) + '&c=0';
+	$.ajax({ type: 'get', url: url, async: false })
+	.done(function( html ) {
+		var $html = $(html),
+			$td = $html.find('TR.now TD');
+
+		info.ranking.push( $td.eq( 4 ).text().toInt() || 0 );
+		info.ranking.push( $td.eq( 5 ).text().toInt() || 0 );
+	});
+
+	url = '/war/war_ranking.php?m=&c=' + info.country + '&find_rank=&find_name=' + encodeURIComponent( info.name );
+	$.ajax({ type: 'get', url: url, async: false })
+	.done(function( html ) {
+		var $html = $(html),
+			$td = $html.find('TR.ig_rank_you TD');
+
+		info.warRanking = [
+			$td.eq( 3 ).text().toInt() || 0,
+			$td.eq( 4 ).text().toInt() || 0,
+			$td.eq( 5 ).text().toInt() || 0,
+			$td.eq( 6 ).text().toInt() || 0
+		];
+	});
+
+	storage.set( key, info );
+},
+
+//. getUserCamp
+getUserCamp: function( userid ) {
+	var storage = MetaStorage('USER_INFO'),
+		key = 'U' + userid,
+		info = storage.get( key ),
+		url;
+
+	url = '/user/';
+	if ( userid ) { url += '?user_id=' + userid; }
+
+	$.ajax({ type: 'get', url: url, async: false })
+	.done(function( html ) {
+		var $html = $(html),
+			$table = $html.find('TABLE.common_table1'),
+			camp = [], campc, territory = 0;
+
+		$table.find('TR.fs14').each(function() {
+			var $this = $(this),
+				type  = $this.find('TD').eq( 0 ).text(),
+				point = $this.find('A').eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
+				x     = point[ 1 ].toInt(),
+				y     = point[ 2 ].toInt(),
+				c     = point[ 3 ].toInt();
+
+			if ( type == '陣' ) {
+				camp.push({ x: x, y: y });
+				campc = c;
+			}
+			else if ( type == '領地' ) {
+				territory++;
+			}
+		});
+
+		info.camp = camp;
+		info.campc = campc;
+		info.territory = territory;
+	});
+
+	storage.set( key, info );
 },
 
 //. getVillageByName
@@ -4124,7 +4289,7 @@ analyzeImg: function( $img_list ) {
 analyzeArea: function( $area_list, img_list ) {
 	var source_reg = /'.*?'/g,
 		search_reg = /map\.php\?x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
-		storage = MetaStorage('USER_FALL'),
+		char = $('<div>&#8233;</div>').text(),
 		list = [];
 
 	$area_list.each(function( idx ) {
@@ -4137,6 +4302,7 @@ analyzeArea: function( $area_list, img_list ) {
 
 		if ( !img_data ) { return; }
 
+		source = source.replace( char, '', 'g' );
 		array = source.match( source_reg );
 		array.forEach(function( value, idx, ary ) {
 			ary[ idx ] = value.replace(/'/g, '');
@@ -4235,27 +4401,8 @@ analyzeArea: function( $area_list, img_list ) {
 			}
 		}
 
-		if ( data.discriminant == '敵' && data.type == '城' ) {
-			storage.set( data.userId, false );
-		}
-
 		list.push( data );
 	});
-
-	for ( var i = 0; i < list.length; i++ ) {
-		let data = list[ i ];
-
-		if ( data.discriminant == '敵' && $.inArray( data.type, [ '城', '村', '砦', '支城' ] ) != -1 ) {
-			data.fallmain = storage.get( data.userId );
-
-			if ( data.fallmain === true && ( data.type == '村' || data.type == '砦' || data.type == '支城' ) ) {
-				let $img = $( '.' + data.class ).not('.imc_mark');
-
-				$img.attr('defaultsrc', $img.attr('src') )
-				.attr('src', Env.externalFilePath + '/img/panel/fall_capital_r_l.png');
-			}
-		}
-	}
 
 	Map.analyzedData = list;
 },
@@ -4293,7 +4440,7 @@ analyzeReport: function() {
 			'<td target="imn_alliance">' + obj.alliance + '</td>' +
 			'<td target="imn_user">' + obj.user + '</td>' +
 			'<td>' + obj.castle + '</td>' +
-			'<td>' + obj.type + ( ( obj.fallmain === true ) ? '×' : ( obj.fallmain === false ) ? '○' : '' ) + '</td>' +
+			'<td>' + obj.type + '</td>' +
 			'<td>' + obj.scale + '</td>' +
 			'<td style="background-color: ' + color + '">' + obj.discriminant + '</td>' +
 			'<td>' + obj.population + '</td>' +
@@ -4303,7 +4450,9 @@ analyzeReport: function() {
 	}).join('');
 
 	$('#imi_base_list').empty().append( html );
+	$('#imi_user_list').trigger('update');
 	Map.showMark();
+	Map.showFall();
 },
 
 //. targetList
@@ -4343,7 +4492,7 @@ targetList: function() {
 	list.sort(function( a, b ) {
 		return ( a.alliance + a.user > b.alliance + b.user )
 			|| ( a.alliance + a.user == b.alliance + b.user && a.showDist > b.showDist );
-	})
+	});
 
 	return list;
 },
@@ -4488,7 +4637,7 @@ showMark: function() {
 	for ( var i = 0, len = list.length; i < len; i++ ) {
 		var { sx, sy, ex, ey, ec, mode } = list[ i ];
 
-		if ( ec != Map.info.country ) { continue; }
+		if ( ec != country ) { continue; }
 
 		mark( ex, ey, mode );
 
@@ -4501,7 +4650,7 @@ showMark: function() {
 	for ( var i = 0, len = enemy.length; i < len; i++ ) {
 		var { sx, sy, ex, ey, ec } = enemy[ i ];
 
-		if ( ec != Map.info.country ) { return; }
+		if ( ec != country ) { return; }
 
 		mark( sx, sy, '敵襲' );
 		mark( ex, ey, '出撃' );
@@ -4514,6 +4663,15 @@ showMark: function() {
 		for ( var i = 0, len = base.length; i < len; i++ ) {
 			mark( base[ i ].x, base[ i ].y, '矢印１' );
 		}
+	}
+
+	var userid = $('#imi_user_info').data('userid');
+	if ( userid !== undefined ) {
+		var name = Util.getUserInfo( userid ).name;
+		Map.analyzedData.forEach(function( obj ) {
+			if ( obj.user != name ) { return; }
+			mark( obj.x, obj.y, '矢印２' );
+		});
 	}
 
 	MiniMap.showRoute( movelist );
@@ -4565,6 +4723,9 @@ showMark: function() {
 		else if ( mode == '矢印１' ) {
 			$img.attr('src', images.panel_icon_arrow1);
 		}
+		else if ( mode == '矢印２' ) {
+			$img.attr('src', images.panel_icon_arrow2);
+		}
 
 		$map.append( $img );
 	}
@@ -4582,6 +4743,49 @@ showMark: function() {
 
 		$map.append( $img );
 	});
+},
+
+//. showFall
+showFall: function() {
+	var list = Map.analyzedData;
+
+	for ( var i = 0; i < list.length; i++ ) {
+		let area = list[ i ],
+			fall, info, src, $img;
+
+		if ( area.npc ) { continue; }
+//		if ( area.discriminant != '敵' ) { continue; }
+		if ( $.inArray( area.type, [ '村', '砦', '支城' ] ) == -1 ) { continue; }
+
+		info = Util.getUserInfo( area.userId, false );
+		if ( !info ) { continue; }
+
+		info.base.forEach(function( base ) {
+			if ( base.type == '本領' && base.c == Map.info.country ) {
+				fall = base.fall;
+			}
+		});
+
+		$img = $( '.' + area.class ).not('.imc_mark');
+		src = $img.attr('defaultsrc');
+		if ( !src ) { $img.attr('defaultsrc', $img.attr('src') ); }
+
+		if ( fall ) {
+			src = Env.externalFilePath + '/img/panel/fall_capital_r_l.png';
+
+			if ( area.discriminant == '味方' ) {
+				src = src.replace('_r_', '_g_');
+			}
+			else if ( area.discriminant == '同盟' ) {
+				src = src.replace('_r_', '_ga_');
+			}
+
+			$img.attr('src', src );
+		}
+		else {
+			if ( src ) { $img.attr('src', src ); }
+		}
+	}
 },
 
 //. move
@@ -4856,27 +5060,7 @@ contextmenu: function() {
 		menu['セパレーター1'] = $.contextMenu.separator;
 
 		menu['合戦報告書【城主】'] = function() { Map.contextmenu.warList( data.user ); };
-
-		submenu = {};
-		submenu['格付'] = function() { Map.contextmenu.ranking( data.user ); };
-		submenu['一戦撃破・防衛'] = function() { Map.contextmenu.score( data.user ); };
-		if ( data.discriminant == '敵' ) {
-			submenu['本領陥落チェック'] = Map.contextmenu.checkFall;
-		}
-		submenu['セパレーター'] = $.contextMenu.separator;
-		submenu['城主プロフィール'] = Map.contextmenu.userProfile;
-
-		menu['城主情報'] = submenu;
-
-		submenu = {};
-		submenu['合戦報告書 【同盟】'] = function() { Map.contextmenu.warList( '', '', '', data.alliance ); };
-		if ( enemy > 0 ) {
-			submenu['敵襲状況'] = Map.contextmenu.fightHistoryAlliance;
-		}
-		submenu['セパレーター'] = $.contextMenu.separator,
-		submenu['同盟情報'] = Map.contextmenu.alliancInfo
-
-		menu['同盟情報'] = submenu;
+		menu['城主情報'] = Map.contextmenu.userProfile;
 	}
 
 	menu['セパレーター2'] = $.contextMenu.separator;
@@ -4944,14 +5128,10 @@ fightHistoryAround: function() {
 },
 
 //.. fightHistoryAlliance
-fightHistoryAlliance: function() {
-	var idx  = $(this).attr('idx').toInt(),
-		data = Map.analyzedData[ idx ],
-		href;
+fightHistoryAlliance: function( alliId ) {
+	if ( !alliId ) { return; }
 
-	if ( !data.alliId ) { return; }
-
-	href = '/alliance/info.php?id=' + data.alliId;
+	var href = '/alliance/info.php?id=' + alliId;
 
 	Page.get( href )
 	.pipe(function( html ) {
@@ -4962,82 +5142,29 @@ fightHistoryAlliance: function() {
 	});
 },
 
-//.. checkFall
-checkFall: function() {
-	var $this = $(this),
-		idx   = $this.attr('idx').toInt(),
-		data  = Map.analyzedData[ idx ];
-
-	if ( !data.userId ) { return; }
-
-	Page.get( '/user/?user_id=' + data.userId )
-	.pipe(function( html ) {
-		var $tr = $( html ).find('.common_table1').eq( 0 ).find('TR:contains("本領")'),
-			$a = $tr.find('A').eq( 1 ),
-			land = $a.attr('href'),
-			map = land.replace('land', 'map'),
-			coord = $a.text();
-
-		return $.get( map )
-		.pipe(function( html ) {
-			var $html = $( html ),
-				idx = $html.find('#mapOverlayMap > AREA[onmouseover*="' + coord + '"]').index(),
-				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
-
-			return ( $img.attr('src').indexOf('fall') != -1 );
-		});
-	})
-	.pipe(function( fall ) {
-		MetaStorage('USER_FALL').set( data.userId, fall );
-
-		for ( var i = 0, len = Map.analyzedData.length; i < len; i++ ) {
-			let areadata = Map.analyzedData[ i ];
-			if ( areadata.userId != data.userId ) { continue; }
-			if ( $.inArray( areadata.type, [ '城', '村', '砦', '支城' ] ) == -1 ) { continue; }
-
-			let $img = $( '.' + areadata.class ).not('.imc_mark'),
-				src = $img.attr('defaultsrc');
-
-			if ( !fall ) {
-				if ( src ) { $img.attr('src', src ); }
-
-				areadata.fallmain = false;
-			}
-			else if ( areadata.type == '村' || areadata.type == '砦' || areadata.type == '支城' ) {
-				if ( src ) { $img.attr('defaultsrc', src ); }
-
-				$img.attr('src', Env.externalFilePath + '/img/panel/fall_capital_r_l.png');
-
-				areadata.fallmain = true;
-			}
-		}
-
-		Map.analyzeReport();
-	});
-},
-
 //.. userProfile
 userProfile: function() {
 	var idx  = $(this).attr('idx').toInt(),
 		data = Map.analyzedData[ idx ],
-		href;
+		userid = '';
 
 	if ( data.discriminant == '自分' ) {
-		href = '/user/';
+		userid = '';
 	}
 	else if ( data.userId ) {
-		href = '/user/?user_id=' + data.userId;
+		userid = data.userId;
 	}
 	else {
 		//合戦中以外の他国
 		var url = '/land.php?x=' + data.x + '&y=' + data.y + '&c=' + data.country;
 		$.ajax({ type: 'get', url: url, async: false })
 		.pipe(function( html ) {
-			href = $(html).find('.ig_mappanel_dataarea').find('A[href^="/user"]').attr('href');
+			userid = $(html).find('.ig_mappanel_dataarea').find('A[href^="/user"]').attr('href').match(/user_id=(\d+)/)[ 1 ];
 		});
 	}
 
-	if ( href ) { location.href = href; }
+	$('#imi_tab_container').find('LI[target="imi_user"]').click();
+	$('#imi_user_info').trigger( 'update', userid );
 },
 
 //.. alliancInfo
@@ -9289,7 +9416,7 @@ var BaseList = (function() {
 //. base
 function base( country ) {
 	var list = [],
-		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff' };
+		colors = { '本領': '#f60', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff' };
 
 	$('#imi_basename .imc_basename LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
@@ -13635,6 +13762,13 @@ style: '' +
 '.imc_fort TD { width: 50px; }' +
 '.imc_fort2 TD { width: 42px; }' +
 
+/* 城主情報 */
+'#imi_user_list TR { cursor: pointer; }' +
+'#imi_user_list TR:hover { background-color: #f9dea1; }' +
+'.imc_link { color: #060; text-decoration: underline; cursor: pointer; }' +
+'.imc_link:hover { text-decoration: none; }' +
+'.imc_base_table TR:hover { background-color: #f9dea1; cursor: pointer; }' +
+
 /* 敵襲情報 */
 '#imi_tab_container LI.imc_enemy { color: #f30; }' +
 '#imi_raid_list TR { cursor: pointer; }' +
@@ -13686,11 +13820,10 @@ main: function() {
 	Map.init();
 	this.layouter();
 	this.layouterMapInfo();
+	this.layouterUser();
 	this.layouterCoord();
 	this.layouterSituation();
 	this.layouterWarReport();
-	this.layouterRanking();
-	this.layouterScore();
 	this.layouterUnitStatus();
 	this.countrySelecter();
 	if ( $('#kagemusha_list').length > 0 ) {
@@ -13777,11 +13910,10 @@ layouter: function() {
 	//表示欄追加
 	html = '<div id="imi_container">' +
 		'<div id="imi_base" />' +
+		'<div id="imi_user" style="display: none;" />' +
 		'<div id="imi_coord" style="display: none;" />' +
 		'<div id="imi_situation" style="display: none;" />' +
 		'<div id="imi_warlist" style="display: none;" />' +
-		'<div id="imi_ranking" style="display: none;" />' +
-		'<div id="imi_score" style="display: none;" />' +
 	'</div>';
 
 	$( html ).appendTo('#ig_mapbox');
@@ -13789,11 +13921,10 @@ layouter: function() {
 	//タブ
 	html = '<ul id="imi_tab_container">' +
 		'<li target="imi_base" class="imc_selected">拠点情報</li>' +
+		'<li target="imi_user">城主情報</li>' +
 		'<li target="imi_coord">座標情報</li>' +
 		'<li target="imi_situation">敵襲状況</li>' +
 		'<li target="imi_warlist">合戦報告書</li>' +
-		'<li target="imi_ranking">格付</li>' +
-		'<li target="imi_score">一戦</li>' +
 	'</ul>';
 
 	$( html ).appendTo('#ig_mapbox')
@@ -13868,10 +13999,6 @@ layouterMapInfo: function() {
 	'</tr>' +
 	'</table>' +
 	'<table class="imc_table">' +
-	'<tr><th>本領陥落データ</th><td><button id="imi_cache_delete">削除</button></td></tr>' +
-	'</table>' +
-	'<br />' +
-	'<table class="imc_table">' +
 	'<tr><td colspan="2"><label><input type="checkbox" name="imn_mark">地図にマーク表示</label></td></tr>' +
 	'</table>' +
 	'<table class="imc_table" style="margin-bottom: 20px; clear: both;">' +
@@ -13926,12 +14053,286 @@ layouterMapInfo: function() {
 
 		$('#imi_base_conditions').trigger('change');
 	});
+},
 
-	$('#imi_cache_delete').click(function() {
-		if ( !window.confirm( '本領陥落データを全て削除します。\nよろしいですか？') ) { return; }
+//. layouterUser
+layouterUser: function() {
+	var html;
 
-		MetaStorage('USER_FALL').clear();
+	html = '' +
+	'<div style="width: 168px; height: 420px; overflow: auto; margin-right: 15px; float: left;">' +
+	'<table class="imc_table" style="width: 150px; margin-bottom: 10px;">' +
+	'<thead>' +
+	'<tr><td><label><input type="checkbox" id="imi_base_filter" checked>拠点情報のフィルタ適用</label></td></tr>' +
+	'<tr><th>城主名</th></tr>' +
+	'</thead>' +
+	'<tbody id="imi_user_list"></tbody>' +
+	'</table>' +
+	'</div>' +
+	'<div id="imi_user_info" style="width: 550px; margin: 0px 15px 10px 0px; float: left;"></div>' +
+	'';
+
+	$( html ).appendTo('#imi_user');
+
+	$('#imi_user_list')
+	.on('update', function() {
+		var userid = $('#imi_user_info').data('userid'),
+			list = {}, data, html;
+
+		if ( $('#imi_base_filter').attr('checked') ) {
+			data = Map.targetList();
+		}
+		else {
+			data = Map.analyzedData;
+		}
+
+		html = data.filter(function( obj ) {
+			return !obj.npc;
+		})
+		.sort(function( a, b ) {
+			return ( a.alliance + a.user > b.alliance + b.user )
+				|| ( a.alliance + a.user == b.alliance + b.user && a.showDist > b.showDist );
+		})
+		.map(function( obj ) {
+			var cssClass = '';
+
+			if ( list[ obj.userId ] ) { return ''; }
+
+			if ( ( obj.userId || '' ) == userid ) { cssClass = ' class="imc_current"'; }
+
+			list[ obj.userId ] = true;
+			return '<tr><td data-userid="' + ( obj.userId || '' ) + '"' + cssClass + '>' + obj.user + '</td></tr>';
+		}).join('');
+
+		$(this).empty().append( html );
+	})
+	.on('click', 'TD', function() {
+		var $this = $(this);
+
+		$('#imi_user_list .imc_current').removeClass('imc_current');
+		$this.addClass('imc_current');
+
+		$('#imi_user_info').trigger('update', $this.data('userid') );
 	});
+
+	$('#imi_base_filter').on('change', function() {
+		$('#imi_user_list').trigger('update');
+	});
+
+	$('#imi_user_info')
+	.on('update', function() {
+		var userid = arguments[ 1 ],
+			info = Util.getUserInfo( userid ),
+			html;
+
+		html = '' +
+		'<table class="imc_table">' +
+		'<tr>' +
+			'<th width="60">城主名</th>' +
+			'<td width="135"><a target="_blank" href="/user/' + ( info.userId ? '?user_id=' + info.userId : '' ) + '">' + info.name + '</a></td>' +
+			'<th width="50">LV</th>' +
+			'<td width="72">' + info.lv + '</td>' +
+			'<th width="50">国</th>' +
+			'<td width="72">' + Data.countries[ info.country ] + '</td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th>同盟</th>' +
+			'<td><a target="_blank" href="/alliance/info.php?id=' + info.allianceId + '">' + info.alliance + '</a></td>' +
+			'<th>役職</th>' +
+			'<td>' + info.managerial + '</td>' +
+			'<th>規模</th>' +
+			'<td>' + info.scale + '</td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th width="60">情報</th>' +
+			'<td>' +
+				'<span class="imc_link imc_user_warlist">【城主】合戦報告書</span>&nbsp;&nbsp;' +
+				'<a target="_blank" href="/war/list.php?m=&s=1&name=lord&word=' + encodeURIComponent( info.name ) + '&coord=map&x=&y=">■</a>' +
+			'</td>' +
+			'<td colspan="2">' +
+				'<span class="imc_link imc_alliance_warlist">【同盟】合戦報告書</span>&nbsp;&nbsp;' +
+				'<a target="_blank" href="/war/list.php?m=&s=1&name=alliance&word=' + encodeURIComponent( info.alliance ) + '&coord=map&x=&y=">■</a>' +
+			'</td>' +
+			'<td colspan="2">' +
+				( ( $('#btn_enemysituation').length > 0 ) ? '<span class="imc_link imc_alliance_fight">【同盟】敵襲状況</span>' : '【同盟】敵襲状況' ) +
+			'</td>' +
+		'</tr>' +
+		'</table>' +
+		'<br />' +
+		'<table class="imc_table">' +
+		'<tr>' +
+			'<th width="60">人口</th>' +
+			'<th width="60">戦功</th>' +
+			'<th width="60">攻撃</th>' +
+			'<th width="60">防御</th>' +
+			'<th width="60">総合</th>' +
+			'<th width="60">一戦撃破</th>' +
+			'<th width="60">一戦防衛</th>' +
+		'</tr>' +
+		'<tr>' +
+		info.ranking.map(function( value ) {
+			return '<td>' + value + '</td>';
+		}).join('') +
+		'</tr>' +
+		'<tr>' +
+			'<th>合戦格付</td>' +
+		info.warRanking.map(function( value ) {
+			return '<td>' + value + '</td>';
+		}).join('') +
+			'<th colspan="2" style="padding: 0px;"><button class="imc_ranking_update">情報更新</button></th>' +
+		'</tr>' +
+		'</table>' +
+		'<br />' +
+		'<table class="imc_table" style="float: left; margin-right: 14px;">' +
+		'<thead><tr>' +
+			'<th width="40">種類</th>' +
+			'<th width="130">名前</th>' +
+			'<th width="60">座標</th>' +
+			'<th width="40">人口</th>' +
+			'<th width="80" style="padding: 0px;"><button class="imc_fall_check">陥落チェック</button></th>' +
+		'</tr></thead>' +
+		'<tbody class="imc_base_table">' +
+		info.base.map(function( base ) {
+			if ( base.c != Map.info.country ) { return ''; }
+
+			return '' +
+			'<tr class="ime_coord" x="' + base.x + '" y="' + base.y + '">' +
+				'<td>' + base.type + '</td>' +
+				'<td>' + base.name + '</td>' +
+				'<td>' + base.x + ',' + base.y + '</td>' +
+				'<td>' + base.pop + '</td>' +
+				'<td>' + ( ( base.fall ) ? '陥落中' : '' ) + '</td>' +
+			'</tr>';
+		}).join('') +
+		'</tbody>' +
+		'<thead>' +
+		'<tr><th colspan="4">前回チェックからの経過時間</th><th>' +
+		( ( info.checktime ) ? ( Util.getLocalTime() - info.checktime ).toFormatTime() : '-' ) +
+		'</th></tr>' +
+		'</thead>' +
+		'</table>' +
+		'<table class="imc_table">' +
+		'<tr>' +
+			'<th width="80">陣</th>' +
+		'</tr>' +
+		'<tr>' +
+			'<td>' + info.camp.length + '</td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th>領地</th>' +
+		'</tr>' +
+		'<tr>' +
+			'<td>' + info.territory + '</td>' +
+		'</tr>' +		'<tr>' +
+			'<th style="padding: 0px;"><button class="imc_camp_update">情報更新</button></th>' +
+		'</tr>' +
+		'</table>';
+
+		$(this).data('userid', userid).empty().append( html );
+
+		$('#imi_user_list TD')
+		.filter('.imc_current').removeClass('imc_current').end()
+		.each(function() { if ( $(this).data('userid') == userid ) { $(this).addClass('imc_current'); } });
+
+		var colors = { '本領': '#fc0', '所領': '#bf0', '出城': '#f7f', '陣': '#39f' },
+			baselist, camplist;
+
+		baselist = info.base.filter(function( base ) {
+			return ( base.c == Map.info.country );
+		})
+		.map(function( base ) {
+			return { x: base.x, y: base.y, color: colors[ base.type ] };
+		});
+
+		if ( info.campc == Map.info.country ) {
+			camplist = info.camp.map(function( camp ) {
+				return { x: camp[ 0 ], y: camp[ 1 ], color: colors[ '陣' ] };
+			});
+		}
+		else {
+			camplist = [];
+		}
+
+		baselist = baselist.concat( camplist );
+		MiniMap.showBasePoint( 'target', baselist );
+
+		Map.showMark();
+		Map.showFall();
+	})
+	.on('click', '.imc_user_warlist, .imc_alliance_warlist, .imc_alliance_fight', function() {
+		var $this = $(this),
+			userid = $('#imi_user_info').data('userid'),
+			info = Util.getUserInfo( userid );
+
+		if ( $this.hasClass('imc_user_warlist') ) {
+			Map.contextmenu.warList( info.name );
+		}
+		else if ( $this.hasClass('imc_alliance_warlist') ) {
+			Map.contextmenu.warList( '', '', '', info.alliance );
+		}
+		else if ( $this.hasClass('imc_alliance_fight') ) {
+			Map.contextmenu.fightHistoryAlliance( info.alliance );
+		}
+	})
+	.on('click', '.imc_ranking_update', function() {
+		var userid = $('#imi_user_info').data('userid');
+
+		$(this).text('取得中');
+		$('#imi_user_info BUTTON').attr('disabled', true)
+
+		Util.getUserRanking( userid );
+		$('#imi_user_info').trigger( 'update', userid );
+	})
+	.on('click', '.imc_fall_check', function() {
+		var userid = $('#imi_user_info').data('userid'),
+			data = Util.getUserInfo( userid ),
+			country = Map.info.country;
+
+		$(this).text('取得中');
+		$('#imi_user_info BUTTON').attr('disabled', true)
+
+		for ( var i = 0, len = data.base.length; i < len; i++ ) {
+			let base = data.base[ i ];
+
+			if ( base.c != country ) { continue; }
+
+			delete base.fall;
+			if ( checkFall( base.x, base.y, base.c ) ) {
+				base.fall = true;
+				if ( base.type == '本領' ) { break; }
+			}
+		}
+
+		data.checktime = Util.getLocalTime();
+		MetaStorage('USER_INFO').set( 'U' + userid, data );
+		$('#imi_user_info').trigger( 'update', userid );
+	})
+	.on('click', '.imc_camp_update', function() {
+		var userid = $('#imi_user_info').data('userid');
+
+		$(this).text('取得中');
+		$('#imi_user_info BUTTON').attr('disabled', true)
+
+		Util.getUserCamp( userid );
+		$('#imi_user_info').trigger( 'update', userid );
+	});
+
+	function checkFall( x, y, c ) {
+		var map = '/map.php?x=' + x + '&y=' + y + '&c=' + c,
+			coord = '(' + x + ',' + y + ')',
+			result;
+
+		$.ajax({ type: 'get', url: map, async: false })
+		.pipe(function( html ) {
+			var $html = $( html ),
+				idx = $html.find('#mapOverlayMap > AREA[onmouseover*="' + coord + '"]').index(),
+				$img = $html.find('#ig_mapsAll > IMG').not('[src$="outside.png"]').eq( idx );
+
+			result = ( $img.attr('src').indexOf('fall') != -1 );
+		});
+
+		return result;
+	}
 },
 
 //. layouterCoord
@@ -14204,51 +14605,6 @@ layouterWarReport: function() {
 	'';
 
 	$( html ).appendTo('#imi_warlist');
-},
-
-//. layouterRanking
-layouterRanking: function() {
-	var html;
-
-	html = '' +
-	'<table class="imc_table">' +
-	'<thead><tr>' +
-		'<th width="65">国</th>' +
-		'<th width="30">順位</th>' +
-		'<th width="130">城主名</th>' +
-		'<th width="130">同盟</th>' +
-		'<th width="45">戦功</th>' +
-		'<th width="45">攻撃</th>' +
-		'<th width="45">防御</th>' +
-		'<th width="40">人口</th>' +
-		'<th width="45">総合</th>' +
-	'</tr></thead>' +
-	'<tbody id="imi_ranking_list"></tbody>' +
-	'</table>' +
-	'';
-
-	$( html ).appendTo('#imi_ranking');
-},
-
-//. layouterScore
-layouterScore: function() {
-	var html;
-
-	html = '' +
-	'<table class="imc_table">' +
-	'<thead><tr>' +
-		'<th width="65">国</th>' +
-		'<th width="30">順位</th>' +
-		'<th width="130">城主名</th>' +
-		'<th width="130">同盟</th>' +
-		'<th width="100">一戦撃破</th>' +
-		'<th width="100">一戦防衛</th>' +
-	'</tr></thead>' +
-	'<tbody id="imi_score_list"></tbody>' +
-	'</table>' +
-	'';
-
-	$( html ).appendTo('#imi_score');
 },
 
 //. layouterUnitStatus
