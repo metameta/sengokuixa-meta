@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.7
+// @version        1.2.3.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1544,6 +1544,10 @@ keyBindMap: function() {
 
 		'a': Util.keyBindCallback(function() {
 			$('#ig_cur04_w').click();
+		}),
+
+		'z': Util.keyBindCallback(function() {
+			$('#imi_map_zoom').click();
 		})
 	});
 },
@@ -4588,7 +4592,8 @@ showMiniMap: function( country ) {
 		pxsize: 0.5,
 		pointsize: 2,
 		fortresssize: 1,
-		fortress: !Map.info.isBattleMap
+		fortress: !Map.info.isBattleMap,
+		zoom: true
 	}).appendTo('#imi_map');
 	MiniMap.showBasePoint( 'user', list );
 	MiniMap.showViewArea( Map.info );
@@ -5462,23 +5467,33 @@ function create( country, _options ) {
 
 //. showZoom
 function showZoom() {
-	var $select, $button;
+	var $select, $button, dialog;
 
 	$select = $('<select id="imi_map_scale"><option value="2">&times;2</option><option value="3">&times;3</option><option value="4">&times;4</option></select>');
-	$button = $('<button>拡大</button>')
+	$button = $('<button id="imi_map_zoom">拡大</button>')
 	.on('click' ,function() {
-		var pxsize = 0.5 * $('#imi_map_scale').val().toInt(),
-			pointsize = Math.floor( pxsize ) + 1,
+		var scale = $('#imi_map_scale').val().toInt(),
+			pxsize = 0.5 * scale,
+			pointsize = Math.ceil( pxsize ) + 1,
 			fortresssize = Math.floor( pointsize / 2 ),
 			$map;
 
+		if ( dialog ) {
+			dialog.close();
+			dialog = null;
+			return;
+		}
+
 		$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
 
-		Display.dialog({
-			top: 50, width: $map.width() + 16, height: 'auto',
+		dialog = Display.dialog({
+			top: ( scale == 4 ) ? 30 : 50, width: $map.width() + 16, height: 'auto',
 			content: $map,
 			buttons: {
-				'閉じる': function() { this.close(); }
+				'閉じる': function() {
+					dialog.close();
+					dialog = null;
+				}
 			}
 		});
 	});
