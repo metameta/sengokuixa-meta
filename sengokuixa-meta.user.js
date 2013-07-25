@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.3.6
+// @version        1.2.3.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -483,7 +483,7 @@ getUserCamp: function( userid ) {
 				c     = point[ 3 ].toInt();
 
 			if ( type == '陣' ) {
-				camp.push({ x: x, y: y });
+				camp.push([ x, y ]);
 				campc = c;
 			}
 			else if ( type == '領地' ) {
@@ -4605,12 +4605,13 @@ showMiniMap: function( country ) {
 //. showCoord
 showCoord: function( country ) {
 	var coord = MetaStorage('COORD.' + country).data,
+		color = MiniMap.colors['coord'],
 		coordList;
 
 	coordList = $.map( coord, function( value, key ) {
 		var array = key.split(',');
 
-		return { x: array[0].toInt(), y: array[1].toInt(), color: '#ff0' };
+		return { x: array[0].toInt(), y: array[1].toInt(), color: color };
 	});
 
 	MiniMap.showBasePoint( 'coord', coordList );
@@ -4626,10 +4627,7 @@ showMark: function() {
 		enemy = MetaStorage('UNIT_STATUS').get('敵襲') || [],
 		coord = MetaStorage('COORD.' + country).data,
 		base = Map.targetList(),
-		movecolors = {
-			'攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f',
-			'帰還': '#3f9', '開拓': '#063', '敵襲': '#f66'
-		},
+		movecolors = MiniMap.colors['move'],
 		movelist = [];
 
 	$map.find('.imc_mark').remove();
@@ -5823,6 +5821,12 @@ function mapClick( e ) {
 
 //. return
 return {
+	colors: {
+		'type1': { '本領': '#f80', '出城': '#f80', '所領': '#0e0', '陣': '#0ef', '領地': '#ff0', '開拓地': '#9a0' },
+		'type2': { '本領': '#f0f', '出城': '#f0f', '所領': '#090', '陣': '#39f' },
+		'move':  { '攻撃': '#39f', '陣張': '#39f', '合流': '#39f', '加勢': '#39f', '帰還': '#3f9', '開拓': '#063', '敵襲': '#f66' },
+		'coord': '#ee0'
+	},
 	create: create,
 	showViewArea: showViewArea,
 	showBasePoint: showBasePoint,
@@ -9416,7 +9420,7 @@ var BaseList = (function() {
 //. base
 function base( country ) {
 	var list = [],
-		colors = { '本領': '#f60', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff' };
+		colors = MiniMap.colors['type1'];
 
 	$('#imi_basename .imc_basename LI > *:first-child').each(function() {
 		var name = $(this).text().trim(),
@@ -10243,7 +10247,9 @@ baseMap: function() {
 userBaseList: function() {
 	var list = [],
 		regex = /x=(-?\d+)&y=(-?\d+)&c=(\d+)/,
-		colors = { '本領': '#f80', '所領': '#0f0', '出城': '#f0f', '陣': '#0ff', '領地': '#ff0', '開拓地': '#9a0' };
+		colors = $.extend( {}, MiniMap.colors['type1'] );
+
+	colors['出城'] = MiniMap.colors['type2']['出城'];
 
 	$('TABLE.common_table1 TR.fs14').each(function() {
 		var $this = $(this),
@@ -14234,7 +14240,7 @@ layouterUser: function() {
 		.filter('.imc_current').removeClass('imc_current').end()
 		.each(function() { if ( $(this).data('userid') == userid ) { $(this).addClass('imc_current'); } });
 
-		var colors = { '本領': '#fc0', '所領': '#bf0', '出城': '#f7f', '陣': '#39f' },
+		var colors = MiniMap.colors['type2'],
 			baselist, camplist;
 
 		baselist = info.base.filter(function( base ) {
