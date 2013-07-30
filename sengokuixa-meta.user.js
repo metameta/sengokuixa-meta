@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.0
+// @version        1.2.4.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4222,6 +4222,15 @@ mapInfo: function() {
 	return info;
 },
 
+//. getMapSettings
+getMapSettings: function() {
+	var settings = MetaStorage('SETTINGS').get('mapinfo');
+
+	settings = $.extend( { type: '|城||砦|村|支城||出城|', discriminant: '', alliance: '', user: '', rank: 0, mark: false }, settings );
+
+	return settings;
+},
+
 //. analyze
 analyze: function() {
 	var $img_list = $('#ig_mapsAll').children('IMG'),
@@ -4461,7 +4470,7 @@ analyzeReport: function() {
 
 //. targetList
 targetList: function() {
-	var { type, discriminant, alliance, user, rank } = MetaStorage('SETTINGS').get('mapinfo'),
+	var { type, discriminant, alliance, user, rank } = Map.getMapSettings(),
 		list;
 
 	list = Map.analyzedData.filter(function( value ) {
@@ -4624,7 +4633,7 @@ showCoord: function( country ) {
 
 //. showMark
 showMark: function() {
-	var settings = MetaStorage('SETTINGS').get('mapinfo'),
+	var settings = Map.getMapSettings(),
 		country = Map.info.country,
 		images = Data.images,
 		$map = $('#ig_mapsAll'),
@@ -13964,10 +13973,8 @@ layouter: function() {
 
 //. layouterMapInfo
 layouterMapInfo: function() {
-	var settings = MetaStorage('SETTINGS').get('mapinfo'),
+	var settings = Map.getMapSettings(),
 		html;
-
-	settings = $.extend( { type: '|城||砦|村|支城||出城|', discriminant: '', alliance: '', user: '', rank: 0, mark: false }, settings );
 
 	//拠点情報
 	html = '' +
