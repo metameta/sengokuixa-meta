@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.3
+// @version        1.2.4.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1310,7 +1310,7 @@ getValidSoldiers: function( facility ) {
 			soldata = Soldier.getByName( name );
 			image = $this.find('.ig_tilesection_iconarea IMG').attr('src');
 
-			soldiers.push({ type: soldata.type, name: name, materials: materials, training: soldata.training, image: image });
+			soldiers.push({ type: soldata.type, name: name, materials: materials, training: soldata.training, image: image, order: soldata.order });
 		});
 	});
 
@@ -2246,6 +2246,7 @@ dialogTraining: function() {
 		if ( flist.length == 0 ) { return; }
 		slist = Util.getValidSoldiers( flist[ 0 ] );
 		if ( slist.length == 0 ) { return; }
+		slist.sort(function( a, b ) { return ( a.order < b.order ); });
 
 		facility = { list: flist, soldiers: slist, total: 0, count: 0, finish: 0 };
 
@@ -2958,28 +2959,28 @@ if ( Env.chapter <= 5 ) {
 	//５章以前
 	data = {
 		//槍
-		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍']},
-		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍']},
-		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓']},
-		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍']},
+		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: 150, dou:   0, require: ['槍', '槍'], order: 1 },
+		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: 165, dou:  10, require: ['槍', '槍'], order: 2 },
+		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  2, command: '槍', skillType: '槍', training: 180, dou: 200, require: ['槍', '弓'], order: 3 },
+		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 13, speed: 17, destroy:  3, command: '槍', skillType: '槍', training:   0, dou:   0, require: ['槍', '槍'], order: 0 },
 		//弓
-		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓']},
-		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓']},
-		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬']},
-		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓']},
+		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: 155, dou:   0, require: ['弓', '弓'], order: 1 },
+		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: 170, dou:  10, require: ['弓', '弓'], order: 2 },
+		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: 185, dou: 200, require: ['弓', '馬'], order: 3 },
+		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training:   0, dou:   0, require: ['弓', '弓'], order: 0 },
 		//馬
-		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬']},
-		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬']},
-		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍']},
-		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬']},
+		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: 160, dou:   0, require: ['馬', '馬'], order: 1 },
+		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: 175, dou:  10, require: ['馬', '馬'], order: 2 },
+		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: 190, dou: 200, require: ['馬', '槍'], order: 3 },
+		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training:   0, dou:   0, require: ['馬', '馬'], order: 0 },
 		//器
-		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器']},
-		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器']},
-		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器']},
-		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器']},
-		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器']},
-		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器']},
+		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器'], order: 1 },
+		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: 255, dou:  10, require: ['器', '器'], order: 2 },
+		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: 330, dou: 300, require: ['弓', '器'], order: 3 },
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: 240, dou:  10, require: ['槍', '器'], order: 5 },
+		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: 310, dou: 300, require: ['馬', '器'], order: 6 },
+		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training:   0, dou:   0, require: ['槍', '器'], order: 0 },
+		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: 250, dou:  10, require: ['弓', '器'], order: 4 },
 		//NPC用
 		'浪人':     { defend:  12, command: '槍' },
 		'抜け忍':   { defend:  12, command: '弓' },
@@ -2992,28 +2993,28 @@ if ( Env.chapter <= 5 ) {
 else {
 	data = {
 		//槍
-		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: [  90, 73, 59, 48, 39, 32, 26, 22, 18, 15, 13, 11,  9, 8, 7 ], dou:   0, require: ['槍', '槍']},//14
-		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: [ 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 11, 9, 8 ], dou:  10, require: ['槍', '槍']},//14
-		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  3, command: '槍', skillType: '槍', training: [ 120, 97, 78, 63, 51, 42, 34, 28, 23, 19, 16, 13, 11, 9, 8 ], dou: 200, require: ['槍', '弓']},//11
-		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 17, speed: 19, destroy:  4, command: '槍', skillType: '槍', training: [], dou:   0, require: ['槍', '槍']},
+		'足軽':     { type: 321, class: 'yari1', attack: 11, defend: 11, speed: 15, destroy:  2, command: '槍', skillType: '槍', training: [  90, 73, 59, 48, 39, 32, 26, 22, 18, 15, 13, 11,  9,  8, 7 ], dou:   0, require: ['槍', '槍'], order: 1 },//14
+		'長槍足軽': { type: 322, class: 'yari2', attack: 16, defend: 16, speed: 16, destroy:  2, command: '槍', skillType: '槍', training: [ 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 11,  9, 8 ], dou:  10, require: ['槍', '槍'], order: 2 },//14
+		'武士':     { type: 323, class: 'yari3', attack: 18, defend: 18, speed: 18, destroy:  3, command: '槍', skillType: '槍', training: [ 120, 97, 78, 63, 51, 42, 34, 28, 23, 19, 16, 14, 12, 10, 9 ], dou: 200, require: ['槍', '弓'], order: 3 },//13
+		'国人衆':   { type: 324, class: 'yari4', attack: 17, defend: 17, speed: 19, destroy:  4, command: '槍', skillType: '槍', training: [], dou:   0, require: ['槍', '槍'], order: 0 },
 		//弓
-		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: [  95,  77, 62, 51, 41, 34, 28, 23, 19, 16, 13, 11,  9,  8, 7 ], dou:   0, require: ['弓', '弓']},//12
-		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: [ 110,  89, 72, 58, 47, 39, 32, 26, 21, 18, 15, 13, 11,  9, 8 ], dou:  10, require: ['弓', '弓']},//12
-		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: [ 125, 101, 82, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10, 9 ], dou: 200, require: ['弓', '馬']},//11
-		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training: [], dou:   0, require: ['弓', '弓']},
+		'弓足軽':   { type: 325, class: 'yumi1', attack: 10, defend: 12, speed: 16, destroy:  1, command: '弓', skillType: '弓', training: [  95,  77, 62, 51, 41, 34, 28, 23, 19, 16, 13, 11, 10,  9, 8 ], dou:   0, require: ['弓', '弓'], order: 1 },//13
+		'長弓兵':   { type: 326, class: 'yumi2', attack: 15, defend: 17, speed: 18, destroy:  1, command: '弓', skillType: '弓', training: [ 110,  89, 72, 58, 47, 39, 32, 26, 21, 18, 15, 13, 11,  9, 8 ], dou:  10, require: ['弓', '弓'], order: 2 },//13
+		'弓騎馬':   { type: 327, class: 'yumi3', attack: 17, defend: 19, speed: 23, destroy:  1, command: '弓', skillType: '弓', training: [ 125, 101, 82, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10, 9 ], dou: 200, require: ['弓', '馬'], order: 3 },//13
+		'海賊衆':   { type: 328, class: 'yumi4', attack: 16, defend: 17, speed: 20, destroy:  2, command: '弓', skillType: '弓', training: [], dou:   0, require: ['弓', '弓'], order: 0 },
 		//馬
-		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: [ 100,  81, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10,  9, 8 ], dou:   0, require: ['馬', '馬']},//13
-		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: [ 115,  93, 75, 61, 49, 40, 33, 27, 22, 19, 16, 13, 11,  9, 8 ], dou:  10, require: ['馬', '馬']},//11
-		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: [ 130, 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 10, 9 ], dou: 200, require: ['馬', '槍']},//13
-		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training: [], dou:   0, require: ['馬', '馬']},
+		'騎馬兵':   { type: 329, class: 'kiba1', attack: 12, defend: 10, speed: 22, destroy:  1, command: '馬', skillType: '馬', training: [ 100,  81, 66, 53, 43, 35, 29, 24, 20, 17, 14, 12, 10,  9, 8 ], dou:   0, require: ['馬', '馬'], order: 1 },//14
+		'精鋭騎馬': { type: 330, class: 'kiba2', attack: 17, defend: 15, speed: 23, destroy:  1, command: '馬', skillType: '馬', training: [ 115,  93, 75, 61, 49, 40, 33, 27, 22, 19, 16, 13, 11,  9, 8 ], dou:  10, require: ['馬', '馬'], order: 2 },//13
+		'赤備え':   { type: 331, class: 'kiba3', attack: 21, defend: 20, speed: 25, destroy:  1, command: '馬', skillType: '馬', training: [ 130, 105, 85, 69, 56, 45, 37, 30, 25, 21, 17, 14, 12, 10, 9 ], dou: 200, require: ['馬', '槍'], order: 3 },//14
+		'母衣衆':   { type: 332, class: 'kiba4', attack: 19, defend: 16, speed: 24, destroy:  2, command: '馬', skillType: '馬', training: [], dou:   0, require: ['馬', '馬'], order: 0 },
 		//器
-		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器']},//11
-		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器']},//11
-		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: [ 270, 217, 174, 140, 113, 91, 73, 59, 48, 39, 32, 26, 21, 17, 14 ], dou: 300, require: ['弓', '器']},//11
-		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: [ 180, 145, 117,  94,  76, 61, 50, 41, 33, 27, 23, 19, 16, 13, 11 ], dou: 200, require: ['槍', '器']},//13
-		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou: 300, require: ['馬', '器']},//13
-		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training: [], dou:   0, require: ['槍', '器']},
-		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou:  10, require: ['弓', '器']},//11
+		'破城鎚':   { type: 333, class: 'heiki1', attack:  3, defend:  8, speed:  8, destroy: 10, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器'], order: 1 },//13
+		'攻城櫓':   { type: 334, class: 'heiki2', attack: 14, defend:  5, speed: 10, destroy:  7, command: '器', skillType: '器', training: [ 195, 157, 126, 102,  82, 66, 54, 44, 36, 29, 24, 20, 17, 14, 12 ], dou:  10, require: ['器', '器'], order: 2 },//13
+		'大筒兵':   { type: 335, class: 'heiki3', attack: 10, defend: 12, speed:  8, destroy:  8, command: '器', skillType: '器', training: [ 270, 217, 174, 140, 113, 91, 73, 59, 48, 39, 32, 26, 22, 18, 15 ], dou: 300, require: ['弓', '器'], order: 3 },//13
+		'鉄砲足軽': { type: 336, class: 'heiki4', attack: 18, defend: 26, speed: 15, destroy:  1, command: '器', skillType: '砲', training: [ 180, 145, 117,  94,  76, 61, 50, 41, 33, 27, 23, 19, 16, 13, 11 ], dou: 200, require: ['槍', '器'], order: 5 },//14
+		'騎馬鉄砲': { type: 337, class: 'heiki5', attack: 26, defend: 18, speed: 21, destroy:  1, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou: 300, require: ['馬', '器'], order: 6 },//14
+		'雑賀衆':   { type: 338, class: 'heiki6', attack: 23, defend: 17, speed: 18, destroy:  5, command: '器', skillType: '砲', training: [], dou:   0, require: ['槍', '器'], order: 0 },
+		'焙烙火矢': { type: 345, class: 'heiki7', attack: 23, defend: 23, speed: 19, destroy:  2, command: '器', skillType: '砲', training: [ 250, 201, 162, 130, 105, 84, 68, 55, 45, 37, 30, 25, 20, 17, 14 ], dou:  10, require: ['弓', '器'], order: 4 },//14
 		//NPC用
 		'浪人':     { defend:  12, command: '槍' },
 		'抜け忍':   { defend:  12, command: '弓' },
