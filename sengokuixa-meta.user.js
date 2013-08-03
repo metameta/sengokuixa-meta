@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.2
+// @version        1.2.4.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4140,6 +4140,20 @@ skillTable: {
 	'神童覚醒':		[ '砲陣の極み', '砲撃 羅刹', '疾風怒濤', '鬼謀 国砕', '八咫烏' ],
 
 	'三姉妹の絆':	[ '弓陣 下り藤', '桜花乱舞', '砲陣 菖蒲', '鬼刺', '' ]
+},
+
+//. cardAttribute
+cardAttribute: {
+	2005: { sex: 'f' },	//上杉謙信
+	3040: { sex: 'f' },	//風魔小太郎
+	4057: { sex: 'f' },	//猿飛佐助
+	6002: { slot3: 1 },
+	6003: { slot3: 1 },
+	6004: { slot3: 1 },
+	6005: { slot3: 1 },
+	6006: { slot2: 1, slot3: 1 },
+	6007: { slot3: 1 },
+	6008: { slot2: 1, slot3: 1 }
 }
 
 };
@@ -6440,8 +6454,8 @@ addCardUnion: function() {
 		$('#imi_card_container1').find('DIV[card_id="' + card_id + '"]').remove();
 	}
 	else if ( !Deck.union.added ) {
-		if ( !card.canUnion() ) {
-			Display.info('このカードは合成に使用できません。');
+		if ( !card.useSlot2() ) {
+			Display.info('このカードは合成【スロット２】に使用できません。');
 			return;
 		}
 
@@ -6453,7 +6467,7 @@ addCardUnion: function() {
 	}
 	else if ( Deck.union.materials.length < 5 ) {
 		if ( !card.useMaterial() ) {
-			Display.info('このカードは合成に使用できません。');
+			Display.info('このカードは合成【追加スロット】に使用できません。');
 			return;
 		}
 
@@ -8033,6 +8047,7 @@ cost: 0, rank: 0, lv: 0, hp: 100, maxHp: 100, solNum: 0, maxSolNum: 0,
 solName: '', solType: null, atk: 0, def: 0, int: 0, commands: {}, skillList: [], skillCount: 0,
 command: '', totalAtk: 0, totalDef: 0, totalDes: 0,
 job: '', exp: 0,
+sex: 'm', slot2: '', slot3: '',
 
 //.. power
 power: function() {
@@ -8326,18 +8341,13 @@ canAssign: function() {
 
 //.. checkAssign
 checkAssign: function( cards ) {
-	var result = true,
-		list = {
-			1004: 'm', 1021: 'm', 4118: 'm', 2005: 'f', //上杉謙信
-			2071: 'm', 3004: 'm', 3040: 'f', //風魔小太郎
-			3100: 'm', 4056: 'm', 4057: 'f', //猿飛佐助
-		};
+	var result = true;
 
 	for ( var i = 0, len = cards.length; i < len; i++ ) {
 		let card = cards[ i ];
 
 		if ( this.name != card.name ) { continue; }
-		if ( list[ this.cardNo ] != list[ card.cardNo ] ) { continue; }
+		if ( this.sex != card.sex ) { continue; }
 
 		result = false;
 	}
@@ -8350,13 +8360,15 @@ canUnion: function() {
 	return ( this.rarity !== '祝' && this.rarity !== '雅' && this.cardId !== undefined );
 },
 
+//.. useSlot2
+useSlot2: function() {
+	if ( this.slot2 ) { return true; }
+	return this.canUnion();
+},
+
 //.. useMaterial
 useMaterial: function() {
-	//追加素材専用
-	if ( $.inArray( this.cardNo, [ 6002, 6003, 6004, 6005 ] ) != -1 ) {
-		return true;
-	}
-
+	if ( this.slot3 ) { return true; }
 	return this.canUnion();
 },
 
@@ -8403,7 +8415,7 @@ $.extend( LargeCard.prototype, Card.prototype, {
 //.. analyze
 analyze: function( $elem ) {
 	var $param = $elem.find('.parameta_area'),
-		text, array;
+		text, array, attr;
 
 	if ( $param.length == 0 ) {
 		throw new Error('武将カード情報を取得できませんでした。');
@@ -8497,6 +8509,9 @@ analyze: function( $elem ) {
 	if ( array != null ) {
 		this.cardId = array[1];
 	}
+
+	attr = Data.cardAttribute[ this.cardNo ];
+	if ( attr ) { $.extend( this, attr ); }
 }
 
 });
@@ -12767,8 +12782,12 @@ unionMode: function() {
 
 		var len = $('TR.imc_selected').length;
 
-		if ( ( len == 0 && !data.canUnion() ) || ( len >= 1 && !data.useMaterial() ) ) {
-			Display.info('このカードは合成に使用できません。');
+		if ( len == 0 && !data.useSlot2() ) {
+			Display.info('このカードは合成【スロット２】に使用できません。');
+			return;
+		}
+		else if ( !data.useMaterial() ) {
+			Display.info('このカードは合成【追加スロット】に使用できません。');
 			return;
 		}
 
