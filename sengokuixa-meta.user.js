@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.4
+// @version        1.2.4.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4590,8 +4590,6 @@ coordList: function( country ) {
 		if ( castle != '' ) {
 			menu['セパレーター1'] = $.contextMenu.separator;
 			menu['合戦報告書'] = function() { Map.contextmenu.warList( user ); };
-			menu['格付'] = function() { Map.contextmenu.ranking( user ); };
-			menu['一戦撃破・防衛'] = function() { Map.contextmenu.score( user ); };
 		}
 
 		menu['セパレーター2'] = $.contextMenu.separator;
@@ -4907,7 +4905,7 @@ fightHistory: function( search ) {
 		.contextMenu(function() {
 			var $this = $(this),
 				user = $this.find('A:first').text(),
-				castle = $this.find('A:eq(2)').text().replace(/\(.+\)/, ''),
+				castle = $this.find('A:eq(2)').text().replace(/\s\([\d,-]+\)$/, ''),
 				x = $this.attr('x'),
 				y = $this.attr('y'),
 				country = $this.attr('country'),
@@ -5245,65 +5243,6 @@ warList: function( user, x, y, alliance ) {
 		});
 
 		$('#imi_tab_container').find('LI[target="imi_warlist"]').click();
-	});
-},
-
-//.. ranking - 格付
-ranking: function( user ) {
-	var search = 'm=total&find_rank=&find_name=' + encodeURIComponent( user ) + '&c=0',
-		$list = $('#imi_ranking_list'),
-		len = $list.find('TD:nth-child(3)').find('A:contains("' + user + '")').length;
-
-	if ( len > 0 ) {
-		$('#imi_tab_container').find('LI[target="imi_ranking"]').click();
-
-		return;
-	}
-
-	$('#imi_ranking_list').data( user, true );
-
-	Page.get( '/user/ranking.php?' + search )
-	.pipe(function( html ) {
-		var $html = $(html),
-			$tbody = $('#imi_ranking_list'),
-			$tr;
-
-		$tr = $html.find('table.common_table1 tr.now').removeAttr('class');
-		$tr.find('TD').removeAttr('class').slice( 4 ).css( 'fontSize', 10 );
-		$tr.find('A').attr( 'target', '_blank' );
-
-		$tbody.prepend( $tr );
-
-		$('#imi_ranking_list').removeData( user );
-
-		$('#imi_tab_container').find('LI[target="imi_ranking"]').click();
-	});
-},
-
-//.. score - 一戦撃破・防衛
-score: function( user ) {
-	var search = 'm=attack_score&find_rank=&find_name=' + encodeURIComponent( user ) + '&c=0',
-		len = $('#imi_score_list').find('TD:nth-child(3)').find('A:contains("' + user + '")').length;
-
-	if ( len > 0 ) {
-		$('#imi_tab_container').find('LI[target="imi_score"]').click();
-
-		return;
-	}
-
-	Page.get( '/user/ranking.php?' + search )
-	.pipe(function( html ) {
-		var $html = $(html),
-			$tbody = $('#imi_score_list'),
-			$tr;
-
-		$tr = $html.find('table.common_table1 tr.now').removeAttr('class');
-		$tr.find('TD').removeAttr('class').slice( 4 ).css( 'fontSize', 10 );
-		$tr.find('A').attr( 'target', '_blank' );
-
-		$tbody.prepend( $tr );
-
-		$('#imi_tab_container').find('li[target="imi_score"]').click();
 	});
 },
 
@@ -14609,14 +14548,6 @@ layouterSituation: function() {
 		menu['合戦報告書【城主】'] = function() {
 			var { user } = $(this).data();
 			Map.contextmenu.warList( user );
-		};
-		menu['格付'] = function() {
-			var { user } = $(this).data();
-			Map.contextmenu.ranking( user );
-		};
-		menu['一戦撃破・防衛'] = function() {
-			var { user } = $(this).data();
-			Map.contextmenu.score( user );
 		};
 
 		return menu;
