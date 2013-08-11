@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.5
+// @version        1.2.4.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5841,6 +5841,116 @@ freeCost: 0,
 //.. ano
 ano: 0,
 
+//.. filterList
+filterList: [
+	{ title: '全て',     condition: null },
+	{ title: '未編成',   condition: [ 'soltype', 'none' ] },
+	{ title: '槍',       condition: [ 'soltype', [ 321, 322, 323, 324 ] ] },
+	{ title: '武士',     condition: [ 'soltype', [ 323 ] ] },
+	{ title: '長槍足軽', condition: [ 'soltype', [ 322 ] ] },
+	{ title: '足軽',     condition: [ 'soltype', [ 321 ] ] },
+	{ title: '国人衆',   condition: [ 'soltype', [ 324 ] ] },
+	{ title: '弓',       condition: [ 'soltype', [ 325, 326, 327, 328 ] ] },
+	{ title: '弓騎馬',   condition: [ 'soltype', [ 327 ] ] },
+	{ title: '長弓兵',   condition: [ 'soltype', [ 326 ] ] },
+	{ title: '弓足軽',   condition: [ 'soltype', [ 325 ] ] },
+	{ title: '海賊衆',   condition: [ 'soltype', [ 328 ] ] },
+	{ title: '馬',       condition: [ 'soltype', [ 329, 330, 331, 332 ] ] },
+	{ title: '赤備え',   condition: [ 'soltype', [ 331 ] ] },
+	{ title: '精鋭騎馬', condition: [ 'soltype', [ 330 ] ] },
+	{ title: '騎馬兵',   condition: [ 'soltype', [ 329 ] ] },
+	{ title: '母衣衆',   condition: [ 'soltype', [ 332 ] ] },
+	{ title: '兵器',     condition: [ 'soltype', [ 333, 334, 335, 336, 337, 338, 345 ] ] },
+	{ title: '騎馬鉄砲', condition: [ 'soltype', [ 337 ] ] },
+	{ title: '鉄砲足軽', condition: [ 'soltype', [ 336 ] ] },
+	{ title: '焙烙火矢', condition: [ 'soltype', [ 345 ] ] },
+	{ title: '雑賀衆',   condition: [ 'soltype', [ 338 ] ] },
+	{ title: '大筒兵',   condition: [ 'soltype', [ 335 ] ] },
+	{ title: '攻城櫓',   condition: [ 'soltype', [ 334 ] ] },
+	{ title: '破城鎚',   condition: [ 'soltype', [ 333 ] ] },
+
+	{ title: '指定無し', condition: null },
+	{ title: '配置可',   condition: [ '', true, 'eq', function( card ) { return card.canAssign(); } ] },
+	{ title: '第一組',   condition: [ 'brigade', 1 ] },
+	{ title: '第二組',   condition: [ 'brigade', 2 ] },
+	{ title: '第三組',   condition: [ 'brigade', 3 ] },
+	{ title: '第四組',   condition: [ 'brigade', 4 ] },
+	{ title: '未設定',   condition: [ 'brigade', 5 ] },
+	{ title: 'Cost 4',   condition: [ 'cost', 4 ] },
+	{ title: 'Cost 3.5', condition: [ 'cost', 3.5 ] },
+	{ title: 'Cost 3',   condition: [ 'cost', 3 ] },
+	{ title: 'Cost 2.5', condition: [ 'cost', 2.5 ] },
+	{ title: 'Cost 2',   condition: [ 'cost', 2 ] },
+	{ title: 'Cost 1.5', condition: [ 'cost', 1.5 ] },
+	{ title: 'Cost 1',   condition: [ 'cost', 1 ] },
+	{ title: '★★★★★', condition: [ 'rank', 5 ] },
+	{ title: '★★★★',   condition: [ 'rank', 4 ] },
+	{ title: '★★★',     condition: [ 'rank', 3 ] },
+	{ title: '★★',       condition: [ 'rank', 2 ] },
+	{ title: '★',         condition: [ 'rank', 1 ] },
+	{ title: '☆',         condition: [ 'rank', 0 ] },
+	{ title: 'Lv20',       condition: [ 'lv', 20 ] },
+	{ title: 'Lv19以下',   condition: [ 'lv', 19, 'lt' ] },
+	{ title: 'Lv1以上',    condition: [ 'lv', 1, 'gt' ] },
+	{ title: 'Lv0',        condition: [ 'lv', 0 ] },
+	{ title: '兵数最大',   condition: [ 'solNum', 'max' ] },
+	{ title: '最大以外',   condition: [ 'solNum', 'max', 'ne' ] },
+	{ title: '兵数２以上', condition: [ 'solNum', 2, 'gt' ] },
+	{ title: '兵数１以上', condition: [ 'solNum', 1, 'gt' ] },
+	{ title: '兵数１',     condition: [ 'solNum', 1 ] },
+	{ title: 'HP最大',     condition: [ 'hp', 'max' ] },
+	{ title: 'HP99以下',   condition: [ 'hp', 99, 'lt' ] },
+	{ title: '討伐300',    condition: [ 'battleGage', 300 ] },
+	{ title: 'レベルUP',   condition: [ 'lvup', 1 ] },
+	{ title: 'ランクUP',    condition: [ 'rankup', 1 ] }
+],
+
+//.. sortList
+sortList: [
+	{ title: '指定無し',    condition: null },
+	{ title: '総攻：降',    condition: [ 'totalAtk', 'desc' ] },
+	{ title: '総攻：昇',    condition: [ 'totalAtk', 'asc' ] },
+	{ title: '総防：降',    condition: [ 'totalDef', 'desc' ] },
+	{ title: '総防：昇',    condition: [ 'totalDef', 'asc' ] },
+	{ title: '速度：降',    condition: [ 'speed', 'desc', function( card ) { return Util.getSpeed( [ card ] ); } ] },
+	{ title: '速度：昇',    condition: [ 'speed', 'asc', function( card ) { return Util.getSpeed( [ card ] ); } ] },
+	{ title: '攻撃力：降',  condition: [ 'atk', 'desc' ] },
+	{ title: '攻撃力：昇',  condition: [ 'atk', 'asc' ] },
+	{ title: '防御力：降',  condition: [ 'def', 'desc' ] },
+	{ title: '防御力：昇',  condition: [ 'def', 'asc' ] },
+	{ title: '兵法：降',    condition: [ 'int', 'desc' ] },
+	{ title: '兵法：昇',    condition: [ 'int', 'asc' ] },
+	{ title: '兵数：降',    condition: [ 'solNum', 'desc' ] },
+	{ title: '兵数：昇',    condition: [ 'solNum', 'asc' ] },
+	{ title: '指揮力：降',  condition: [ 'maxSolNum', 'desc' ] },
+	{ title: '指揮力：昇',  condition: [ 'maxSolNum', 'asc' ] },
+	{ title: '破壊力：降',  condition: [ 'totalDes', 'desc' ] },
+	{ title: '破壊力：昇',  condition: [ 'totalDes', 'asc' ] },
+	{ title: 'コスト：降',  condition: [ 'cost', 'desc' ] },
+	{ title: 'コスト：昇',  condition: [ 'cost', 'asc' ] },
+	{ title: 'レア度：降',  condition: [ 'rarity', 'desc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] },
+	{ title: 'レア度：昇',  condition: [ 'rarity', 'asc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] },
+	{ title: '経験値：降',  condition: [ 'exp', 'desc' ] },
+	{ title: '経験値：昇',  condition: [ 'exp', 'asc' ] },
+	{ title: 'ランク：降',  condition: [ 'rank', 'desc' ] },
+	{ title: 'ランク：昇',  condition: [ 'rank', 'asc' ] },
+	{ title: 'レベル：降',  condition: [ 'lv', 'desc' ] },
+	{ title: 'レベル：昇',  condition: [ 'lv', 'asc' ] },
+	{ title: 'HP：降',      condition: [ 'hp', 'desc' ] },
+	{ title: 'HP：昇',      condition: [ 'hp', 'asc' ] },
+	{ title: '討伐：降',    condition: [ 'battleGage', 'desc' ] },
+	{ title: '討伐：昇',    condition: [ 'battleGage', 'asc' ] }
+],
+
+//.. getConditionByTitle
+getConditionByTitle: function( title, list ) {
+	for ( var i = 0, len = list.length; i < len; i++ ) {
+		if ( list[ i ].title == title ) { return list[ i ]; }
+	}
+
+	return null;
+},
+
 //.. getPoolSoldiers
 getPoolSoldiers: function() {
 	Deck.poolSoldiers = Deck.poolSoldiers || Util.getPoolSoldiers();
@@ -5970,15 +6080,15 @@ commandMenu: function( container, up ) {
 
 		conditions = [];
 		$li.filter('.imc_filter').each(function() {
-			var selecter = $(this).data('selecter');
-			if ( selecter ) { conditions.push( selecter ); }
+			var condition = $(this).data('condition');
+			if ( condition ) { conditions.push( condition ); }
 		});
 		Deck.filter.conditions = conditions;
 
 		conditions = [];
 		$li.filter('.imc_sort').each(function() {
-			var selecter = $(this).data('selecter');
-			if ( selecter ) { conditions.push( selecter ); }
+			var condition = $(this).data('condition');
+			if ( condition ) { conditions.push( condition ); }
 		});
 		Deck.sort.conditions = conditions;
 
@@ -5986,12 +6096,19 @@ commandMenu: function( container, up ) {
 	})
 	.on('click', 'A', function() {
 		var $this = $(this),
-			data = $this.data('selecter'),
-			$li = $this.closest('LI');
+			title = $this.text(),
+			$li = $this.closest('LI'),
+			data;
 
-		$li.find('SPAN').text( $this.text() );
-		$li.data( 'selecter', data );
+		if ( $li.hasClass('imc_filter') ) {
+			data = Deck.getConditionByTitle( title, Deck.filterList );
+			Deck.filter.exceptions = {};
+		}
+		else {
+			data = Deck.getConditionByTitle( title, Deck.sortList );
+		}
 
+		data = ( data ) ? data.condition : null;
 		if ( data == null ) {
 			$li.removeClass('imc_selected');
 		}
@@ -5999,10 +6116,8 @@ commandMenu: function( container, up ) {
 			$li.addClass('imc_selected');
 		}
 
-		//フィルタ変更の場合
-		if ( $li.hasClass('imc_filter') ) {
-			Deck.filter.exceptions = {};
-		}
+		$li.children('SPAN').text( title );
+		$li.data( 'condition', data );
 
 		container.trigger('update');
 	});
@@ -6015,96 +6130,27 @@ filterMenu: function( container, up ) {
 	container.append('<label>フィルタ</label>');
 
 	menulist = [
-		[
-			{ title: '全て',   selecter: null },
-			{ title: '未編成', selecter: [ 'soltype', 'none' ] }
-		],
-		[
-			{ title: '槍',       selecter: [ 'soltype', [ 321, 322, 323, 324 ] ] },
-			{ title: '武士',     selecter: [ 'soltype', [ 323 ] ] },
-			{ title: '長槍足軽', selecter: [ 'soltype', [ 322 ] ] },
-			{ title: '足軽',     selecter: [ 'soltype', [ 321 ] ] },
-			{ title: '国人衆',   selecter: [ 'soltype', [ 324 ] ] }
-		],
-		[
-			{ title: '弓',     selecter: [ 'soltype', [ 325, 326, 327, 328 ] ] },
-			{ title: '弓騎馬', selecter: [ 'soltype', [ 327 ] ] },
-			{ title: '長弓兵', selecter: [ 'soltype', [ 326 ] ] },
-			{ title: '弓足軽', selecter: [ 'soltype', [ 325 ] ] },
-			{ title: '海賊衆', selecter: [ 'soltype', [ 328 ] ] }
-		],
-		[
-			{ title: '馬',       selecter: [ 'soltype', [ 329, 330, 331, 332 ] ] },
-			{ title: '赤備え',   selecter: [ 'soltype', [ 331 ] ] },
-			{ title: '精鋭騎馬', selecter: [ 'soltype', [ 330 ] ] },
-			{ title: '騎馬兵',   selecter: [ 'soltype', [ 329 ] ] },
-			{ title: '母衣衆',   selecter: [ 'soltype', [ 332 ] ] }
-		],
-		[
-			{ title: '兵器',     selecter: [ 'soltype', [ 333, 334, 335, 336, 337, 338, 345 ] ] },
-			{ title: '騎馬鉄砲', selecter: [ 'soltype', [ 337 ] ] },
-			{ title: '鉄砲足軽', selecter: [ 'soltype', [ 336 ] ] },
-			{ title: '焙烙火矢', selecter: [ 'soltype', [ 345 ] ] },
-			{ title: '雑賀衆',   selecter: [ 'soltype', [ 338 ] ] },
-			{ title: '大筒兵',   selecter: [ 'soltype', [ 335 ] ] },
-			{ title: '攻城櫓',   selecter: [ 'soltype', [ 334 ] ] },
-			{ title: '破城鎚',   selecter: [ 'soltype', [ 333 ] ] }
-		]
+		[ '全て', '未編成' ],
+		[ '槍', '武士', '長槍足軽', '足軽', '国人衆', ],
+		[ '弓', '弓騎馬', '長弓兵', '弓足軽', '海賊衆' ],
+		[ '馬', '赤備え', '精鋭騎馬', '騎馬兵', '母衣衆' ],
+		[ '兵器', '騎馬鉄砲', '鉄砲足軽', '焙烙火矢', '雑賀衆', '大筒兵', '攻城櫓', '破城鎚' ]
 	];
 
-	Deck.createMenu( container, 'imc_filter', menulist, '全て', up );
+	Deck.createMenu( container, 'imc_filter', Deck.filterList, menulist, '全て', up );
 
 	menulist = [
-		[
-			{ title: '指定無し', selecter: null },
-			{ title: '配置可', selecter: [ '', true, 'eq', function( card ) { return card.canAssign(); } ] }
-		],
-		[
-			{ title: '第一組',   selecter: [ 'brigade', 1 ] },
-			{ title: '第二組',   selecter: [ 'brigade', 2 ] },
-			{ title: '第三組',   selecter: [ 'brigade', 3 ] },
-			{ title: '第四組',   selecter: [ 'brigade', 4 ] },
-			{ title: '未設定',   selecter: [ 'brigade', 5 ] }
-		],
-		[
-			{ title: 'Cost 4',   selecter: [ 'cost', 4 ] },
-			{ title: 'Cost 3.5', selecter: [ 'cost', 3.5 ] },
-			{ title: 'Cost 3',   selecter: [ 'cost', 3 ] },
-			{ title: 'Cost 2.5', selecter: [ 'cost', 2.5 ] },
-			{ title: 'Cost 2',   selecter: [ 'cost', 2 ] },
-			{ title: 'Cost 1.5', selecter: [ 'cost', 1.5 ] },
-			{ title: 'Cost 1',   selecter: [ 'cost', 1 ] },
-		],
-		[
-			{ title: '★★★★★', selecter: [ 'rank', 5 ] },
-			{ title: '★★★★',   selecter: [ 'rank', 4 ] },
-			{ title: '★★★',     selecter: [ 'rank', 3 ] },
-			{ title: '★★',       selecter: [ 'rank', 2 ] },
-			{ title: '★',         selecter: [ 'rank', 1 ] },
-			{ title: '☆',         selecter: [ 'rank', 0 ] },
-		],
-		[
-			{ title: 'Lv20',     selecter: [ 'lv', 20 ] },
-			{ title: 'Lv19以下', selecter: [ 'lv', 19, 'lt' ] },
-			{ title: 'Lv1以上',  selecter: [ 'lv', 1, 'gt' ] },
-			{ title: 'Lv0',      selecter: [ 'lv', 0 ] },
-		],
-		[
-			{ title: '兵数最大',   selecter: [ 'solNum', 'max' ] },
-			{ title: '最大以外',   selecter: [ 'solNum', 'max', 'ne' ] },
-			{ title: '兵数２以上', selecter: [ 'solNum', 2, 'gt' ] },
-			{ title: '兵数１以上', selecter: [ 'solNum', 1, 'gt' ] },
-			{ title: '兵数１',     selecter: [ 'solNum', 1 ] }
-		],
-		[
-			{ title: 'HP最大',    selecter: [ 'hp', 'max' ] },
-			{ title: 'HP99以下',  selecter: [ 'hp', 99, 'lt' ] },
-			{ title: '討伐300',   selecter: [ 'battleGage', 300 ] }
-		],
+		[ '指定無し', '配置可' ],
+ 		[ '第一組', '第二組', '第三組', '第四組', '未設定' ],
+		[ 'Cost 4', 'Cost 3.5', 'Cost 3', 'Cost 2.5', 'Cost 2', 'Cost 1.5', 'Cost 1' ],
+		[ '★★★★★', '★★★★', '★★★', '★★', '★', '☆' ],
+		[ 'Lv20', 'Lv19以下', 'Lv1以上', 'Lv0' ],
+		[ '兵数最大', '最大以外', '兵数２以上', '兵数１以上', '兵数１' ],
+		[ 'HP最大', 'HP99以下', '討伐300', 'レベルUP', 'ランクUP' ]
 	];
 
-	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
-	Deck.createMenu( container, 'imc_filter', menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_filter', Deck.filterList, menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_filter', Deck.filterList, menulist, '指定無し', up );
 	Deck.filter.conditions = [];
 	Deck.filter.exceptions = {};
 },
@@ -6116,87 +6162,48 @@ sortMenu: function( container, up ) {
 	container.append('<label>ソート</label>');
 
 	menulist = [
-		[
-			{ title: '指定無し', selecter: null },
-		],
-		[
-			{ title: '総攻：降', selecter: [ 'totalAtk', 'desc' ] },
-			{ title: '総攻：昇', selecter: [ 'totalAtk', 'asc' ] },
-			{ title: '総防：降', selecter: [ 'totalDef', 'desc' ] },
-			{ title: '総防：昇', selecter: [ 'totalDef', 'asc' ] },
-			{ title: '速度：降', selecter: [ 'speed', 'desc', function( card ) { return Util.getSpeed( [ card ] ); } ] },
-			{ title: '速度：昇', selecter: [ 'speed', 'asc', function( card ) { return Util.getSpeed( [ card ] ); } ] }
-		],
-		[
-			{ title: '攻撃力：降', selecter: [ 'atk', 'desc' ] },
-			{ title: '攻撃力：昇', selecter: [ 'atk', 'asc' ] },
-			{ title: '防御力：降', selecter: [ 'def', 'desc' ] },
-			{ title: '防御力：昇', selecter: [ 'def', 'asc' ] },
-			{ title: '兵法：降', selecter: [ 'int', 'desc' ] },
-			{ title: '兵法：昇', selecter: [ 'int', 'asc' ] }
-		],
-		[
-			{ title: '兵数：降', selecter: [ 'solNum', 'desc' ] },
-			{ title: '兵数：昇', selecter: [ 'solNum', 'asc' ] },
-			{ title: '指揮力：降', selecter: [ 'maxSolNum', 'desc' ] },
-			{ title: '指揮力：昇', selecter: [ 'maxSolNum', 'asc' ] },
-			{ title: '破壊力：降', selecter: [ 'totalDes', 'desc' ] },
-			{ title: '破壊力：昇', selecter: [ 'totalDes', 'asc' ] }
-		],
-		[
-			{ title: 'コスト：降', selecter: [ 'cost', 'desc' ] },
-			{ title: 'コスト：昇', selecter: [ 'cost', 'asc' ] },
-			{ title: 'レア度：降', selecter: [ 'rarity', 'desc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] },
-			{ title: 'レア度：昇', selecter: [ 'rarity', 'asc', function( card ) { return { '天': 7, '極': 6, '特': 5, '上': 4, '序': 3, '祝': 2, '雅': 1 }[ card.rarity ]; } ] }
-		],
-		[
-			{ title: 'ランク：降', selecter: [ 'rank', 'desc' ] },
-			{ title: 'ランク：昇', selecter: [ 'rank', 'asc' ] },
-			{ title: 'レベル：降', selecter: [ 'lv', 'desc' ] },
-			{ title: 'レベル：昇', selecter: [ 'lv', 'asc' ] }
-		],
-		[
-			{ title: 'HP：降',   selecter: [ 'hp', 'desc' ] },
-			{ title: 'HP：昇',   selecter: [ 'hp', 'asc' ] },
-			{ title: '討伐：降', selecter: [ 'battleGage', 'desc' ] },
-			{ title: '討伐：昇', selecter: [ 'battleGage', 'asc' ] }
-		]
+		[ '指定無し' ],
+		[ '総攻：降', '総攻：昇', '総防：降', '総防：昇', '速度：降', '速度：昇' ],
+		[ '攻撃力：降', '攻撃力：昇', '防御力：降', '防御力：昇', '兵法：降', '兵法：昇' ],
+		[ '兵数：降', '兵数：昇', '指揮力：降', '指揮力：昇', '破壊力：降', '破壊力：昇' ],
+		[ 'コスト：降', 'コスト：昇', 'レア度：降', 'レア度：昇' ],
+		[ '経験値：降', '経験値：昇', 'ランク：降', 'ランク：昇', 'レベル：降', 'レベル：昇' ],
+		[ 'HP：降', 'HP：昇', '討伐：降', '討伐：昇' ]
 	];
 
-	Deck.createMenu( container, 'imc_sort', menulist, '指定無し', up );
-	Deck.createMenu( container, 'imc_sort', menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_sort', Deck.sortList, menulist, '指定無し', up );
+	Deck.createMenu( container, 'imc_sort', Deck.sortList, menulist, '指定無し', up );
 	Deck.sort.conditions = [];
 },
 
 //.. createMenu
-createMenu: function( container, type, menulist, selected, up ) {
-	var $li = $('<li class="' + type + '"><span></span></li>'),
-		submenu = $('<div class="imc_pulldown" />');
+createMenu: function( container, type, conditionlist, menulist, selected, up ) {
+	var html, cond, $li, $submenu, margin;
+
+	html = '' +
+	'<li class="' + type + '"><span></span>' +
+	'<div class="imc_pulldown">';
 
 	for ( var i = 0, len = menulist.length; i < len; i++ ) {
-		let list = menulist[ i ],
-			$div = $('<div/>').appendTo( submenu );
+		let list = menulist[ i ];
 
+		html += '<div>';
 		for ( var j = 0, lenj = list.length; j < lenj; j++ ) {
-			let $a = $('<a class="imc_pulldown_item" href="javascript:void(0);">' + list[ j ].title + '</a>');
-
-			$a.data('selecter', list[ j ].selecter);
-			$div.append( $a );
-
-			if ( list[ j ].title == selected ) {
-				$li.data( 'selecter', list[ j ].selecter ).find('SPAN').text( list[ j ].title );
-			}
+			html += '<a class="imc_pulldown_item" href="javascript:void(0);">' + list[ j ] + '</a>';
 		}
+		html += '</div>';
 	}
 
-	if ( submenu.find('A').length == 0 ) { return; }
+	html += '</div></li>';
 
-	$li
-	.appendTo( container )
-	.append( submenu );
+	cond = Deck.getConditionByTitle( selected, conditionlist );
+	$li = $(html).appendTo( container );
+	$li.data( 'condition', cond ).children('SPAN').text( selected );
 
 	if ( up ) {
-		submenu.css({ marginTop: -( submenu.outerHeight() + $li.height() ) });
+		margin = ( 1 + menulist.length ) * -26;
+		$submenu = $li.find('.imc_pulldown');
+		$submenu.css('margin-top', margin );
 	}
 },
 
@@ -6756,21 +6763,15 @@ contextmenu: function() {
 
 	if ( added_cid ) { added_card = Deck.analyzedData[ added_cid ]; }
 
-	if ( $this.find('.levelup_btn').length ) {
-		menu['レベルアップ！'] = function () {
-			location.href = '/card/status_info.php?cid=' + card_id + '&p=1&ano=0&dmo=nomal';
-		}
+	if ( card.lvup ) {
+		menu['レベルアップ！'] = function() { card.openLvup(); }
 	}
 	else {
-		menu['ステータス確認'] = function () {
-			location.href = '/card/status_info.php?cid=' + card_id + '&p=1&ano=0&dmo=nomal';
-		}
+		menu['ステータス確認'] = function() { card.openLvup(); }
 	}
 
-	if ( $this.find('.rankup_btn').length ) {
-		menu['ランクアップ！'] = function () {
-			location.href = '/card/lead_info.php?cid=' + card_id + '&p=1&ano=0&dmo=nomal';
-		}
+	if ( card.rankup ) {
+		menu['ランクアップ！'] = function() { card.openRankup(); }
 	}
 
 	//合成可能な場合のメニュー
@@ -7534,6 +7535,20 @@ contextmenu: function() {
 
 	menu['兵編成'] = function() { card.editUnit().done( Deck.update ); };
 	menu['セパレーター1'] = $.contextMenu.separator;
+
+	if ( card.lvup ) {
+		menu['レベルアップ！'] = function() { card.openLvup(); }
+	}
+	else {
+		menu['ステータス確認'] = function() { card.openLvup(); }
+	}
+
+	if ( card.rankup ) {
+		menu['ランクアップ！'] = function() { card.openRankup(); }
+	}
+
+	menu['セパレーター2'] = $.contextMenu.separator;
+
 	menu['リストから除外する'] = function() {
 		Deck.filter.exceptions[ card_id ] = true;
 		card.element.hide();
@@ -7589,7 +7604,7 @@ contextmenu: function() {
 			});
 		}
 
-		menu['セパレーター2'] = $.contextMenu.separator;
+		menu['セパレーター3'] = $.contextMenu.separator;
 		menu['選択中の武将'] = submenu;
 	}
 	else if ( list && batch >= 1 ) {
@@ -7628,7 +7643,7 @@ contextmenu: function() {
 			});
 		}
 
-		menu['セパレーター2'] = $.contextMenu.separator;
+		menu['セパレーター3'] = $.contextMenu.separator;
 
 		if ( $.isEmptyObject( submenu ) ) {
 			menu['表示中の武将'] = $.contextMenu.nothing;
@@ -8274,6 +8289,16 @@ getRecoveryTime: function() {
 	return Math.ceil( time * ( this.maxHp - this.hp ) / 100 );
 },
 
+//.. openLvup
+openLvup: function() {
+	GM_openInTab( location.origin + '/card/status_info.php?cid=' + this.cardId + '&p=1&ano=0&dmo=nomal');
+},
+
+//.. openRankup
+openRankup: function() {
+	GM_openInTab( location.origin + '/card/lead_info.php?cid=' + this.cardId + '&p=1&ano=0&dmo=nomal');
+},
+
 //.. canAssign
 canAssign: function() {
 	return ( this.gounit == '1' && this.solNum > 0 );
@@ -8658,6 +8683,9 @@ analyze: function() {
 	//組
 	text = $elem.find('.ig_deck_unitbox > DIV').attr('class');
 	this.brigade = text.match(/unit_brigade(\d)/)[ 1 ].toInt();
+
+	this.lvup = $elem.find('.levelup_btn').length;
+	this.rankup = $elem.find('.rankup_btn').length;
 
 	//「兵士編成」ボタンがある：編成・合成可、ボタンがない：出品中
 	if ( $elem.find('IMG[alt="兵士編成"]').length == 0 ) {
