@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.6
+// @version        1.2.4.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4188,6 +4188,18 @@ setup: function() {
 	Map.npcPower();
 	Map.coordList( Map.info.country );
 
+	$('#ig_mapbox')
+	.on('contextmenu', '#mapOverlayMap AREA', function() {
+		if ( !$('#imi_rclick_link').attr('checked') ) { return; }
+
+		var idx = $(this).attr('idx').toInt(),
+			data = Map.analyzedData[ idx ];
+
+		if ( data.user != '' && data.npc == '' ) {
+			Map.contextmenu.userProfile.call( this );
+		}
+	});
+
 	$('#mapOverlayMap > AREA').contextMenu( Map.contextmenu, true );
 	$('#imi_base_list TR').contextMenu( Map.contextmenu, true );
 
@@ -4239,6 +4251,15 @@ mapInfo: function() {
 
 //. getMapSettings
 getMapSettings: function() {
+	var settings = MetaStorage('SETTINGS').get('map');
+
+	settings = $.extend( { scale: 2, filter1: true, link1: false, link2: false }, settings );
+
+	return settings;
+},
+
+//. getFilterSettings
+getFilterSettings: function() {
 	var settings = MetaStorage('SETTINGS').get('mapinfo');
 
 	settings = $.extend( { type: '|城||砦|村|支城||出城|', discriminant: '', alliance: '', user: '', rank: 0, mark: false }, settings );
@@ -4399,7 +4420,7 @@ analyzeArea: function( $area_list, img_list ) {
 		data.class   = img_data.class;
 
 		if ( data.discriminant == '自分' ) {
-			data.userId = undefined;
+			data.userId = '';
 			data.alliId = ( $('.gMenu07 > A').attr('href').match(/\d+/) || [] )[ 0 ];
 		}
 		else {
@@ -4485,7 +4506,7 @@ analyzeReport: function() {
 
 //. targetList
 targetList: function() {
-	var { type, discriminant, alliance, user, rank } = Map.getMapSettings(),
+	var { type, discriminant, alliance, user, rank } = Map.getFilterSettings(),
 		list;
 
 	list = Map.analyzedData.filter(function( value ) {
@@ -4646,7 +4667,7 @@ showCoord: function( country ) {
 
 //. showMark
 showMark: function() {
-	var settings = Map.getMapSettings(),
+	var settings = Map.getFilterSettings(),
 		country = Map.info.country,
 		images = Data.images,
 		$map = $('#ig_mapsAll'),
@@ -5173,10 +5194,7 @@ userProfile: function() {
 		data = Map.analyzedData[ idx ],
 		userid = '';
 
-	if ( data.discriminant == '自分' ) {
-		userid = '';
-	}
-	else if ( data.userId ) {
+	if ( data.userId || data.discriminant == '自分' ) {
 		userid = data.userId;
 	}
 	else {
@@ -5430,9 +5448,19 @@ function create( country, _options ) {
 
 //. showZoom
 function showZoom() {
-	var $select, $button, dialog;
+	var scale = Map.getMapSettings().scale,
+		$select, $button, dialog;
 
-	$select = $('<select id="imi_map_scale"><option value="2">&times;2</option><option value="3">&times;3</option><option value="4">&times;4</option></select>');
+	$select = $('<select id="imi_map_scale"><option value="2">&times;2</option><option value="3">&times;3</option><option value="4">&times;4</option></select>')
+	.val( scale )
+	.on('change', function() {
+		var scale = $(this).val(),
+			settings = Map.getMapSettings();
+
+		$.extend( settings, { scale: scale } );
+		MetaStorage('SETTINGS').set('map', settings);
+	});
+
 	$button = $('<button id="imi_map_zoom">拡大</button>')
 	.on('click' ,function() {
 		var scale = $('#imi_map_scale').val().toInt(),
@@ -13960,7 +13988,7 @@ layouter: function() {
 
 //. layouterMapInfo
 layouterMapInfo: function() {
-	var settings = Map.getMapSettings(),
+	var settings = Map.getFilterSettings(),
 		html;
 
 	//拠点情報
@@ -14072,22 +14100,45 @@ layouterMapInfo: function() {
 
 //. layouterUser
 layouterUser: function() {
-	var html;
+	var settings = Map.getMapSettings(),
+		html;
 
 	html = '' +
 	'<div style="width: 168px; height: 420px; overflow: auto; margin-right: 15px; float: left;">' +
 	'<table class="imc_table" style="width: 150px; margin-bottom: 10px;">' +
 	'<thead>' +
-	'<tr><td><label><input type="checkbox" id="imi_base_filter" checked>拠点情報のフィルタ適用</label></td></tr>' +
+	'<tr><td><label><input type="checkbox" id="imi_base_filter">拠点情報のフィルタ適用</label></td></tr>' +
 	'<tr><th>城主名</th></tr>' +
 	'</thead>' +
 	'<tbody id="imi_user_list"></tbody>' +
+	'</table>' +
+	'</div>' +
+	'<div>' +
+	'<table class="imc_table" style="margin-bottom: 10px;">' +
+	'<tr><td style="text-align: left;">' +
+	'<label><input type="checkbox" id="imi_rclick_link">右クリック連動</label>' +
+	'<label><input type="checkbox" id="imi_filter_link">同盟名フィルタ連動</label>' +
+	'</td></tr>' +
 	'</table>' +
 	'</div>' +
 	'<div id="imi_user_info" style="width: 550px; margin: 0px 15px 10px 0px; float: left;"></div>' +
 	'';
 
 	$( html ).appendTo('#imi_user');
+
+	$('#imi_user')
+	.find('#imi_base_filter').attr('checked', settings.filter1).end()
+	.find('#imi_rclick_link').attr('checked', settings.link1).end()
+	.find('#imi_filter_link').attr('checked', settings.link2).end()
+	.on('change', function() {
+		var filter1 = $('#imi_base_filter').attr('checked') ? true : false,
+			link1 = $('#imi_rclick_link').attr('checked') ? true : false,
+			link2 = $('#imi_filter_link').attr('checked') ? true : false,
+			settings = Map.getMapSettings();
+
+		$.extend( settings, { filter1: filter1, link1: link1, link2: link2 } );
+		MetaStorage('SETTINGS').set('map', settings);
+	});
 
 	$('#imi_user_list')
 	.on('update', function() {
@@ -14111,12 +14162,12 @@ layouterUser: function() {
 		.map(function( obj ) {
 			var cssClass = '';
 
-			if ( list[ obj.userId ] ) { return ''; }
+			if ( list[ 'U' + obj.userId ] ) { return ''; }
 
-			if ( ( obj.userId || '' ) == userid ) { cssClass = ' class="imc_current"'; }
+			if ( obj.userId == userid ) { cssClass = ' class="imc_current"'; }
 
-			list[ obj.userId ] = true;
-			return '<tr><td data-userid="' + ( obj.userId || '' ) + '"' + cssClass + '>' + obj.user + '</td></tr>';
+			list[ 'U' + obj.userId ] = true;
+			return '<tr><td data-userid="' + obj.userId + '"' + cssClass + '>' + obj.user + '</td></tr>';
 		}).join('');
 
 		$(this).empty().append( html );
@@ -14132,6 +14183,38 @@ layouterUser: function() {
 
 	$('#imi_base_filter').on('change', function() {
 		$('#imi_user_list').trigger('update');
+	});
+
+	$('#imi_filter_link')
+	.on('change', function() {
+		var $this = $(this),
+			userid = $('#imi_user_info').data('userid');
+
+		if ( userid === undefined ) {
+			return;
+		}
+		else if ( $this.attr('checked') ) {
+			$this.trigger('update');
+		}
+		else {
+			$('#imi_base_conditions INPUT[name="imn_alliance"]').val('').trigger('change');
+		}
+	})
+	.on('update', function() {
+		var $this = $(this),
+			userid = $('#imi_user_info').data('userid'),
+			info;
+
+		//同盟名フィルタと連動
+		if ( $this.attr('checked') ) {
+			info = Util.getUserInfo( userid );
+			$('#imi_base_conditions INPUT[name="imn_discriminant"]').first().attr('checked', true);
+			$('#imi_base_conditions INPUT[name="imn_alliance"]').val( info.alliance ).trigger('change');
+		}
+		else {
+			Map.showMark();
+			Map.showFall();
+		}
 	});
 
 	$('#imi_user_info')
@@ -14271,8 +14354,7 @@ layouterUser: function() {
 		baselist = baselist.concat( camplist );
 		MiniMap.showBasePoint( 'target', baselist );
 
-		Map.showMark();
-		Map.showFall();
+		$('#imi_filter_link').trigger('update');
 	})
 	.on('click', '.imc_user_warlist, .imc_alliance_warlist, .imc_alliance_fight', function() {
 		var $this = $(this),
