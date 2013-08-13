@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.4.7
+// @version        1.2.4.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -258,7 +258,7 @@ var Env = (function() {
 		war = 0;
 	}
 
-	if ( login ) {
+	if ( login && war == 0 ) {
 		MetaStorage('USER_FALL').clear();
 		MetaStorage('USER_INFO').clear();
 	}
@@ -4499,7 +4499,7 @@ analyzeReport: function() {
 	}).join('');
 
 	$('#imi_base_list').empty().append( html );
-	$('#imi_user_list').trigger('update');
+	$('#imi_map_user .imc_user_list').trigger('update');
 	Map.showMark();
 	Map.showFall();
 },
@@ -13808,8 +13808,10 @@ style: '' +
 '.imc_fort2 TD { width: 42px; }' +
 
 /* 城主情報 */
-'#imi_user_list TR { cursor: pointer; }' +
-'#imi_user_list TR:hover { background-color: #f9dea1; }' +
+'#imi_user_list_tab LI { float: left; width: 83px; border: solid 1px #76601D; border-bottom: none; color: #300; font-size: 12px; line-height: 20px; text-align: center; margin-top: 2px; cursor: pointer; }' +
+'#imi_user_list_tab LI.imc_selected { font-weight: bold; line-height: 22px; background-color: #E0DCC1; margin-top: 0px; }' +
+'.imc_user_list TR { cursor: pointer; }' +
+'.imc_user_list TR:hover { background-color: #f9dea1; }' +
 '.imc_link { color: #060; text-decoration: underline; cursor: pointer; }' +
 '.imc_link:hover { text-decoration: none; }' +
 '.imc_base_table TR:hover { background-color: #f9dea1; cursor: pointer; }' +
@@ -14101,16 +14103,29 @@ layouterMapInfo: function() {
 //. layouterUser
 layouterUser: function() {
 	var settings = Map.getMapSettings(),
+		allianceId = $('.gMenu07 A').attr('href').match(/\d+/)[ 0 ],
 		html;
 
 	html = '' +
-	'<div style="width: 168px; height: 420px; overflow: auto; margin-right: 15px; float: left;">' +
-	'<table class="imc_table" style="width: 150px; margin-bottom: 10px;">' +
-	'<thead>' +
-	'<tr><td><label><input type="checkbox" id="imi_base_filter">拠点情報のフィルタ適用</label></td></tr>' +
-	'<tr><th>城主名</th></tr>' +
-	'</thead>' +
-	'<tbody id="imi_user_list"></tbody>' +
+	'<div id="imi_user_list" style="width: 188px; height: 420px; overflow: auto; margin-right: 15px; float: left;">' +
+	'<ul id="imi_user_list_tab"><li class="imc_selected">地図</li><li>その他</li></ul>' +
+	'<table id="imi_map_user" class="imc_table" style="width: 170px; margin-bottom: 10px;">' +
+		'<thead>' +
+		'<tr><td><label><input type="checkbox" id="imi_base_filter">拠点情報のフィルタ適用</label></td></tr>' +
+		'<tr><th>城主名</th></tr>' +
+		'</thead>' +
+		'<tbody class="imc_user_list"></tbody>' +
+	'</table>' +
+	'<table id="imi_other_user" class="imc_table" style="width: 170px; margin-bottom: 10px; display: none;">' +
+		'<thead>' +
+		'<tr><td>' +
+		'<select id="imi_data_type" style="width: 100%;">' +
+		'</select>' +
+		'<button id="imi_data_receive" style="float: right;">取得</button>' +
+		'</td></tr>' +
+		'<tr><th>城主名</th></tr>' +
+		'</thead>' +
+		'<tbody class="imc_user_list"></tbody>' +
 	'</table>' +
 	'</div>' +
 	'<div>' +
@@ -14124,7 +14139,7 @@ layouterUser: function() {
 	'<div id="imi_user_info" style="width: 550px; margin: 0px 15px 10px 0px; float: left;"></div>' +
 	'';
 
-	$( html ).appendTo('#imi_user');
+	$('#imi_user').html( html );
 
 	$('#imi_user')
 	.find('#imi_base_filter').attr('checked', settings.filter1).end()
@@ -14141,7 +14156,23 @@ layouterUser: function() {
 	});
 
 	$('#imi_user_list')
-	.on('update', function() {
+	.on('click', '#imi_user_list_tab LI', function() {
+		$('#imi_user_list_tab LI').removeClass('imc_selected');
+		$(this).addClass('imc_selected');
+
+		if ( $(this).text() == '地図' ) {
+			$('#imi_map_user').show();
+			$('#imi_other_user').hide();
+		}
+		else {
+			$('#imi_map_user').hide();
+			$('#imi_other_user').show();
+		}
+	})
+	.on('change', '#imi_map_user #imi_base_filter', function() {
+		$('#imi_map_user .imc_user_list').trigger('update');
+	})
+	.on('update', '#imi_map_user .imc_user_list', function() {
 		var userid = $('#imi_user_info').data('userid'),
 			list = {}, data, html;
 
@@ -14170,19 +14201,90 @@ layouterUser: function() {
 			return '<tr><td data-userid="' + obj.userId + '"' + cssClass + '>' + obj.user + '</td></tr>';
 		}).join('');
 
+		$(this).empty().html( html );
+
+		$('#imi_data_type').trigger('update');
+	})
+	.on('update', '#imi_data_type', function() {
+		var userid = $('#imi_user_info').data('userid'),
+			country = Map.info.country,
+			html = '', family_name, data;
+
+		if ( country != 20 && country != 21 ) {
+			family_name = Data.countries[ country ];
+
+			html += '' +
+			'<option data-param="[ 1, ' + country + ', 1 ]">【格付】盟主 1-10【' + family_name + '】</option>' +
+			'<option data-param="[ 1, ' + country + ', 2 ]">【格付】盟主11-20【' + family_name + '】</option>';
+		}
+
+		html += '<option data-param="[ 2, ' + allianceId + ' ]">【同盟】自同盟員</option>';
+
+		if ( userid !== undefined ) {
+			data = Util.getUserInfo( userid );
+			html += '<option data-param="[ 2, ' + data.allianceId + ' ]">【同盟】' + data.alliance + '</option>';
+		}
+
+		$(this).empty().html( html );
+	})
+	.on('click', '#imi_other_user #imi_data_receive', function() {
+		var [ type, param1, param2 ] = $('#imi_data_type OPTION:selected').data('param'),
+			dfd;
+
+		if ( type == 1 ) {
+			dfd = $.get( '/alliance/list.php?c=' + param1 + '&p=' + param2 );
+		}
+		else if ( type == 2 ) {
+			dfd = $.get( '/alliance/info.php?id=' + param1 );
+		}
+
+		dfd.pipe(function( html ) {
+			var list = [];
+
+			$(html).find('.common_table1 TR').slice( 1 ).each(function() {
+				var $tr = $(this),
+					$a = $tr.find('A[href^="/user/"]'),
+					id = $a.attr('href').match(/user_id=(\d+)/)[ 1 ],
+					name = $a.text(),
+					text;
+
+				if ( type == 2 ) {
+					text = $tr.find('TD').eq( 6 ).text();
+					if ( text.indexOf('補佐') != -1 ) {
+						name += ' 【補佐】';
+					}
+					else if ( text.indexOf('盟主') != -1 ) {
+						name += ' 【盟主】';
+					}
+				}
+
+				list.push({ userId: id, user: name });
+			});
+
+			$('#imi_other_user .imc_user_list').trigger( 'update', [ list ] );
+		});
+	})
+	.on('update', '#imi_other_user .imc_user_list', function() {
+		var list = arguments[ 1 ],
+			name = $('#lordName').text(),
+			userid = $('#imi_user_info').data('userid'),
+			html;
+
+		html = list.map(function( obj ) {
+			var cssClass = '';
+
+			if ( obj.user == name ) { obj.userId = ''; }
+			if ( obj.userId == userid ) { cssClass = ' class="imc_current"'; }
+
+			return '<tr><td data-userid="' + obj.userId + '"' + cssClass + '>' + obj.user + '</td></tr>';
+		}).join('');
+
 		$(this).empty().append( html );
 	})
-	.on('click', 'TD', function() {
-		var $this = $(this);
+	.on('click', '.imc_user_list TD', function() {
+		var userid = $(this).data('userid');
 
-		$('#imi_user_list .imc_current').removeClass('imc_current');
-		$this.addClass('imc_current');
-
-		$('#imi_user_info').trigger('update', $this.data('userid') );
-	});
-
-	$('#imi_base_filter').on('change', function() {
-		$('#imi_user_list').trigger('update');
+		$('#imi_user_info').trigger('update', userid );
 	});
 
 	$('#imi_filter_link')
@@ -14328,7 +14430,7 @@ layouterUser: function() {
 
 		$(this).data('userid', userid).empty().append( html );
 
-		$('#imi_user_list TD')
+		$('.imc_user_list TD')
 		.filter('.imc_current').removeClass('imc_current').end()
 		.each(function() { if ( $(this).data('userid') == userid ) { $(this).addClass('imc_current'); } });
 
@@ -14355,6 +14457,7 @@ layouterUser: function() {
 		MiniMap.showBasePoint( 'target', baselist );
 
 		$('#imi_filter_link').trigger('update');
+		$('#imi_data_type').trigger('update');
 	})
 	.on('click', '.imc_user_warlist, .imc_alliance_warlist, .imc_alliance_fight', function() {
 		var $this = $(this),
