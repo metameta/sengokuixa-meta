@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.5.1
+// @version        1.2.5.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -472,17 +472,23 @@ getUserCamp: function( userid ) {
 	.done(function( html ) {
 		var $html = $(html),
 			$table = $html.find('TABLE.common_table1'),
-			camp = [], campc, territory = 0;
+			base = [], camp = [], campc, territory = 0;
 
 		$table.find('TR.fs14').each(function() {
 			var $this = $(this),
 				type  = $this.find('TD').eq( 0 ).text(),
-				point = $this.find('A').eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
+				pop   = $this.find('TD').eq( 3 ).text().toInt() || '-',
+				$a    = $this.find('A'),
+				name  = $a.eq( 0 ).text().trim(),
+				point = $a.eq( 1 ).attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/),
 				x     = point[ 1 ].toInt(),
 				y     = point[ 2 ].toInt(),
 				c     = point[ 3 ].toInt();
 
-			if ( type == '陣' ) {
+			if ( type == '本領' || type == '所領' || type == '出城' ) {
+				base.push({ type: type, name: name, x: x, y: y, c: c, pop: pop });
+			}
+			else if ( type == '陣' ) {
 				camp.push([ x, y ]);
 				campc = c;
 			}
@@ -491,6 +497,19 @@ getUserCamp: function( userid ) {
 			}
 		});
 
+		for ( var i = 0, len = base.length; i < len; i++ ) {
+			let { x, y, c } = base[ i ];
+			for ( var j = 0, lenj = info.base.length; j < lenj; j++ ) {
+				let { x: nx, y: ny, c: nc } = info.base[ j ];
+
+				if ( x == nx && y == ny && c == nc ) {
+					base[ i ].fall = info.base[ j ].fall;
+					break;
+				}
+			}
+		}
+
+		info.base = base;
 		info.camp = camp;
 		info.campc = campc;
 		info.territory = territory;
@@ -14333,7 +14352,7 @@ layouterUser: function() {
 	.on('update', function() {
 		var userid = arguments[ 1 ],
 			info = Util.getUserInfo( userid ),
-			html;
+			found = false, html;
 
 		html = '' +
 		'<table class="imc_table">' +
@@ -14405,6 +14424,7 @@ layouterUser: function() {
 		info.base.map(function( base ) {
 			if ( base.c != Map.info.country ) { return ''; }
 
+			found = true;
 			return '' +
 			'<tr class="ime_coord" x="' + base.x + '" y="' + base.y + '">' +
 				'<td>' + base.type + '</td>' +
@@ -14413,7 +14433,13 @@ layouterUser: function() {
 				'<td>' + base.pop + '</td>' +
 				'<td>' + ( ( base.fall ) ? '陥落中' : '' ) + '</td>' +
 			'</tr>';
-		}).join('') +
+		}).join('');
+
+		if ( !found ) {
+			html += '<tr><td colspan="5">本領／所領／出城は見つかりませんでした。<br/>後から出城を出した場合は、陣情報の更新を行ってください。</td></tr>';
+		}
+
+		html += '' +
 		'</tbody>' +
 		'<thead>' +
 		'<tr><th colspan="4">前回チェックからの経過時間</th><th>' +
