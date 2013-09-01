@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.5.3
+// @version        1.2.5.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -866,17 +866,14 @@ getUnitStatus: function( $table ) {
 
 //. getBaseList
 getBaseList: function( country ) {
-	var list = [];
-
-	$.ajax({ type: 'get', url: '/war/war_briefing.php', async: false })
+	return $.get('/war/war_briefing.php')
 	.pipe(function( html ) {
 		var $html = $(html),
 			$ul = $html.find('#ig_battle_status_tozai_brf UL'),
 			$map = $html.find('#ig_battle_status_map'),
 			name = $html.find('.westTeam IMG').eq( 0 ).attr('title'),
-			$img, countrys, gageflag;
+			list = [], countrys = [], $img, gageflag;
 
-		countrys = [];
 		if ( country == 21 ) {
 			//第二組
 			$img = $ul.slice( 2, 4 ).find('LI IMG');
@@ -912,9 +909,9 @@ getBaseList: function( country ) {
 
 			list.push( data );
 		});
-	});
 
-	return list;
+		return list;
+	});
 },
 
 //. getFee
@@ -4202,10 +4199,6 @@ analyzedData: [],
 //. init
 init: function() {
 	Map.info = Map.mapInfo();
-
-	if ( Map.info.isBattleMap ) {
-		Map.baseList = Util.getBaseList( Map.info.country );
-	}
 },
 
 //. setup
@@ -4236,6 +4229,18 @@ setup: function() {
 	$(window).on('popstate', function() {
 		Map.moveUrl( location.href );
 	});
+
+	if ( Map.info.isBattleMap ) {
+		Util.getBaseList( Map.info.country ).
+		pipe(function( list ) {
+			Map.baseList = list;
+			Map.fortressLink2();
+			MiniMap.showBasePoint( 'fortress', list );
+		})
+	}
+	else {
+		Map.fortressLink();
+	}
 },
 
 //. mapInfo
@@ -4653,6 +4658,106 @@ coordList: function( country ) {
 	Map.showMark();
 },
 
+//. fortressLink
+fortressLink: function() {
+	var compass = Data.compass,
+		fortresses = Data.fortresses,
+		html;
+
+	html = '<table class="imc_table imc_fort">' +
+		'<tr>' +
+			'<th>' + compass[0].name + '</th>' +
+			'<th>' + compass[1].name + '</th>' +
+			'<th>' + compass[2].name + '</th>' +
+			'<th>' + compass[3].name + '</th>' +
+		'</tr>';
+
+	html += fortresses.map(function( value, idx ) {
+		//最初はダミー
+		if ( idx == 0 ) { return; }
+
+		var base_x = value[0],
+			base_y = value[1],
+			html;
+
+		html = [ 0, 1, 2, 3 ].map(function( value ) {
+			var x = base_x * compass[ value ].x,
+				y = base_y * compass[ value ].y,
+				name = compass[ value ].name + idx;
+
+			return '<td class="ime_coord" x="' + x + '" y="' + y + '">' + name + '</td>';
+		}).join('');
+
+		return '<tr style="cursor: pointer">' + html + '</tr>';
+	}).join('');
+
+	html += '</table>';
+
+	$( html ).appendTo('#imi_coord')
+	.find('.ime_coord')
+	.hover( Util.enter, Util.leave );
+},
+
+//. fortressLink2
+fortressLink2: function() {
+	var list = Map.baseList,
+		html;
+
+	html = '<table class="imc_table imc_fort2">';
+
+	list.forEach(function( value, idx ) {
+		var { name, x, y, gage } = value;
+
+		if ( idx % 6 == 0 ) {
+			//大殿
+			html += '<tr><th colspan="6">' + name + '</th></tr>' +
+			'<tr style="cursor: pointer;">' +
+			'<td style="width: 55px;" x="' + x + '" y="' + y + '">大殿城';
+
+			if ( gage != undefined ) {
+				html += '<table class="imc_table imc_gage">' +
+				'<tr>' + '<td />'.repeat( gage ) + '<td class="imc_lose" />'.repeat( 10 - gage ) + '</tr>' +
+				'</table>';
+			}
+
+			html += '</td>';
+		}
+		else {
+			//砦
+			html += '<td x="' + x + '" y="' + y + '">砦' + ( idx % 6 );
+
+			if ( gage != undefined ) {
+				html += '<table class="imc_table imc_gage">' +
+				'<tr>' + '<td />'.repeat( gage ) + '<td class="imc_lose" />'.repeat( 5 - gage ) + '</tr>' +
+				'</table>';
+			}
+
+			html += '</td>';
+
+			if ( idx % 6 == 5 ) { html += '</tr>'; }
+		}
+	});
+
+	html += '</table>';
+
+	$( html ).appendTo('#imi_coord')
+	.find('> TBODY > TR:gt(0) > TD')
+	.hover( Util.enter, Util.leave )
+	.click(function() {
+		var $this = $(this);
+
+		if ( $this.closest('TABLE').hasClass('imc_gage') ) {
+			//ゲージをクリックした場合
+			return true;
+		}
+
+		var x = $this.attr('x'),
+			y = $this.attr('y');
+
+		Map.move( x, y );
+	});
+},
+
 //. showMiniMap
 showMiniMap: function( country ) {
 	var list = BaseList.all( country );
@@ -4666,12 +4771,6 @@ showMiniMap: function( country ) {
 	}).appendTo('#imi_map');
 	MiniMap.showBasePoint( 'user', list );
 	MiniMap.showViewArea( Map.info );
-
-	if ( Map.info.isBattleMap ) {
-		list = Map.baseList;
-		MiniMap.showBasePoint( 'fortress', list );
-	}
-
 	//登録座標表示
 	Map.showCoord( country );
 },
@@ -14604,14 +14703,6 @@ layouterCoord: function() {
 		$('#imi_coord_list').empty();
 		Map.showCoord( country );
 	});
-
-	//砦一覧
-	if ( Map.info.isBattleMap ) {
-		this.fortressLink2();
-	}
-	else {
-		this.fortressLink();
-	}
 },
 
 //. layouterSituation
@@ -14981,106 +15072,6 @@ countrySelecter: function() {
 	}
 
 	$('<div/>').attr('id', 'imi_country_selecter').append( '現在', $selecter, 'を表示中' ).appendTo('#ig_mapbox');
-},
-
-//. fortressLink
-fortressLink: function() {
-	var compass = Data.compass,
-		fortresses = Data.fortresses,
-		html;
-
-	html = '<table class="imc_table imc_fort">' +
-		'<tr>' +
-			'<th>' + compass[0].name + '</th>' +
-			'<th>' + compass[1].name + '</th>' +
-			'<th>' + compass[2].name + '</th>' +
-			'<th>' + compass[3].name + '</th>' +
-		'</tr>';
-
-	html += fortresses.map(function( value, idx ) {
-		//最初はダミー
-		if ( idx == 0 ) { return; }
-
-		var base_x = value[0],
-			base_y = value[1],
-			html;
-
-		html = [ 0, 1, 2, 3 ].map(function( value ) {
-			var x = base_x * compass[ value ].x,
-				y = base_y * compass[ value ].y,
-				name = compass[ value ].name + idx;
-
-			return '<td class="ime_coord" x="' + x + '" y="' + y + '">' + name + '</td>';
-		}).join('');
-
-		return '<tr style="cursor: pointer">' + html + '</tr>';
-	}).join('');
-
-	html += '</table>';
-
-	$( html ).appendTo('#imi_coord')
-	.find('.ime_coord')
-	.hover( Util.enter, Util.leave );
-},
-
-//. fortressLink2
-fortressLink2: function() {
-	var list = Map.baseList,
-		html;
-
-	html = '<table class="imc_table imc_fort2">';
-
-	list.forEach(function( value, idx ) {
-		var { name, x, y, gage } = value;
-
-		if ( idx % 6 == 0 ) {
-			//大殿
-			html += '<tr><th colspan="6">' + name + '</th></tr>' +
-			'<tr style="cursor: pointer;">' +
-			'<td style="width: 55px;" x="' + x + '" y="' + y + '">大殿城';
-
-			if ( gage != undefined ) {
-				html += '<table class="imc_table imc_gage">' +
-				'<tr>' + '<td />'.repeat( gage ) + '<td class="imc_lose" />'.repeat( 10 - gage ) + '</tr>' +
-				'</table>';
-			}
-
-			html += '</td>';
-		}
-		else {
-			//砦
-			html += '<td x="' + x + '" y="' + y + '">砦' + ( idx % 6 );
-
-			if ( gage != undefined ) {
-				html += '<table class="imc_table imc_gage">' +
-				'<tr>' + '<td />'.repeat( gage ) + '<td class="imc_lose" />'.repeat( 5 - gage ) + '</tr>' +
-				'</table>';
-			}
-
-			html += '</td>';
-
-			if ( idx % 6 == 5 ) { html += '</tr>'; }
-		}
-	});
-
-	html += '</table>';
-
-	$( html ).appendTo('#imi_coord')
-	.find('> TBODY > TR:gt(0) > TD')
-	.hover( Util.enter, Util.leave )
-	.click(function() {
-		var $this = $(this);
-
-		if ( $this.closest('TABLE').hasClass('imc_gage') ) {
-			//ゲージをクリックした場合
-			return true;
-		}
-
-		var x = $this.attr('x'),
-			y = $this.attr('y');
-
-		Map.move( x, y );
-	});
 }
 
 });
