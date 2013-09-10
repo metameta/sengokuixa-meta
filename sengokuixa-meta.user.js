@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.5.4
+// @version        1.2.5.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1484,8 +1484,32 @@ keyBindCallback: function( callback ) {
 keyBindCommon: function() {
 
 	$(document).keybind({
+		'n': Util.keyBindCallback(function() {
+			location.href = '/village.php';
+		}),
+
 		'm': Util.keyBindCallback(function() {
 			location.href = '/map.php';
+		}),
+
+		'e': Util.keyBindCallback(function() {
+			var $curr, $next, village;
+
+			$curr = $('#imi_basename .on');
+			$next = $curr.next();
+			if ( $next.length == 0 ) { $next = $curr.parent().children('LI').first(); }
+
+			location.href = $next.find('A').attr('href');
+		}),
+
+		'q': Util.keyBindCallback(function() {
+			var $curr, $prev, village;
+
+			$curr = $('#imi_basename .on');
+			$prev = $curr.prev();
+			if ( $prev.length == 0 ) { $prev = $curr.parent().children('LI').last(); }
+
+			location.href = $prev.find('A').attr('href');
 		}),
 
 		'1': Util.keyBindCallback(function() {
