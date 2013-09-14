@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.5.5
+// @version        1.2.5.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -4201,7 +4201,9 @@ cardAttribute: {
 	6005: { slot3: 1 },
 	6006: { slot2: 1, slot3: 1 },
 	6007: { slot3: 1 },
-	6008: { slot2: 1, slot3: 1 }
+	6008: { slot2: 1, slot3: 1 },
+	6009: { slot3: 1 },
+	6010: { slot3: 1 }
 }
 
 };
