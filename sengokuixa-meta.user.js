@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.5.8
+// @version        1.2.5.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7397,7 +7397,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		'</table>' +
 		'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
 		'<legend>登録完了後</legend>' +
-		'<label><input name="imn_all_assign_option" type="radio" value="1" /> 秘境探索画面へ</label><br/>';
+		'<label><input name="imn_all_assign_option" type="radio" value="1" checked /> 秘境探索画面へ</label><br/>';
 
 		if ( option2 ) {
 			html += '<label><input name="imn_all_assign_option" type="radio" value="2" /> 目的地へ出陣</label><br/>';
@@ -7407,7 +7407,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		}
 
 		html += '' +
-		'<label><input name="imn_all_assign_option" type="radio" value="0" checked /> 部隊作成ダイアログを閉じる</label><br/>' +
+		'<label><input name="imn_all_assign_option" type="radio" value="0" /> 部隊作成ダイアログを閉じる</label><br/>' +
 		'</fieldset>';
 
 		$html = $( html );
