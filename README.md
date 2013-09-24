@@ -8,7 +8,7 @@ sengokuixa-meta
 動作確認
 --------
 
-* FireFox22 + Scriptish
+* Firefox24 + Scriptish
 * （確か・・・FireFox9以上必須）
 
 インストール
