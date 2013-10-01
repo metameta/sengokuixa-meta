@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.0
+// @version        1.2.6.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8516,7 +8516,7 @@ assignCard: function( ano ) {
 			tasks.push( $.post( '/card/deck.php', {
 				select_assign_no: ano,
 				unit_assign_id: unit_id,
-				unset_unit_squad_id: card.squadId,
+				unset_card_id: card.squadId,
 				deck_mode: 'nomal',
 				p: 1
 			}));
@@ -8626,7 +8626,7 @@ breakUp: function() {
 	return $.post( '/card/deck.php', {
 		select_assign_no: this.ano,
 		unit_assign_id: this.unitId,
-		unset_unit_squad_id: this.leaderId,
+		unset_card_id: this.leaderId,
 		deck_mode: 'nomal',
 		p: 1,
 		select_card_group: 0
