@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.3
+// @version        1.2.6.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3194,9 +3194,12 @@ modify: function( name, commands ) {
 
 $.each( data, function( key, value ) {
 	value.name = key;
-	Soldier.nameKeys[ key ] = value.type;
-	Soldier.typeKeys[ value.type ] = key;
-	Soldier.classKeys[ value.class ] = key;
+
+	if ( value.type ) {
+		Soldier.nameKeys[ key ] = value.type;
+		Soldier.typeKeys[ value.type ] = key;
+		Soldier.classKeys[ value.class ] = key;
+	}
 });
 
 return Soldier;
@@ -7826,7 +7829,6 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 	}
 
 	dfd.always(function() {
-		Deck.getPoolSoldiers();
 		$('#imi_deck_bottom').trigger('update');
 
 		if ( coord ) {
@@ -7880,7 +7882,7 @@ loadUnit: function( ano ) {
 	return $.get( '/card/deck.php', { myselect: '', ano: ano, dmo: 'normal', select_card_group: 0, p: 1 })
 	.pipe(function( html ) {
 		var $html = $( html ),
-			unit, array, newano;
+			pool = {}, unit, array, newano;
 
 		//デッキ関係の情報保存
 		unit = new Unit( $html.find('#assign_form') );
@@ -7892,6 +7894,11 @@ loadUnit: function( ano ) {
 			if ( text.indexOf('新規') != -1 ) { return null; }
 			return text.replace('[', '').replace(']部隊', '');
 		});
+
+		$.each( Soldier.typeKeys, function( type ) {
+			pool[ type ] = $html.find( '#pool_unit_cnt_' + type ).val().toInt();
+		});
+		Deck.poolSoldiers = { pool: pool };
 
 		if ( unit.card == 0 ) {
 			//部隊情報が読み込めなかった
@@ -7936,7 +7943,7 @@ loadCard: function( brigade ) {
 			$pager = $html.find('UL.pager.cardstock:first'),
 			source = $pager.find('LI.last A:eq(1)').attr('onClick') || '',
 			match = source.match(/input.name = "p"; input.value = "(\d+)"/),
-			deck_cost, ano, lastPage;
+			pool = {}, deck_cost, ano, lastPage;
 
 		//デッキ関係の情報保存
 		deck_cost = $html.find('#ig_deckcost SPAN.ig_deckcostdata').text().match(/(\d+\.?\d?)\/(\d+)/);
@@ -7949,6 +7956,11 @@ loadCard: function( brigade ) {
 			if ( text.indexOf('新規') != -1 ) { return null; }
 			return text.replace('[', '').replace(']部隊', '');
 		});
+
+		$.each( Soldier.typeKeys, function( type ) {
+			pool[ type ] = $html.find( '#pool_unit_cnt_' + type ).val().toInt();
+		});
+		Deck.poolSoldiers = { pool: pool };
 
 		$('#imi_temporary').append( $html.find('#ig_boxInner > DIV[id^=cardWindow_]') );
 		pageData.push( $card_list );
@@ -13769,7 +13781,7 @@ style: '' +
 main: function() {
 	//デッキ関係の情報保存
 	var unit_list = $('#ig_unitchoice LI'),
-		ano, condition, array;
+		pool = {}, ano, condition, array;
 
 	//追加の場合、現在選択されているano
 	ano = unit_list.index( unit_list.filter('.now').first() );
@@ -13795,6 +13807,11 @@ main: function() {
 	SmallCard.setup( $card_list );
 	Deck.updateDeckInfo();
 //	Deck.update();
+
+	$.each( Soldier.typeKeys, function( type ) {
+		pool[ type ] = $( '#pool_unit_cnt_' + type ).val().toInt();
+	});
+	Deck.poolSoldiers = { pool: pool };
 
 	var unit_num = 5 - unit_list.filter('.unset').length,
 		cache_num = MetaStorage('UNIT_STATUS').get('部隊').length;
