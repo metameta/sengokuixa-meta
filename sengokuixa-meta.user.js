@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.2
+// @version        1.2.6.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8192,10 +8192,13 @@ contextmenu: function() {
 		card.element.hide();
 	};
 
-	var condition = Deck.filter.conditions[ 0 ] || [,[]],
-		deck = $this.closest('#imi_card_container').length,
+	var deck = $this.closest('#imi_card_container').length,
 		list = $this.closest('#ig_deck_smallcardarea_out').length,
-		batch = 0;
+		condition = [], batch = 0;
+
+	if ( Deck.filter.conditions[ 0 ] ) {
+		condition = Deck.filter.conditions[ 0 ].condition || [];
+	}
 
 	if ( condition[ 0 ] == 'soltype' ) {
 		if ( $.isArray( condition[ 1 ] ) ) {
