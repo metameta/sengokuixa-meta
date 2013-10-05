@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.1
+// @version        1.2.6.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -8305,7 +8305,7 @@ var Unit = function( $form, type ) {
 
 	if ( $form && $form.find('#howto_butai_hensei').length == 0 ) {
 		var villagename = $form.find('.ig_deck_unitdata_assign').text().trim(),
-			condition = $form.find('.ig_deck_unitdata_condition').children().remove().end().text().trim(),
+			condition = $form.find('.ig_deck_unitdata_condition').text().replace('帰還する', '').trim(),
 			source = $form.find('.deck_navi A').first().attr('onClick') || '',
 			$li, args;
 
