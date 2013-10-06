@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.4
+// @version        1.2.6.5
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7896,7 +7896,8 @@ loadUnit: function( ano ) {
 		});
 
 		$.each( Soldier.typeKeys, function( type ) {
-			pool[ type ] = $html.find( '#pool_unit_cnt_' + type ).val().toInt();
+			var $input = $html.find( '#pool_unit_cnt_' + type );
+			if ( $input.length == 1 ) { pool[ type ] = $input.val().toInt(); }
 		});
 		Deck.poolSoldiers = { pool: pool };
 
@@ -7958,7 +7959,8 @@ loadCard: function( brigade ) {
 		});
 
 		$.each( Soldier.typeKeys, function( type ) {
-			pool[ type ] = $html.find( '#pool_unit_cnt_' + type ).val().toInt();
+			var $input = $html.find( '#pool_unit_cnt_' + type );
+			if ( $input.length == 1 ) { pool[ type ] = $input.val().toInt(); }
 		});
 		Deck.poolSoldiers = { pool: pool };
 
@@ -13809,7 +13811,8 @@ main: function() {
 //	Deck.update();
 
 	$.each( Soldier.typeKeys, function( type ) {
-		pool[ type ] = $( '#pool_unit_cnt_' + type ).val().toInt();
+		var $input = $( '#pool_unit_cnt_' + type );
+		if ( $input.length == 1 ) { pool[ type ] = $input.val().toInt(); }
 	});
 	Deck.poolSoldiers = { pool: pool };
 
