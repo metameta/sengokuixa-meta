@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.5
+// @version        1.2.6.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7404,6 +7404,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		'</table>' +
 		'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
 		'<legend>登録完了後</legend>' +
+		'<label><input name="imn_all_assign_option" type="radio" value="3" /> 部隊編成を続行</label><br/>' +
 		'<label><input name="imn_all_assign_option" type="radio" value="1" checked /> 秘境探索画面へ</label><br/>';
 
 		if ( option2 ) {
@@ -7414,7 +7415,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		}
 
 		html += '' +
-		'<label><input name="imn_all_assign_option" type="radio" value="0" /> 部隊作成ダイアログを閉じる</label><br/>' +
+		'<label><input name="imn_all_assign_option" type="radio" value="0" /> 部隊編成ダイアログを閉じる</label><br/>' +
 		'</fieldset>';
 
 		$html = $( html );
@@ -7483,13 +7484,22 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 				unit;
 
 			if ( assignlist.length == 0 ) {
-				if ( option == "1" ) {
+				if ( option == '1' ) {
 					Display.dialog().message('ページを更新します...');
 					location.href = Util.getVillageChangeUrl( village.id, '/facility/dungeon.php' );
 				}
-				else if ( option == "2" ) {
+				else if ( option == '2' ) {
 					Display.dialog().message('ページを更新します...');
 					Map.send( target_x, target_y, village.country, village );
+				}
+				else if ( option == '3') {
+					Deck.dialog.loadUnit( 4 ).pipe(function() {
+						return Util.getUnitStatus();
+					})
+					.pipe(function( list ) {
+						Deck.assignedList = list;
+						Deck.updateDeckCard();
+					});
 				}
 				else {
 					Util.getUnitStatusCD();
@@ -7507,6 +7517,17 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 
 			unit.assignCard( Deck.newano )
 			.done(function() {
+				var cardlist = Deck.analyzedData,
+					assignlist = unit.assignList;
+
+				for ( var i = 0, len = assignlist.length; i < len; i++ ) {
+					let card = assignlist[ i ];
+
+					card.element.remove();
+					card.element = null;
+					delete cardlist[ card.cardId ];
+				}
+
 				Deck.newano++;
 			})
 			.always(function( param2 ) {
@@ -7533,6 +7554,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 				let card = assignlist[ i ];
 
 				card.element.remove();
+				card.element = null;
 				delete cardlist[ card.cardId ];
 			}
 
