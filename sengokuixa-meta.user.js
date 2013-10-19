@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.7
+// @version        1.2.6.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7669,7 +7669,10 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			card = Deck.getCard( card_id );
 
 		card.editUnit()
-		.done( Deck.update );
+		.done(function() {
+			Deck.checkAssignCard( [ card ] );
+			Deck.update();
+		})
 
 		return false;
 	})
