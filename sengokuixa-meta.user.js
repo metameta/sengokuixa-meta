@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.10
+// @version        1.2.6.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1492,7 +1492,9 @@ unionCardParam: function( card ) {
 		lv: card.lv,
 		rankup: card.canRankup(),
 		skilllvup: card.canSkillLvup(),
-		skilladd: card.canSkillAdd()
+		skilladd: card.canSkillAdd(),
+		skillslot2: card.useSkillSlot2(),
+		rankupslot2: card.useRankupSlot2()
 	};
 },
 
@@ -2992,13 +2994,13 @@ panelUnionSlot: function( $panel ) {
 		});
 
 		html += '<tr><td colspan="3">';
-		if ( slot1.rank < 5 && slot2.rank >= slot1.rank && slot1.lv == 20 && slot2.lv == 20 ) {
+		if ( slot1.rank < 5 && slot2.rank >= slot1.rank && slot1.lv == 20 && slot2.lv == 20 && slot2.rankupslot2 ) {
 			html += '<button class="imc_rankup">ランクアップ</button>';
 		}
-		if ( slot1.skilllvup ) {
+		if ( slot1.skilllvup && slot2.skillslot2 ) {
 			html += '<button class="imc_skill_levelup">強化合成</button>';
 		}
-		if ( slot1.skilladd ) {
+		if ( slot1.skilladd && slot2.skillslot2 ) {
 			html += '<button class="imc_skill_add">追加合成</button>';
 		}
 		html += '</td></tr></table>';
@@ -4290,7 +4292,9 @@ cardAttribute: {
 	6007: { slot3: 1 },
 	6008: { slot2: 1, slot3: 1 },
 	6009: { slot3: 1 },
-	6010: { slot3: 1 }
+	6010: { slot3: 1 },
+	6011: { rslot2: 1, slot3: 1 },
+	6012: { rslot2: 1, slot3: 1 }
 }
 
 };
@@ -7150,14 +7154,14 @@ contextmenu: function() {
 			}
 		}
 
-		if ( card.canSkillLvup() ) {
+		if ( card.canSkillLvup() && ( !added_card || added_card.useSkillSlot2() ) ) {
 			submenu['スキル強化'] = function() { Card.skillLevelup( card_id, added_cid, material_cid ); };
 		}
 		else {
 			submenu['スキル強化'] = $.contextMenu.nothing;
 		}
 
-		if ( card.canSkillAdd() ) {
+		if ( card.canSkillAdd() && ( !added_card || added_card.useSkillSlot2() ) ) {
 			submenu['スキル追加'] = function() { Card.skillAdd( card_id, added_cid ); };
 		}
 		else {
@@ -9626,7 +9630,19 @@ canUnion: function() {
 
 //.. useSlot2
 useSlot2: function() {
+	if ( this.slot2 || this.rslot2 ) { return true; }
+	return this.canUnion();
+},
+
+//.. useSkillSlot2
+useSkillSlot2: function() {
 	if ( this.slot2 ) { return true; }
+	return this.canUnion();
+},
+
+//.. useRankupSlot2
+useRankupSlot2: function() {
+	if ( this.rslot2 ) { return true; }
 	return this.canUnion();
 },
 
@@ -13625,11 +13641,11 @@ contextmenu: function() {
 				separator = true;
 			}
 		}
-		if ( card.canSkillLvup() ) {
+		if ( card.canSkillLvup() && ( !added_card || added_card.useSkillSlot2() ) ) {
 			menu['スキルを強化する'] = function() { Card.skillLevelup( card_id, added_cid, material_cid ); };
 			separator = true;
 		}
-		if ( card.canSkillAdd() ) {
+		if ( card.canSkillAdd() && ( !added_card || added_card.useSkillSlot2() ) ) {
 			menu['スキルを追加する'] = function() { Card.skillAdd( card_id, added_cid ); };
 			separator = true;
 		}
