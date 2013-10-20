@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.8
+// @version        1.2.6.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7493,13 +7493,12 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 					Map.send( target_x, target_y, village.country, village );
 				}
 				else if ( option == '3') {
-					Deck.dialog.loadUnit( 4 ).pipe(function() {
-						return Util.getUnitStatus();
-					})
-					.pipe(function( list ) {
-						Deck.assignedList = list;
-						Deck.checkAssignCard( Deck.analyzedData );
-						Deck.updateDeckCard();
+					Deck.dialog.loadUnit( 4 ).always(function() {
+						Util.getUnitStatus().pipe(function( list ) {
+							Deck.assignedList = list;
+							Deck.checkAssignCard( Deck.analyzedData );
+							Deck.updateDeckCard();
+						});
 					});
 				}
 				else {
