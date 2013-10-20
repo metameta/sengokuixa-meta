@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.9
+// @version        1.2.6.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3475,6 +3475,12 @@ style: '' +
 '#imi_unit_dialog .imc_command_selecter LI:hover .imc_pulldown { display: block; }' +
 '#imi_unit_dialog .imc_command_selecter LI A.imc_pulldown_item { padding: 3px 0px; text-indent: 0px; width: 65px !important; height: 20px; line-height: 20px; text-align: center; color: #fff; background: #000 none; display: inline-block; }' +
 '#imi_unit_dialog .imc_command_selecter LI A:hover { color: #fff; background-color: #666; }' +
+
+/* 兵種変更 */
+'#imi_unit_dialog LI.imc_soltype_change .imc_pulldown { margin-left: -129px; width: 257px; }' +
+'#imi_unit_dialog LI.imc_soltype_change .imc_pulldown LABEL { width: 115px }' +
+'#imi_unit_dialog LI A.imc_batch_item { width: 65px; height: 22px; line-height: 22px; text-align: center; color: #fff; background-color: #000; display: inline-block; }' +
+'#imi_unit_dialog LI A.imc_batch_item:hover { color: #fff; background-color: #666; }' +
 
 '#imi_unit_dialog #imi_new_deck { float: right; }' +
 '#imi_unit_dialog #imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
@@ -7240,6 +7246,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 				'<li data-brigade="4" class="imc_brigade imc_brigade_4 imc_off" />' +
 				'<li data-brigade="5" class="imc_brigade imc_brigade_5 imc_off" />' +
 				'<label style="margin-left: 8px;">一括編成</label>' +
+				'<li class="imc_batch_change imc_soltype_change">兵種変更<div class="imc_pulldown" /></li>' +
 				'<li class="imc_batch_gather">兵寄せ</li>' +
 				'<li class="imc_batch_max">最大補充</li>' +
 				'<li class="imc_batch_sol1">兵１</li>' +
@@ -7784,6 +7791,61 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 	.on('click', '.imc_batch_sol1', function() {
 		var list = Deck.targetList();
 		Deck.setUnit( list, 1 );
+	})
+	.on('mouseenter', '.imc_unit_change, .imc_batch_change', function() {
+		var $this = $(this),
+			data = Deck.getPoolSoldiers(),
+			unit = $this.hasClass('imc_unit_change'),
+			pool = [], $div;
+
+		$.each( Soldier.typeKeys, function( type ) {
+			var poolnum = data.pool[ type ] || 0;
+
+			if ( poolnum == 0 ) { return; }
+
+			pool.push({ type: type, name: '' + this, num: poolnum });
+		});
+
+		$div = $this.find('.imc_pulldown').empty();
+
+		if ( pool.length > 0 ) {
+			pool.forEach(function( poolSol ) {
+				var html;
+
+				html = '' +
+				'<label>' + poolSol.name + ' (' + poolSol.num + ')</label>' +
+				'<a class="imc_batch_item imc_max" data-type="' + poolSol.type + '">兵数最大</a>' +
+				'<a class="imc_batch_item" data-type="' + poolSol.type + '">兵数 1</a>' +
+				'<hr style="display: block; height: 1px;"/>';
+
+				$div.append( html );
+			});
+		}
+		else {
+			$div.append('<div style="text-align: center;">待機兵がいません</div>');
+		}
+
+		if ( !unit ) { $div.css({ marginTop: -( $this.outerHeight()  + $div.outerHeight() - 1 ) }); }
+	})
+	.on('click', '.imc_batch_item', function() {
+		var $this = $(this),
+			unit = $this.closest('.imc_unit_change').length,
+			type = $this.data('type'),
+			list;
+
+		if ( unit ) {
+			list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
+		}
+		else {
+			list = Deck.targetList();
+		}
+
+		if ( $this.hasClass('imc_max') ) {
+			Deck.setUnitMax( list, type );
+		}
+		else {
+			Deck.setUnit( list, 1, type );
+		}
 	});
 
 	options = {
@@ -8033,6 +8095,17 @@ loadCard: function( brigade ) {
 			MiniCard.setup( pageData[ i ] );
 		}
 
+		var cardlist = Deck.analyzedData;
+		for ( var card_id in cardlist ) {
+			let card = cardlist[ card_id ];
+
+			if ( card.status == Card.EXHIBITED ) {
+				card.element.remove();
+				card.element = null;
+				delete cardlist[ card.cardId ];
+			}
+		}
+
 		if ( brigade == 0 ) {
 			Deck.dialog.loaded = 0x3E;
 		}
@@ -8072,6 +8145,7 @@ updateUnitPanel: function() {
 
 		html += '' +
 			'<label>一括編成</label>' +
+			'<li class="imc_unit_change imc_soltype_change">兵種変更<div class="imc_pulldown" /></li>' +
 			'<li class="imc_unit_max">最大補充</li>' +
 			'<li class="imc_unit_sol1">兵１</li>' +
 		'</ul>';
@@ -8224,113 +8298,12 @@ contextmenu: function() {
 		menu['ランクアップ！'] = function() { card.openRankup(); }
 	}
 
-	menu['セパレーター2'] = $.contextMenu.separator;
-
-	menu['リストから除外する'] = function() {
-		Deck.filter.exceptions[ card_id ] = true;
-		card.element.hide();
-	};
-
-	var deck = $this.closest('#imi_card_container').length,
-		list = $this.closest('#ig_deck_smallcardarea_out').length,
-		condition = [], batch = 0;
-
-	if ( Deck.filter.conditions[ 0 ] ) {
-		condition = Deck.filter.conditions[ 0 ].condition || [];
-	}
-
-	if ( condition[ 0 ] == 'soltype' ) {
-		if ( $.isArray( condition[ 1 ] ) ) {
-			batch = ( condition[ 1 ].length == 1 ) ? 2 : 0;
-		}
-		else if ( condition[ 1 ] == 'none' ) {
-			batch = 1;
-		}
-	}
-
-	if ( deck ) {
-		submenu = {};
-		submenu['兵数変更'] = $.contextMenu.title;
-		submenu['最大補充'] = function() {
-			var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
-			Deck.setUnitMax( list );
+	if ( $this.closest('#ig_deck_smallcardarea_out').length ) {
+		menu['セパレーター2'] = $.contextMenu.separator;
+		menu['リストから除外する'] = function() {
+			Deck.filter.exceptions[ card_id ] = true;
+			card.element.hide();
 		};
-		submenu['兵数 1 セット'] = function() {
-			var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
-			Deck.setUnit( list, 1 );
-		};
-
-		[ 10, 100, 300 ].forEach(function( value ) {
-			submenu['兵数 ' + value + ' セット'] = function() {
-				var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
-				Deck.gatherSoldier( list, value );
-			};
-		});
-
-		if ( pool.length > 0 ) {
-			submenu['兵種変更'] = $.contextMenu.title;
-
-			pool.forEach(function( poolSol ) {
-				submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = {
-					'兵数最大': function() {
-						var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
-						Deck.setUnitMax( list, poolSol.type );
-					},
-					'兵数 1': function() {
-						var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
-						Deck.setUnit( list, 1, poolSol.type );
-					}
-				};
-			});
-		}
-
-		menu['セパレーター3'] = $.contextMenu.separator;
-		menu['選択中の武将'] = submenu;
-	}
-	else if ( list && batch >= 1 ) {
-		submenu = {};
-
-		if ( batch == 2 ) {
-			submenu['兵数変更'] = $.contextMenu.title;
-			submenu['兵寄せ'] = function() {
-				var list = Deck.targetList();
-				Deck.gatherSoldierMax( list );
-			};
-			submenu['最大補充'] = function() {
-				var list = Deck.targetList();
-				Deck.setUnitMax( list );
-			};
-			submenu['兵数 1 セット'] = function() {
-				var list = Deck.targetList();
-				Deck.setUnit( list, 1 );
-			};
-		}
-
-		if ( pool.length > 0 ) {
-			submenu['兵種変更'] = $.contextMenu.title;
-
-			pool.forEach(function( poolSol ) {
-				submenu[ poolSol.name + ' ( ' + poolSol.num + ' )' ] = {
-					'兵数最大': function() {
-						var list = Deck.targetList();
-						Deck.setUnitMax( list, poolSol.type );
-					},
-					'兵数 1': function() {
-						var list = Deck.targetList();
-						Deck.setUnit( list, 1, poolSol.type );
-					}
-				};
-			});
-		}
-
-		menu['セパレーター3'] = $.contextMenu.separator;
-
-		if ( $.isEmptyObject( submenu ) ) {
-			menu['表示中の武将'] = $.contextMenu.nothing;
-		}
-		else {
-			menu['表示中の武将'] = submenu;
-		}
 	}
 
 	return menu;
