@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.13
+// @version        1.2.6.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3514,9 +3514,10 @@ style: '' +
 '#imi_unit_dialog .imc_unit_sc_panel { width: 547px; height: 22px; padding: 1px; text-align: left; color: #fff; background-color: #000; border: 1px solid #999; z-index: 5; position: absolute; margin-top: -3px; margin-left: -3px; }' +
 '#imi_unit_dialog .imc_unit_sc_panel .imc_opener { float: right; display: inline-block; width: 20px; height: 22px; line-height: 22px; text-align: center; font-size: 14px; cursor: pointer; }' +
 '#imi_unit_dialog .imc_hide .imc_unit_sc_panel { width: 22px; height: 22px; margin-left: 522px; border-radius: 0px 0px 0px 5px; }' +
-'#imi_unit_dialog .imc_sc_panel { position: absolute; top: 124px; left: 0px; width: 128px; height: 20px; padding: 1px 2px; z-index: 5; }' +
+'#imi_unit_dialog .imc_sc_panel { position: absolute; bottom: 2px; left: 0px; width: 128px; height: auto; padding: 1px 2px; z-index: 5; }' +
 '#imi_unit_dialog .imc_sc_panel SPAN { display: inline-block; width: 40px; height: 18px; border: solid 1px #999; color: #fff; background-color: #000; text-align: center; line-height: 18px; cursor: pointer; }' +
 '#imi_unit_dialog .imc_sc_panel SPAN[class]:hover { color: #fff; background-color: #666; }' +
+'#imi_unit_dialog .imc_sc_panel .imc_card_info { width: 118px; height: 16px; padding: 0px 3px; line-height: 16px; color: #fff; background-color: #000; border: solid 1px #999; border-bottom: none; }' +
 '#imi_unit_dialog .imc_unit .imc_sc_panel,' +
 '#imi_unit_dialog .imc_selected .imc_sc_panel { padding: 0px 1px; }' +
 '#imi_unit_dialog #imi_card_container .imc_selected .imc_sc_panel { padding: 1px 2px; }' +
@@ -7637,12 +7638,25 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			card_id = $this.attr('card_id'),
 			card = Deck.getCard( card_id ),
 			data = Deck.getPoolSoldiers(),
+			now = Util.getServerTime(),
 			num = data.pool[ card.solType ] || 0;
 
 		if ( card.status == Card.EXHIBITED || card.status == Card.ACTION ) { return; }
 
 		html = '' +
 		'<div class="imc_sc_panel">';
+
+		if ( !card.recoveryTime ) {
+			if ( card.lv < 20 ) {
+				html += '<div class="imc_card_info">次Lvまで ' + card.nextExp + '</div>';
+			}
+		}
+		else if ( card.recoveryTime <= now ) {
+			html += '<div class="imc_card_info">全快しました</div>';
+		}
+		else if ( card.recoveryTime > now ) {
+			html += '<div class="imc_card_info">' + ( card.recoveryTime - now ).toFormatTime() + ' 後全快</div>';
+		}
 
 		if ( num > 0 && card.solNum > 0 && card.solNum < card.maxSolNum ) {
 			html += '<span class="imc_sc_solmax">最大</span>';
@@ -9569,8 +9583,8 @@ unsetUnit: function() {
 	this.hp -= 5;
 	if ( this.hp < 0 ) { this.hp = 0; }
 	if ( this.battleGage > 300 ) { this.battleGage = 300; }
-	this.recoveryTime = Util.getServerTime() + this.getRecoveryTime();
 	this.setStatus( Card.DISABLED );
+	this.recoveryTime = Util.getServerTime() + this.getRecoveryTime();
 	this.update();
 },
 
@@ -9611,7 +9625,10 @@ getRecoveryTime: function() {
 		time = ( 1 + this.lv / 4 ) * Data.hpRecovery[ this.rarity ];
 	}
 
-	return Math.ceil( time * ( this.maxHp - this.hp ) / 100 );
+	time = Math.ceil( time * ( this.maxHp - this.hp ) / 100 );
+	if ( this.status == Card.UNIT || this.status == Card.ACTION ) { time *= 2; }
+
+	return time;
 },
 
 //.. openLvup
