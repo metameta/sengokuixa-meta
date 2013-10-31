@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.12
+// @version        1.2.6.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1571,32 +1571,52 @@ keyBindCommon: function() {
 
 		'A-1': Util.keyBindCallback(function() {
 			if ( location.pathname == '/card/deck.php' ) { return; }
-			if ( Deck.dialog.opened ) { return; }
-			Deck.dialog( null, null, null, 0 );
+			if ( Deck.dialog.opened ) {
+				$('#imi_unit_tab LI').eq( 0 ).trigger('click');
+			}
+			else {
+				Deck.dialog( null, null, null, 0 );
+			}
 		}),
 
 		'A-2': Util.keyBindCallback(function() {
 			if ( location.pathname == '/card/deck.php' ) { return; }
-			if ( Deck.dialog.opened ) { return; }
-			Deck.dialog( null, null, null, 1 );
+			if ( Deck.dialog.opened ) {
+				$('#imi_unit_tab LI').eq( 1 ).trigger('click');
+			}
+			else {
+				Deck.dialog( null, null, null, 1 );
+			}
 		}),
 
 		'A-3': Util.keyBindCallback(function() {
 			if ( location.pathname == '/card/deck.php' ) { return; }
-			if ( Deck.dialog.opened ) { return; }
-			Deck.dialog( null, null, null, 2 );
+			if ( Deck.dialog.opened ) {
+				$('#imi_unit_tab LI').eq( 2 ).trigger('click');
+			}
+			else {
+				Deck.dialog( null, null, null, 2 );
+			}
 		}),
 
 		'A-4': Util.keyBindCallback(function() {
 			if ( location.pathname == '/card/deck.php' ) { return; }
-			if ( Deck.dialog.opened ) { return; }
-			Deck.dialog( null, null, null, 3 );
+			if ( Deck.dialog.opened ) {
+				$('#imi_unit_tab LI').eq( 3 ).trigger('click');
+			}
+			else {
+				Deck.dialog( null, null, null, 3 );
+			}
 		}),
 
 		'A-5': Util.keyBindCallback(function() {
 			if ( location.pathname == '/card/deck.php' ) { return; }
-			if ( Deck.dialog.opened ) { return; }
-			Deck.dialog( null, null, null, 4 );
+			if ( Deck.dialog.opened ) {
+				$('#imi_unit_tab LI').eq( 4 ).trigger('click');
+			}
+			else {
+				Deck.dialog( null, null, null, 4 );
+			}
 		})
 
 	});
