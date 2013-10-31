@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.6.14
+// @version        1.2.6.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -192,7 +192,7 @@ unique: function() {
 //■ MetaStorage
 var MetaStorage=(function(){var storageList={},storagePrefix='IM.',eventListener=new Object(),propNames='expires'.split(' ');function MetaStorage(name){var storageName=storagePrefix+name,storage,storageArea;storageArea=MetaStorage.keys[storageName];if(!storageArea){throw new Error('「'+storageName+'」このストレージ名は存在しません。');}storage=storageList[storageName];if(storage==undefined){storage=new Storage(storageArea,storageName);loadData.call(storage);storageList[storageName]=storage}return storage}$.extend(MetaStorage,{keys:{},registerStorageName:function(storageName){storageName=storagePrefix+storageName;MetaStorage.keys[storageName]='local'},registerSessionName:function(storageName){storageName=storagePrefix+storageName;MetaStorage.keys[storageName]='session'},clearAll:function(){$.each(MetaStorage.keys,function(key,value){localStorage.removeItem(key)});storageList={}},import:function(string){var importData=JSON.parse(string),keys=MetaStorage.keys;this.clearAll();$.each(importData,function(key,value){if(keys[key]){localStorage.setItem(key,importData[key])}})},export:function(){var exportData={};$.each(MetaStorage.keys,function(key,value){var stringData=localStorage.getItem(key);if(stringData){exportData[value]=stringData}});return JSON.stringify(exportData)},change:function(name,callback){var storageName=storagePrefix+name;$(eventListener).on(storageName,callback)}});function Storage(storageArea,storageName){this.storageArea=storageArea;this.storageName=storageName;this.data={};return this}$.extend(Storage.prototype,{clear:function(){this.data={};clearData.call(this)},get:function(key){return this.data[key]},set:function(key,value){this.data[key]=value;saveData.call(this)},remove:function(key){delete this.data[key];saveData.call(this)},begin:function(){this.transaction=true;this.tranData=$.extend({},this.data)},commit:function(){var trans=this.transaction;delete this.transaction;delete this.tranData;if(trans){saveData.call(this)}},rollback:function(){delete this.transaction;this.data=this.tranData;delete this.tranData},toJSON:function(){return JSON.stringify(this.data)}});function loadData(){this.data=load(this.storageArea,this.storageName)}function saveData(){if(this.transaction){return}save(this.storageArea,this.storageName,this.data)}function clearData(){var storageArea;if(this.transaction){return}if(this.storageArea=='local'){storageArea=localStorage}else if(this.storageArea=='session'){storageArea=sessionStorage}storageArea.removeItem(this.storageName)}function load(storageArea,storageName){var parseData={},stringData,storage;if(storageArea=='local'){storage=localStorage}else if(storageArea=='session'){storage=sessionStorage}stringData=storage.getItem(storageName);if(stringData){try{parseData=JSON.parse(stringData)}catch(e){}}return parseData}function save(storageArea,storageName,data){var stringData=JSON.stringify(data),storage;if(storageArea=='local'){storage=localStorage}else if(storageArea=='session'){storage=sessionStorage}if($.isEmptyObject(data)){storage.removeItem(storageName)}else{storage.setItem(storageName,stringData)}}$(window).on('storage',function(event){var storageName=event.originalEvent.key,storage;if(!MetaStorage.keys[storageName]){return}storage=storageList[storageName];if(storage!==undefined){loadData.call(storage)}$(eventListener).trigger(storageName,event)});return MetaStorage})();
 
-'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO'.split(' ').forEach(function( value ) {
+'ENVIRONMENT SETTINGS VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO FAVORITE_UNIT'.split(' ').forEach(function( value ) {
 	MetaStorage.registerStorageName( value );
 });
 '1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -259,7 +259,7 @@ var Env = (function() {
 
 		if ( newseason !== season ) {
 			//期が変わった場合
-			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO'.split(' ').forEach(function( value ) {
+			'VILLAGE FACILITY ALLIANCE COUNTDOWN UNIT_STATUS USER_FALL USER_INFO FAVORITE_UNIT'.split(' ').forEach(function( value ) {
 				MetaStorage( value ).clear();
 			});
 			'1 2 3 4 5 6 7 8 9 10 11 12 20 21'.split(' ').forEach(function( value ) {
@@ -2969,6 +2969,142 @@ dialogRename: function( village ) {
 	$('#imi_village_name').focus();
 },
 
+//. dialogFavoriteUnit
+dialogFavoriteUnit: function( data ) {
+	var list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+		tags, html, $content, dialog;
+
+	tags = list.map(function( elem ) { return elem.tag; });
+	tags = tags.unique().sort();
+
+	html = '' +
+	'<table class="imc_table" style="width: 300px; margin-bottom: 10px;">' +
+		'<tr>' +
+			'<th colspan="4">武将</th>' +
+		'</tr>';
+
+	for ( var i = 0; i < 4; i++ ) {
+		let name = data.namelist[ i ] ? data.namelist[ i ] : '-';
+
+		if ( i % 2 == 0 ) { html += '<tr>'; }
+		html += '<td colspan="2">' + name + '</td>';
+		if ( i % 2 == 1 ) { html += '</tr>'; }
+	}
+
+	html += '' +
+		'<tr>' +
+			'<th width="60">部隊名</th>' +
+			'<td colspan="3" style="text-align: left;"><input class="imc_unit_name" value="' + data.name + '" /></td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th>コスト</th>' +
+			'<td width="70">' + data.cost.toFixed( 1 ) + '</td>' +
+			'<th width="60">部隊速</th>' +
+			'<td width="70" style="text-align: left;"><input class="imc_unit_skill" style="width: 50px; ime-mode: disabled;" value="' + data.skill.toFixed( 1 ) + '" /> %</td>' +
+		'</tr>' +
+		'<tr>' +
+			'<th width="60">タグ</th>' +
+			'<td colspan="3" style="text-align: left;"><input class="imc_unit_tag" style="width: 120px" maxlength="8" value="' + data.tag + '" /> （最大８文字）</td>' +
+		'</tr>' +
+	'</table>' +
+	'<table id="imi_tag_list" class="imc_table" style="width: 300px; margin-bottom: 10px;">' +
+		'<tr><th>既存タグ一覧</th></tr>' +
+		'<tr><td style="height: 50px;">';
+
+	for ( var i = 0, len = tags.length; i < len; i++ ) {
+		html += '<span>' + tags[ i ] + '</span>';
+	}
+
+	html += '' +
+		'</td></tr>' +
+	'</table>' +
+	'<label style="display: inline-block; height: 20px; width: 300px;">' +
+		'<input class="imc_favorite_delete_check" type="checkbox"> 削除する場合はチェック' +
+	'</label>';
+
+	$content = $( html )
+	.on('click', 'SPAN', function() {
+		$('.imc_unit_tag').val( $(this).text() );
+	});
+
+	dialog = Display.dialog({
+		title: 'お気に入り部隊登録',
+		content: $content,
+		top: 150, width: 320, height: 'auto',
+		buttons: {
+			'削除': function() {
+				var storage = MetaStorage('FAVORITE_UNIT'),
+					list = storage.get('list') || [],
+					checked = $content.find('.imc_favorite_delete_check').attr('checked');
+
+				if ( !checked ) { return; }
+
+				list = list.filter(function( elem ) { return elem.fid != data.fid; });
+				storage.set('list', list);
+
+				if ( $('#imi_unit_favorite').hasClass('imc_selected') ) {
+					$('#imi_favorite_container').trigger('update');
+				}
+
+				this.close();
+			},
+			'登録': function() {
+				var storage = MetaStorage('FAVORITE_UNIT'),
+					name = $content.find('.imc_unit_name').val(),
+					skill = $content.find('.imc_unit_skill').val(),
+					tag = $content.find('.imc_unit_tag').val(),
+					fid = storage.get('fid') || 0,
+					list = storage.get('list') || [];
+
+				//入力チェック
+				if ( name == '' || tag == '' ) {
+					Display.alert('部隊名又はタグが入力されていません。');
+					return;
+				}
+				if ( !/^\d{1,2}(\.\d)?$/.test( skill ) ) {
+					Display.alert('部隊速は数値を入力してください。');
+					return;
+				}
+
+				if ( !data.fid ) {
+					fid++;
+					data.fid = fid;
+					data.name = name;
+					data.tag = tag;
+					data.skill = skill.toFloat();
+					list.push( data );
+				}
+				else {
+					list.forEach(function( elem ) {
+						if ( elem.fid != data.fid ) { return; }
+
+						elem.name = name;
+						elem.tag = tag;
+						elem.skill = skill.toFloat();
+					});
+				}
+
+				storage.set('fid', fid);
+				storage.set('list', list);
+
+				if ( $('#imi_unit_favorite').hasClass('imc_selected') ) {
+					$('#imi_favorite_container').trigger('update');
+				}
+
+				this.close();
+			},
+			'キャンセル': function() {
+				this.close();
+			}
+		}
+	});
+
+	if ( !data.fid ) {
+		$content.find('.imc_favorite_delete_check').attr('disabled', true);
+		dialog.buttons.eq( 0 ).attr('disabled', true);
+	}
+},
+
 //. panelUnionSlot
 panelUnionSlot: function( $panel ) {
 	var storage = MetaStorage('UNION_CARD'),
@@ -3491,6 +3627,13 @@ style: '' +
 '#imi_unit_dialog .imc_bar_battle_gage { width: 110px; height: 4px; border: solid 1px #c90; border-radius: 2px; background: -moz-linear-gradient(left, #cc0, #c60); margin-bottom: 1px; }' +
 '#imi_unit_dialog .imc_bar_hp { width: 110px; height: 4px; border: solid 1px #696; border-radius: 2px; background: -moz-linear-gradient(left, #a60, #3a0); }' +
 '#imi_unit_dialog .imc_bar_inner { background-color: #000; float: right; height: 100%; display: inline-block; }' +
+/* お気に入り */
+'#imi_unit_dialog #imi_favorite_tab LI { min-width: 50px; border-bottom: 1px solid #76601D; }' +
+'#imi_unit_dialog #imi_favorite_container .imc_command_button { cursor: pointer; }' +
+'#imi_unit_dialog #imi_favorite_container .imc_command_button:hover { background-color: #f9dea1; }' +
+/* お気に入り登録 */
+'#imi_tag_list SPAN { float: left; padding: 4px 6px; margin: 1px 3px; white-space: nowrap; background-color: #E0DCC1; border-radius: 3px; cursor: pointer; }' +
+'#imi_tag_list SPAN:hover { background-color: #f9dea1; }' +
 
 /* フィルタ */
 '#imi_unit_dialog .imc_command_selecter LI .imc_pulldown { position: absolute; margin: 1px -1px; padding: 2px; background-color: #000; border: solid 1px #fff; z-index: 2000; text-align: left; display: none; }' +
@@ -3503,6 +3646,8 @@ style: '' +
 '#imi_unit_dialog LI.imc_soltype_change .imc_pulldown LABEL { width: 115px }' +
 '#imi_unit_dialog LI A.imc_batch_item { width: 65px; height: 22px; line-height: 22px; text-align: center; color: #fff; background-color: #000; display: inline-block; }' +
 '#imi_unit_dialog LI A.imc_batch_item:hover { color: #fff; background-color: #666; }' +
+'#imi_unit_dialog #imi_unit_favorite.imc_selected { background-color: #666; color: #fff; border-color: #fff; }' +
+'#imi_unit_dialog #imi_unit_favorite .imc_pulldown_item { min-width: 65px; width: auto !important; padding: 3px 5px; }' +
 
 '#imi_unit_dialog #imi_new_deck { float: right; }' +
 '#imi_unit_dialog #imi_new_deck LI { float: right; min-width: 44px; height: 20px; line-height: 20px; text-align: center; padding: 0px 8px; border: solid 1px #666; color: #666; background-color: #000; margin-left: 8px; cursor: pointer; }' +
@@ -7267,6 +7412,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		'</div>' +
 		'<div id="imi_info" style="border: solid 1px #76601D; height: 368px; padding-top: 20px; background-color: #000; color: #fff; font-size: 18px; text-align: center;">武将カード情報取得中...</div>' +
 		'<div id="ig_deck_smallcardarea_out" style="display: none; border: solid 1px #76601D; border-bottom: none; height: 351px; padding: 4px; background-color: #000; overflow: auto;"><span id="imi_cardarea_out"></span></div>' +
+		'<div id="imi_favorite_container" style="display: none; border: solid 1px #76601D; border-bottom: none; height: 347px; padding: 8px 4px 4px 4px; background-color: #F1F0DC; overflow: auto;"></div>' +
 		'<div id="imi_deck_bottom" style="display: none; height: 22px; padding: 4px 3px 3px 3px; background-color: #000; border: solid 1px #76601D; border-top: none;">' +
 			'<ul class="imc_command_selecter">' +
 				'<li class="imc_deck_info">デッキ情報</li>' +
@@ -7276,7 +7422,8 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 				'<li data-brigade="3" class="imc_brigade imc_brigade_3 imc_off" />' +
 				'<li data-brigade="4" class="imc_brigade imc_brigade_4 imc_off" />' +
 				'<li data-brigade="5" class="imc_brigade imc_brigade_5 imc_off" />' +
-				'<label style="margin-left: 8px;">一括編成</label>' +
+				'<li id="imi_unit_favorite" class="" style="margin-left: 8px;">お気に入り<div class="imc_pulldown" style="max-width: 300px;" /></li>' +
+				'<label>一括編成</label>' +
 				'<li class="imc_batch_change imc_soltype_change">兵種変更<div class="imc_pulldown" /></li>' +
 				'<li class="imc_batch_gather">兵寄せ</li>' +
 				'<li class="imc_batch_max">最大補充</li>' +
@@ -7289,6 +7436,9 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 	$content
 	.on( 'click', '.ig_deck_smallcardarea', function() {
 		Deck.addCardDeck.call( this );
+		if ( $('#imi_unit_favorite').hasClass('imc_selected') ) {
+			$('#imi_favorite_container').trigger('update');
+		}
 	})
 	.on( 'click', '#imi_info_change', function() {
 		var $this = $(this);
@@ -7364,7 +7514,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			$('#imi_card_container').append( unit.assignList[ i ].clone() );
 		}
 
-		if ( !unit || unit.card == 0 || ( unit.condition != '新規' && unit.condition != '待機' ) ) {
+		if ( !unit || unit.card == 0 ) {
 			$('.imc_unit_sc_panel').remove();
 		}
 		else {
@@ -7620,6 +7770,10 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 				unit = new Unit();
 				unit.village = Deck.dialog.village;
 				Deck.setup( Deck.maxCost, use_cost , Deck.newano + 1, unit );
+
+				if ( $('#imi_unit_favorite').hasClass('imc_selected') ) {
+					$('#imi_favorite_container').trigger('update');
+				}
 			}
 			else {
 				Deck.dialog.loadUnit( Deck.currentUnit.ano )
@@ -7633,13 +7787,256 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			if ( ol && ol.close ) { window.setTimeout( ol.close, 500 ); }
 		});
 	})
+	.on('mouseenter', '#imi_unit_favorite', function() {
+		var $this = $(this),
+			list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			$div, tags, html;
+
+		tags = list.map(function( elem ) { return elem.tag; });
+		tags = tags.unique().sort();
+
+		html = '';
+		tags.forEach(function( val ) {
+			html += '<a class="imc_pulldown_item">' + val + '</a>';
+		});
+
+		if ( tags.length == 0 ) {
+			$div = $this.find('.imc_pulldown').empty().html('登録情報無し');
+		}
+		else {
+			$div = $this.find('.imc_pulldown').empty().append( html );
+		}
+
+		$div.css({ marginTop: -( $this.outerHeight() + $div.outerHeight() - 1 ) });
+	})
+	.on('click', '#imi_unit_favorite, #imi_unit_favorite .imc_pulldown_item', function() {
+		var $this = $(this);
+
+		if ( $this.hasClass('imc_pulldown_item') ) {
+			//子
+			$('#imi_unit_favorite').addClass('imc_selected');
+			$('#imi_favorite_container').data( 'selected', $this.text() ).trigger('update').show();
+			$('#ig_deck_smallcardarea_out').hide();
+		}
+		else {
+			//親
+			if ( $this.hasClass('imc_selected') ) {
+				$this.removeClass('imc_selected');
+				$('#imi_favorite_container').empty().hide();
+				$('#ig_deck_smallcardarea_out').show();
+			}
+			else {
+				$this.addClass('imc_selected');
+				$('#imi_favorite_container').removeData('selected').trigger('update').show();
+				$('#ig_deck_smallcardarea_out').hide();
+			}
+		}
+
+		return false;
+	})
+	.on('update', '#imi_favorite_container', function() {
+		var $this = $(this),
+			list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			selected = $('#imi_favorite_container').data('selected'),
+			tags, html;
+
+		tags = list.map(function( elem ) { return elem.tag; });
+		tags = tags.unique().sort();
+		tags.unshift('全て');
+
+		if ( $.inArray( selected, tags ) == -1 ) { selected = '全て'; }
+
+		html = '<ul id="imi_favorite_tab" class="imc_tab" style="float: left; width: 890px;">';
+
+		for ( var i = 0, len = tags.length; i < len; i++ ) {
+			if ( tags[ i ] == selected ) {
+				html += '<li class="imc_selected">' + tags[ i ] + '</li>';
+			}
+			else {
+				html += '<li>' + tags[ i ] + '</li>';
+			}
+		}
+
+		html += '</ul>';
+		html += '<ul id="imi_favorite_list" style="float: left; margin-bottom: 4px;"></ul>';
+
+		$this.empty().html( html );
+		$('#imi_favorite_list').trigger('update');
+	})
+	.on('update', '#imi_favorite_list', function() {
+		var list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			tag = $('#imi_favorite_tab LI.imc_selected').text(),
+			now = Util.getServerTime(),
+			found = false, html;
+
+		html = '';
+		for ( var i = 0, len = list.length; i < len; i++ ) {
+			let obj = list[ i ], count = 0, tr1, tr2;
+
+			if ( tag != '全て' && obj.tag != tag ) { continue; }
+			found = true;
+
+			html += '<li fid="' + obj.fid + '"><table class="imc_table">';
+			html += '<tr><th width="40" rowspan="3">部隊</th><td colspan="3">' + obj.name + '</td>';
+			html += '<th width="35">タグ</th><td>' + obj.tag + '</td>';
+			if ( obj.cost <= ( Deck.maxCost - Deck.useCost ) ) {
+				html += '<th width="55">コスト</th><td style="background-color: #9f9;">' + obj.cost.toFixed( 1 ) + '</td>';
+			}
+			else {
+				html += '<th width="55">コスト</th><td style="background-color: #f99;">' + obj.cost.toFixed( 1 ) + '</td>';
+			}
+			html += '<th width="55">部隊速</th><td>' + obj.skill.toFixed( 1 ) + ' %</td>';
+			html += '<td rowspan="3"></td>';
+
+			tr1 = '<tr><th width="60">武将</th>';
+			tr2 = '<tr><th>状態</th>';
+
+			for ( var j = 0, lenj = obj.namelist.length; j < lenj; j++ ) {
+				let name = obj.namelist[ j ],
+					card_id = obj.cardlist[ j ],
+					card = Deck.getCard( card_id );
+
+				tr1 += '<td width="145" colspan="2">' + name + '</td>';
+
+				if ( !card ) {
+					if ( Deck.assignedList.some(function( elem ) { return elem.cardId == card_id; }) ) {
+						tr2 += '<td colspan="2" style="background-color: #999;">配置済</td>';
+					}
+					else {
+						tr2 += '<td colspan="2" style="background-color: #ccc;">カード情報無し</td>';
+					}
+				}
+				else if ( card.status == Card.UNIT || card.status == Card.ACTION || card.status == Card.UNSET ) {
+					tr2 += '<td colspan="2" style="background-color: #999;">配置済</td>';
+				}
+				else if ( card.status == Card.SELECTED ) {
+					tr2 += '<td colspan="2" style="background-color: #fc0;">選択済</td>';
+				}
+				else if ( card.canAssign() ) {
+					tr2 += '<td  colspan="2" style="background-color: #9f9;">';
+					tr2 += card.solName + ' ( ';
+					tr2 += ( card.solNum == card.maxSolNum ) ? 'MAX' : card.solNum;
+					tr2 += ' )</td>';
+					count++;
+				}
+				else {
+					tr2 += '<td colspan="2" style="background-color: #f99;">';
+					if ( card.recoveryTime && card.recoveryTime <= now ) {
+						tr2 += 'HP: ' + card.hp + ' 　( 全快しました )';
+					}
+					else if ( card.recoveryTime && card.recoveryTime > now ) {
+						tr2 += 'HP: ' + card.hp + ' 　( ' + ( card.recoveryTime - now ).toFormatTime() + ' )';
+					}
+					else if ( card.solNum == 0 ) {
+						tr2 += '未編成';
+					}
+					else {
+						tr2 += card.solName + ' ( ';
+						tr2 += ( card.solNum == card.maxSolNum ) ? 'MAX' : card.solNum;
+						tr2 += ' )';
+					}
+					tr2 += '</td>';
+				}
+			}
+
+			for ( var j = obj.namelist.length; j < 4; j++ ) {
+				tr1 += '<td width="145" colspan="2">-</td>';
+				tr2 += '<td colspan="2">-</td>';
+			}
+
+			if ( count >= 1 && ( Deck.currentUnit.condition == '新規' || Deck.currentUnit.condition == '待機' ) ) {
+				html += '<td width="60" class="imc_command_button imc_card_select">武将選択</td>';
+			}
+			else {
+				html += '<td width="60" style="background-color: #999;">武将選択</td>';
+			}
+			if ( Deck.newano < 5 && count >= 1 ) {
+				tr1 += '<td class="imc_command_button imc_favorite_assign">部隊登録</td></tr>';
+			}
+			else {
+				tr1 += '<td style="background-color: #999;">部隊登録</td></tr>';
+			}
+			tr2 += '<td class="imc_command_button imc_favorite_edit">編集</td></tr>';
+
+			html += '</tr>';
+			html += tr1 + tr2 + '</table></li>';
+		}
+
+		if ( !found ) {
+			html += '<li><table class="imc_table" style="width: 833px; height: 25px;"><tr><td>登録情報無し</td></tr></table></li>';
+		}
+
+		$(this).empty().html( html );
+		return false;
+	})
+	.on('click', '#imi_favorite_tab LI', function() {
+		var tag = $(this).text();
+
+		$('#imi_favorite_container').data('selected', tag).trigger('update');
+	})
+	.on('click', '.imc_card_select', function() {
+		var fid = $(this).closest('LI').attr('fid').toInt(),
+			list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			data = list.filter(function( elem ) { return elem.fid == fid; })[ 0 ],
+			cardlist;
+
+		if ( !data ) { return; }
+
+		cardlist = data.cardlist;
+		for ( var i = 0, len = cardlist.length; i < len; i++ ) {
+			let card_id = cardlist[ i ],
+				card = Deck.getCard( card_id );
+
+			if ( card && card.status == Card.WAIT && card.canAssign() ) {
+				Deck.addCardDeck.call( card.element );
+			}
+		}
+
+		Deck.currentUnit.unitSkill = data.skill;
+		Deck.currentUnit.update();
+		Deck.updateDeckInfo();
+
+		$('#imi_favorite_container').trigger('update');
+	})
+	.on('click', '.imc_favorite_assign', function() {
+		var fid = $(this).closest('LI').attr('fid').toInt(),
+			list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			data = list.filter(function( elem ) { return elem.fid == fid; })[ 0 ],
+			cardlist;
+
+		if ( !data ) { return; }
+		if ( !Deck.dialog.newUnit( Deck.newano ) ) { return; }
+
+		cardlist = data.cardlist;
+		for ( var i = 0, len = cardlist.length; i < len; i++ ) {
+			let card_id = cardlist[ i ],
+				card = Deck.getCard( card_id );
+
+			if ( card && card.status == Card.WAIT && card.canAssign() ) {
+				Deck.addCardDeck.call( card.element );
+			}
+		}
+
+		$('#imi_favorite_container').trigger('update');
+		$('#imi_card_assign').trigger('click');
+	})
+	.on('click', '.imc_favorite_edit', function() {
+		var fid = $(this).closest('LI').attr('fid').toInt(),
+			list = MetaStorage('FAVORITE_UNIT').get('list') || [],
+			data = list.filter(function( elem ) { return elem.fid == fid; })[ 0 ];
+
+		if ( !data ) { return; }
+
+		Display.dialogFavoriteUnit( data );
+	})
 	.on('mouseenter', '.ig_deck_smallcardarea', function() {
 		var $this = $(this),
 			card_id = $this.attr('card_id'),
 			card = Deck.getCard( card_id ),
 			data = Deck.getPoolSoldiers(),
 			now = Util.getServerTime(),
-			num = data.pool[ card.solType ] || 0;
+			num = data.pool[ card.solType ] || 0,
+			html;
 
 		if ( card.status == Card.EXHIBITED || card.status == Card.ACTION ) { return; }
 
@@ -7814,6 +8211,23 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 
 		return false;
 	})
+	.on('click', '.imc_unit_favorite', function() {
+		var unit = Deck.currentUnit,
+			cardlist = unit.list.concat( unit.assignList ),
+			data;
+
+		data = {
+			fid: null,
+			tag: '',
+			name: '[' + unit.getLeaderName() + ']部隊',
+			namelist: cardlist.map(function( elem ) { return elem.name; }),
+			cardlist: cardlist.map(function( elem ) { return elem.cardId; }),
+			cost: unit.cost,
+			skill: unit.unitSkill.toFloat()
+		};
+
+		Display.dialogFavoriteUnit( data );
+	})
 	.on('click', '.imc_unit_max', function() {
 		var list = Deck.currentUnit.list.concat( Deck.currentUnit.assignList );
 		Deck.setUnitMax( list );
@@ -7869,7 +8283,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			$div.append('<div style="text-align: center;">待機兵がいません</div>');
 		}
 
-		if ( !unit ) { $div.css({ marginTop: -( $this.outerHeight()  + $div.outerHeight() - 1 ) }); }
+		if ( !unit ) { $div.css({ marginTop: -( $this.outerHeight() + $div.outerHeight() - 1 ) }); }
 	})
 	.on('click', '.imc_batch_item', function() {
 		var $this = $(this),
@@ -7985,25 +8399,34 @@ village: null,
 //.. loadBegin
 loadBegin: function() {
 	$('#imi_info').show();
-	$('#ig_deck_smallcardarea_out, #imi_deck_bottom').hide();
+	$('#ig_deck_smallcardarea_out, #imi_favorite_container, #imi_deck_bottom').hide();
 },
 
 //.. loadEnd
 loadEnd: function() {
 	$('#imi_info').hide();
-	$('#ig_deck_smallcardarea_out, #imi_deck_bottom').show();
+
+	if ( $('#imi_unit_favorite').hasClass('imc_selected') ) {
+		$('#imi_favorite_container').trigger('update').show();
+		$('#imi_deck_bottom').show();
+	}
+	else {
+		$('#ig_deck_smallcardarea_out, #imi_deck_bottom').show();
+	}
 },
 
 //.. newUnit
 newUnit: function( ano ) {
-	Deck.dialog.loadBegin();
+	if ( ano >= 5 ) { return false; }
 
 	var unit = new Unit();
 	unit.village = Deck.dialog.village;
 
+	Deck.dialog.loadBegin();
 	Deck.setup( Deck.maxCost, Deck.useCost, ano, unit );
-
 	Deck.dialog.loadEnd();
+
+	return true;
 },
 
 //.. loadUnit
@@ -8173,7 +8596,8 @@ clear: function() {
 
 //.. updateUnitPanel
 updateUnitPanel: function() {
-	var html;
+	var unit = Deck.currentUnit,
+		html;
 
 	if ( $('#imi_card_container').hasClass('imc_hide') ) {
 		html = '<span class="imc_opener">▼</span>';
@@ -8182,17 +8606,24 @@ updateUnitPanel: function() {
 		html = '' +
 		'<span class="imc_opener">▲</span>' +
 		'<ul class="imc_command_selecter">';
-
-		if ( Deck.currentUnit.leaderId ) {
+		
+		if ( unit.condition == '待機' && unit.leaderId ) {
 			html += '<li class="imc_unit_breakup">解散</li>';
 		}
+		else {
+			html += '<li>-</li>';
+		}
 
-		html += '' +
-			'<label>一括編成</label>' +
+		html += '<li class="imc_unit_favorite">お気に入り</li>';
+
+		if ( unit.condition == '新規' || unit.condition == '待機' ) {
+			html += '' +
+				'<label>一括編成</label>' +
 			'<li class="imc_unit_change imc_soltype_change">兵種変更<div class="imc_pulldown" /></li>' +
-			'<li class="imc_unit_max">最大補充</li>' +
-			'<li class="imc_unit_sol1">兵１</li>' +
-		'</ul>';
+				'<li class="imc_unit_max">最大補充</li>' +
+				'<li class="imc_unit_sol1">兵１</li>' +
+			'</ul>';
+		}
 	}
 
 	$('.imc_unit_sc_panel').html( html );
@@ -8419,8 +8850,15 @@ $.extend( Unit.prototype, {
 
 //.. getLeaderName
 getLeaderName: function() {
-	if ( this.list.length == 0 ) { return ''; }
-	return this.list[ 0 ].name;
+	if ( this.list.length >= 1 ) {
+		return this.list[ 0 ].name;
+	}
+	else if ( this.assignList.length >= 1 ) {
+		return this.assignList[ 0 ].name;
+	}
+	else {
+		return '';
+	}
 },
 
 //.. update
