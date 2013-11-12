@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.7.0
+// @version        1.3.0.0beta1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
-// @updateURL      https://raw.github.com/metameta/sengokuixa-meta/master/sengokuixa-meta.meta.js
+// @updateURL      https://raw.github.com/metameta/sengokuixa-meta/beta/sengokuixa-meta.meta.js
 // ==/UserScript==
 
 /*
@@ -384,7 +384,7 @@ getUserInfo: function( userid, receive ) {
 			base = [], camp = [], territory = 0, campc, text;
 
 		info.userId = userid;
-		info.name = $profile.find('.para:first').text().trim();
+		info.name = $profile.find('.card_profile_para').text().trim();
 		info.lv = $profile.find('.pro1 .para').text().match(/\d+/)[ 0 ].toInt();
 		info.pop = $profile.find('.pro3 .ranking').remove().end().find('.pro3 .para').text().toInt();
 		text = $profile.find('.family_name .name').text();
@@ -3752,7 +3752,7 @@ fortresses: (function() {
 		[108,108], [132, 84], [108,132], [132,108], [132,132]
 	]];
 
-	return [ [], data[0], data[0], data[0], data[0], data[1], data[1] ][ Env.chapter ] || [];
+	return [ [], data[0], data[0], data[0], data[0], data[1], data[1], data[1] ][ Env.chapter ] || [];
 })(),
 
 //. countries
@@ -3771,6 +3771,8 @@ countries: (function() {
 		['dummy', '織田家', '足利家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
 		//第６章
 		['dummy', '織田家', '黒田家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '今川家', '長宗我部家', '島津家', '豊臣家', '石田家'],
+		//第７章
+		['dummy', '明智家', '真田家', '鈴木家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
 	][ Env.chapter ] || [];
 })(),
 
@@ -3887,7 +3889,7 @@ getNpcPower: function() {
 		'8-33310': [124800, 124800, 124800, 124800]
 	},
 	{
-		//５章、６章
+		//５章、６章、７章
 		//★１
 		'1-10000': [245, 185, 155, 203],
 		'1-01000': [155, 245, 185, 173],
@@ -3933,7 +3935,7 @@ getNpcPower: function() {
 		'8-33342': { '鬼': 905, '天狗': 455 }
 	}];
 
-	data = [ {}, data[0], data[0], data[1], data[1], data[2], data[2] ][ Env.chapter ] || {};
+	data = [ {}, data[0], data[0], data[1], data[1], data[2], data[2], data[2] ][ Env.chapter ] || {};
 
 	if ( Env.chapter <= 4 ) {
 		Data.npcPower = data;
@@ -9363,8 +9365,8 @@ analyzeLarge: function( element ) {
 	this.skillList = $elem.find('.skill1, .skill2, .skill3').map(function() {
 		var $this = $(this),
 			text = $this.find('.ig_skill_name, .grayig_skill_name').text(),
-			array = text.match(/(.+)L[Vv](\d+)$/),
-			desk, type, targets, prob, effects;
+			array = text.match(/(.+)L[Vv](\d+)/),
+			desk, type, targets, prob1, effects;
 
 		if ( !array ) {
 			//レベルのないもの（感謝の饗宴、東西無双など）
@@ -9374,18 +9376,35 @@ analyzeLarge: function( element ) {
 		var [ all, name, lv ] = array;
 		name = name.trim().replace(/ +/g, ' ');
 
-		desk = $this.find('.ig_skill_desc').text();
+		desk = $this.find('.ig_skill_desc').html();
 		if ( desk.indexOf('速：') != -1 ) { type = '速'; }
 		else if ( desk.indexOf('攻：') != -1 ) { type = '攻'; }
 		else if ( desk.indexOf('防：') != -1 ) { type = '防'; }
 		else { type = '特'; }
 
 		targets = $this.find('.ig_skill_desc FONT').text().replace('級', '');
-		prob = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , 0 ] )[ 1 ].toFloat();
-		effects = ( desk.match(/(.)：(\d+(?:\.\d+)?)%上昇/g) || [] ).map(function( elem ) {
-			var [ all, type, effect ] = elem.match(/(.)：(\d+(?:\.\d+)?)%上昇/);
-			return { targets: targets, type: type, prob: prob, effect: effect.toFloat() };
-		});
+		array = desk.split('<br>');
+		desk = array.shift();
+
+		prob1 = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
+		effects = array.map(function( elem ) {
+			var [ all, type, effect, sw ] = elem.match(/(.)：(\d+(?:\.\d+)?)%(上昇|低下)/) || [],
+				prob2;
+
+			if ( !all ) { return; }
+
+			effect = effect.toFloat();
+			if ( sw == '低下' ) { effect *= -1; }
+
+			if ( prob1 > 0 ) {
+				prob2 = prob1;
+			}
+			else {
+				prob2 = ( elem.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
+			}
+
+			return { targets: targets, type: type, prob: prob2, effect: effect };
+		}).filter(function( elem ) { return elem; });
 
 		return { originName: text, name: name, lv: lv.toInt(), type: type, effects: effects };
 	}).get();
@@ -11392,6 +11411,27 @@ serverSelected: function() {
 
 });
 
+//■ /user/first_login
+Page.registerAction( 'user', 'first_login', {
+
+style: '' +
+'TABLE TD.castlespace { background-color: #ccc; }' +
+'',
+
+main: function() {
+	$('.castlespace IMG').each(function() {
+		var $this = $(this),
+			num = $this.attr('src').match(/img_castle_s_(\d)/)[ 1 ];
+
+		'l m s'.split(' ').forEach(function( scale ) {
+			var file = Env.externalFilePath + '/img/panel/castle_' + num + '_b_' + scale + '.png';
+			$this.after('<img src="' + file + '" style="margin: 0px 2px;" />');
+		});
+	});
+}
+
+});
+
 //■ /user/
 Page.registerAction( 'user', {
 
@@ -11412,7 +11452,7 @@ layouter: function() {
 		$a, text, html, href;
 
 	//城主名
-	$a = $tr.eq( 0 ).find('A');
+	$a = $tr.eq( 0 ).find('.card_profile_para A');
 	text = encodeURIComponent( $a.text() );
 
 	href = '/war/list.php?m=&s=1&name=lord&word=' + text + '&coord=map&x=&y=';
@@ -13503,53 +13543,66 @@ style: '' +
 
 //. main
 main: function() {
+	var self = this,
+		deck = $('#deck_file IMG[src$="btn_deck.png"]').length,
+		edit = $('#deck_file IMG[src$="btn_max.png"]').length,
+		$tr = $('#busho_info .tr_gradient').slice( 1 );
+
+	this.layouter();
+	if ( deck ) {
+		if ( edit ) { this.layouter2(); }
+	}
+	else {
+		this.unionMode();
+	}
+	this.cardOrderSelecter();
+	this.analyze( $tr, deck, edit );
+	this.autoPager( deck, edit );
+},
+
+//. autoPager
+autoPager: function( deck, edit ) {
 	var self = this;
 
-	$.Deferred().resolve()
-	.pipe(function() {
-		var num = $('#deck_file SELECT[name="show_num"]').val(),
-			groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
-			group = groupclass.match(/0(\d)/)[ 1 ];
-
-		if ( num != '100' ) { return; }
-		if ( $('UL.pager').length == 0 ) { return; }
-
-		//２頁目取得
-		return $.post( '/facility/set_unit_list.php', { show_num: num, p: 2, select_card_group: group })
-		.pipe(function( html ) {
+	$.autoPager({
+		container: '#frame_01_bottom',
+		next: function( html ) {
 			var $html = $(html),
-				$tr = $html.find('#busho_info > TBODY > TR').slice( 1 );
+				$pager = $html.find('.pager:first'),
+				source = $pager.find('LI.last A:eq(0)').attr('onClick') || '',
+				match = source.match(/input.name = "p"; input.value = "(\d+)"/),
+				nextPage;
+
+			if ( match ) {
+				nextPage = match[1].toInt();
+			}
+
+			return nextPage;
+		},
+		load: function( nextPage ) {
+			var page = nextPage,
+				ano = $('#assign_form INPUT[name="select_assign_no"]').val(),
+				dmo = $('#assign_form INPUT[name="deck_mode"]').val(),
+				num = $('#deck_file SELECT[name="show_num"]').val(),
+				groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
+				group = groupclass.match(/0(\d)/)[ 1 ];
+
+			return $.post( '/facility/set_unit_list.php', { show_num: num, p: page, select_card_group: group })
+		},
+		loaded: function( html ) {
+			var $html = $(html),
+				$tr = $html.find('#busho_info .tr_gradient').slice( 1 );
 
 			//カード情報
 			$html.find('#ig_boxInner > DIV[id^="cardWindow"]').appendTo( '#ig_boxInner' );
 			$('#busho_info').append( $tr );
 
+			self.analyze( $tr, deck, edit );
 			unsafeWindow.unit_brigade_btn_func();
-		});
-	})
-	.pipe(function() {
-		var deck = $('#deck_file IMG[src$="btn_deck.png"]').length,
-			edit = $('#deck_file IMG[src$="btn_max.png"]').length,
-			$th = $('#busho_info > TBODY > TR').eq( 0 ).find('TH');
-
-		self.layouter();
-		if ( deck ) {
-			if ( edit ) { self.layouter2(); }
+		},
+		ended: function() {
+			Display.info('全ページ読み込み完了');
 		}
-		else {
-			self.unionMode();
-		}
-		self.analyze( deck, edit );
-		self.cardOrderSelecter();
-
-		$th.eq( 0 ).width( 135 );
-		$th.eq( 3 ).hide();
-		$th.eq( 4 ).text('槍/弓');
-		$th.eq( 5 ).hide();
-		$th.eq( 6 ).text('馬/器');
-		$th.eq( 7 ).width( 90 );
-		$th.eq( 8 ).width( 155 );
-		$('.icon_rank:even').hide();
 	});
 },
 
@@ -13557,8 +13610,19 @@ main: function() {
 layouter: function() {
 	var self = this,
 		$table = $('#busho_info'),
+		$th = $table.find('TR').eq( 0 ).find('TH'),
 		num = $('#deck_file SELECT[name="show_num"]').val(),
 		html;
+
+	$th.eq( 0 ).width( 135 );
+	$th.eq( 3 ).hide();
+	$th.eq( 4 ).text('槍/弓');
+	$th.eq( 5 ).hide();
+	$th.eq( 6 ).text('馬/器');
+	$th.eq( 7 ).width( 90 );
+	$th.eq( 8 ).width( 155 );
+
+	$table.find('> TBODY > TR').not('.tr_gradient').remove();
 
 	$table
 	.on('change', 'SELECT', function() {
@@ -13588,13 +13652,6 @@ layouter: function() {
 
 		return false;
 	});
-
-	$table.find('> TBODY > TR').not('.tr_gradient').remove();
-
-	//表示件数とページャーを削除
-	if ( num == 100 ) {
-		$('UL.pager').remove();
-	}
 
 	//コマンド
 	html = '' +
@@ -14016,9 +14073,7 @@ unionMode: function() {
 },
 
 //. analyze
-analyze: function( deck, edit ) {
-	var $tr = $('#busho_info .tr_gradient').slice( 1 );
-
+analyze: function( $tr, deck, edit ) {
 	$tr.each(function() {
 		var $this  = $(this),
 			$input = $this.find('INPUT');
@@ -14035,10 +14090,10 @@ analyze: function( deck, edit ) {
 
 		$td.eq( 1 ).find('A DIV DIV').css({ position: 'relative', left: '1px' }).unwrap();
 
-//		$td.eq( 5 ).append( $td.eq( 6 ).children() );
-//		$td.eq( 7 ).append( $td.eq( 8 ).children() );
 		$td.eq( 6 ).prepend( $td.eq( 5 ).children() );
 		$td.eq( 8 ).prepend( $td.eq( 7 ).children() );
+		$td.eq( 5 ).hide();
+		$td.eq( 7 ).hide();
 
 		//兵士数
 		if ( card.solNum == card.maxSolNum ) {
@@ -14055,7 +14110,7 @@ analyze: function( deck, edit ) {
 			$this.addClass( data.class );
 		}
 		else {
-			$this.addClass('imc_none')
+			$this.addClass('imc_none');
 		}
 
 		//HP
@@ -16337,16 +16392,16 @@ layouter: function() {
 
 	$('TABLE.common_table1').find('TR:gt(0)').each(function() {
 		var $this = $(this),
-			href  = $this.find('A:first').attr('href') || '',
+			href  = $this.find('A').eq( 1 ).attr('href') || '',
 			userid = ( href.match( /user_id=(\d+)/ ) || [] )[1],
-			point = $this.find('TD:eq(2)').text().toInt();
+			point = $this.find('TD').eq( 3 ).text().toInt();
 
 		if ( userid in olddata ) {
 			var diff = point - olddata[ userid ];
 			if ( diff != 0 ) {
 				if ( diff > 0 ) { diff = '+' + diff; }
 				//前回と比べて差があれば表示
-				$this.find('TD:eq(2)').append(' (' + diff + ')');
+				$this.find('TD').eq( 3 ).append(' (' + diff + ')');
 			}
 		}
 
@@ -16355,7 +16410,7 @@ layouter: function() {
 	})
 	.end()
 	.append(
-		'<tr><th colspan="2" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
+		'<tr><th colspan="3" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
 		+ (function() {
 			var html = '';
 
