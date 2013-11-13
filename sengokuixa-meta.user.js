@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.0beta1
+// @version        1.3.0.0beta2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1526,23 +1526,25 @@ keyBindCommon: function() {
 		}),
 
 		'e': Util.keyBindCallback(function() {
-			var $curr, $next, village;
+			var $curr, $next, href;
 
 			$curr = $('#imi_basename .on');
 			$next = $curr.next();
 			if ( $next.length == 0 ) { $next = $curr.parent().children('LI').first(); }
 
-			location.href = $next.find('A').attr('href');
+			href = $next.find('A').attr('href');
+			if ( href ) { location.href = href; }
 		}),
 
 		'q': Util.keyBindCallback(function() {
-			var $curr, $prev, village;
+			var $curr, $prev, href;
 
 			$curr = $('#imi_basename .on');
 			$prev = $curr.prev();
 			if ( $prev.length == 0 ) { $prev = $curr.parent().children('LI').last(); }
 
-			location.href = $prev.find('A').attr('href');
+			href = $prev.find('A').attr('href');
+			if ( href ) { location.href = href; }
 		}),
 
 		'1': Util.keyBindCallback(function() {
@@ -13599,6 +13601,7 @@ autoPager: function( deck, edit ) {
 
 			self.analyze( $tr, deck, edit );
 			unsafeWindow.unit_brigade_btn_func();
+			$('#imi_command_selecter').trigger('click');
 		},
 		ended: function() {
 			Display.info('全ページ読み込み完了');
@@ -13610,10 +13613,15 @@ autoPager: function( deck, edit ) {
 layouter: function() {
 	var self = this,
 		$table = $('#busho_info'),
-		$th = $table.find('TR').eq( 0 ).find('TH'),
 		num = $('#deck_file SELECT[name="show_num"]').val(),
-		html;
+		$tr, $th, html;
 
+	$table.find('> TBODY > TR').not('.tr_gradient').remove();
+
+	$tr = $table.find('TR').eq( 0 );
+	//後の処理の為classを削除
+	$tr.removeClass('tr_gradient').css('background-color', '#272521');
+	$th = $tr.find('TH');
 	$th.eq( 0 ).width( 135 );
 	$th.eq( 3 ).hide();
 	$th.eq( 4 ).text('槍/弓');
@@ -13621,8 +13629,6 @@ layouter: function() {
 	$th.eq( 6 ).text('馬/器');
 	$th.eq( 7 ).width( 90 );
 	$th.eq( 8 ).width( 155 );
-
-	$table.find('> TBODY > TR').not('.tr_gradient').remove();
 
 	$table
 	.on('change', 'SELECT', function() {
@@ -13702,7 +13708,7 @@ layouter: function() {
 		var $selected = $(this).find('LI.imc_selected'),
 			selecter = $selected.attr('selecter'),
 			batch = $selected.attr('batch').toInt(),
-			$tr = $table.find('TR.tr_gradient').slice( 1 ),
+			$tr = $table.find('.tr_gradient'),
 			len = 0;
 
 		if ( selecter == '.imc_all' ) {
@@ -14029,9 +14035,9 @@ cardOrderSelecter: function() {
 
 //. unionMode
 unionMode: function() {
-	$('#busho_info .tr_gradient').slice( 1 )
-	.contextMenu( this.contextmenu )
-	.on('click', function( e ) {
+	$('#busho_info .tr_gradient').contextMenu( this.contextmenu, true );
+	$('#busho_info')
+	.on('click', '.tr_gradient', function( e ) {
 		var $this = $(this),
 			data = $this.data(),
 			$target = $( e.target );
@@ -16334,7 +16340,7 @@ layouter: function() {
 			$td = $this.find('TD'),
 			now = $this.hasClass('now');
 
-		list.push({ name: $td.eq( 1 ).text(), point: $td.eq( 3 ).text().toInt(), now: now });
+		list.push({ name: $td.eq( 2 ).text(), point: $td.eq( 4 ).text().toInt(), now: now });
 	})
 
 	html = '<table class="common_table1 center" width="700">' +
