@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.0beta2
+// @version        1.3.0.0beta3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
-// @updateURL      https://raw.github.com/metameta/sengokuixa-meta/beta/sengokuixa-meta.meta.js
+// @updateURL      https://raw.github.com/metameta/sengokuixa-meta/master/sengokuixa-meta.meta.js
 // ==/UserScript==
 
 /*
@@ -384,7 +384,12 @@ getUserInfo: function( userid, receive ) {
 			base = [], camp = [], territory = 0, campc, text;
 
 		info.userId = userid;
-		info.name = $profile.find('.card_profile_para').text().trim();
+		if ( $profile.find('.busho_info_profile').length ) {
+			info.name = $profile.find('.card_profile_para').text().trim();
+		}
+		else {
+			info.name = $profile.find('.para:first').text().trim();
+		}
 		info.lv = $profile.find('.pro1 .para').text().match(/\d+/)[ 0 ].toInt();
 		info.pop = $profile.find('.pro3 .ranking').remove().end().find('.pro3 .para').text().toInt();
 		text = $profile.find('.family_name .name').text();
@@ -3736,6 +3741,9 @@ compass: [
 	{ name: '南西', x: -1, y: -1 }
 ],
 
+//. mapsize
+mapsize: [ 0, 180, 180, 180, 180, 150, 150, 170 ][ Env.chapter ] || 150,
+
 //. fortresses
 fortresses: (function() {
 	var data = [[
@@ -3754,7 +3762,7 @@ fortresses: (function() {
 		[108,108], [132, 84], [108,132], [132,108], [132,132]
 	]];
 
-	return [ [], data[0], data[0], data[0], data[0], data[1], data[1], data[1] ][ Env.chapter ] || [];
+	return [ [], data[0], data[0], data[0], data[0], data[1], data[1], data[0] ][ Env.chapter ] || [];
 })(),
 
 //. countries
@@ -5827,7 +5835,7 @@ coordInfo: function( type, data ) {
 var MiniMap = (function() {
 
 var options = {
-		size: ( Env.chapter < 5 ) ? 180 : 150,
+		size: Data.mapsize,
 		pxsize: 1,
 		pointsize: 3,
 		fortresssize: 1,
@@ -5885,7 +5893,7 @@ function showZoom() {
 			pxsize = 0.5 * scale,
 			pointsize = Math.ceil( pxsize ) + 1,
 			fortresssize = Math.floor( pointsize / 2 ),
-			$map;
+			_$map;
 
 		if ( dialog ) {
 			dialog.close();
@@ -5893,11 +5901,11 @@ function showZoom() {
 			return;
 		}
 
-		$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
+		_$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
 
 		dialog = Display.dialog({
-			top: ( scale == 4 ) ? 30 : 50, width: $map.width() + 16, height: 'auto',
-			content: $map,
+			top: ( scale == 4 ) ? 30 : 50, width: _$map.width() + 16, height: 'auto',
+			content: _$map,
 			buttons: {
 				'閉じる': function() {
 					dialog.close();
@@ -5908,7 +5916,7 @@ function showZoom() {
 	});
 
 	$map
-	.css({ borderBottomWidth: '25px' })
+	.css({ borderBottomWidth: '25px', borderRadius: '0px 0px 0px 9px' })
 	.append( $select, $button );
 }
 
@@ -11454,7 +11462,12 @@ layouter: function() {
 		$a, text, html, href;
 
 	//城主名
-	$a = $tr.eq( 0 ).find('.card_profile_para A');
+	if ( $('.busho_info_profile').length ) {
+		$a = $tr.eq( 0 ).find('.card_profile_para A');
+	}
+	else {
+		$a = $tr.eq( 0 ).find('A');
+	}
 	text = encodeURIComponent( $a.text() );
 
 	href = '/war/list.php?m=&s=1&name=lord&word=' + text + '&coord=map&x=&y=';
@@ -15105,13 +15118,17 @@ style: '' +
 '.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
 '.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }' +
 
-( ( Env.chapter < 5 ) ?
-'#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
+( ( Data.mapsize == 180 ) ?
+'#imi_map { position: relative; top: 2px; left: 606px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 3px; }' :
-'#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
+  ( Data.mapsize == 170 ) ?
+'#imi_map { position: relative; top: 2px; left: 619px; display: inline-block; }' +
+'#imi_mapcontainer { border-width: 2px; }' :
+// 150
+'#imi_map { position: relative; top: 4px; left: 628px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 5px; }' ) +
 
-'#imi_map_scale { margin-right: 5px; }' +
+'#imi_map_scale { margin: 0px 5px; }' +
 
 /* style調整 */
 '#material { line-height: 14px; }' +
@@ -15395,7 +15412,12 @@ layouterUser: function() {
 	'<tr><td style="text-align: left;">' +
 	'<label><input type="checkbox" id="imi_rclick_link">右クリック連動</label>' +
 	'<label><input type="checkbox" id="imi_filter_link">同盟名フィルタ連動</label>' +
-	'</td></tr>' +
+	'</td>' +
+	'<th width="50">表示</th>' +
+	'<td style="padding: 0px 2px;"><button class="imc_display_clear">解除</button></td>' +
+	'<th width="60">キャッシュ</th>' +
+	'<td style="padding: 0px 2px;"><button class="imc_user_cache_clear">全削除</button></td>' +
+	'</tr>' +
 	'</table>' +
 	'</div>' +
 	'<div id="imi_user_info" style="width: 550px; margin: 0px 15px 10px 0px; float: left;"></div>' +
@@ -15415,6 +15437,15 @@ layouterUser: function() {
 
 		$.extend( settings, { filter1: filter1, link1: link1, link2: link2 } );
 		MetaStorage('SETTINGS').set('map', settings);
+	})
+	.on('click', '.imc_display_clear', function() {
+		$('#imi_user_info').trigger('update');
+	})
+	.on('click', '.imc_user_cache_clear', function() {
+		if ( !window.confirm('城主情報のキャッシュデータを全て削除してよろしいですか？') ) { return; }
+
+		MetaStorage('USER_INFO').clear();
+		$('#imi_user_info').trigger('update');
 	});
 
 	$('#imi_user_list')
@@ -15570,7 +15601,7 @@ layouterUser: function() {
 			info;
 
 		//同盟名フィルタと連動
-		if ( $this.attr('checked') ) {
+		if ( userid !== undefined && $this.attr('checked') ) {
 			info = Util.getUserInfo( userid );
 			$('#imi_base_conditions INPUT[name="imn_discriminant"]').first().attr('checked', true);
 			$('#imi_base_conditions INPUT[name="imn_alliance"]').val( info.alliance ).trigger('change');
@@ -15583,9 +15614,21 @@ layouterUser: function() {
 
 	$('#imi_user_info')
 	.on('update', function() {
-		var userid = arguments[ 1 ],
-			info = Util.getUserInfo( userid ),
-			found = false, html;
+		var userid = arguments[ 1 ],	// undefined：非表示、空文字：自分、userid：他城主
+			found = false, info, html;
+
+		if ( userid === undefined ) {
+			$(this).removeData('userid').empty();
+			$('.imc_user_list TD.imc_current').removeClass('imc_current');
+
+			MiniMap.showBasePoint( 'target', [] );
+			$('#imi_filter_link').trigger('update');
+			$('#imi_data_type').trigger('update');
+
+			return;
+		}
+
+		info = Util.getUserInfo( userid );
 
 		html = '' +
 		'<table class="imc_table">' +
@@ -16333,14 +16376,20 @@ main: function() {
 
 //. layouter
 layouter: function() {
-	var list = [], total = [ 0, 0, 0, 0 ], html;
+	var busho = $('.busho_info_profile').length,
+		list = [], total = [ 0, 0, 0, 0 ], html;
 
 	$('.common_table1 TR').slice( 1 ).each(function() {
 		var $this = $(this),
 			$td = $this.find('TD'),
 			now = $this.hasClass('now');
 
-		list.push({ name: $td.eq( 2 ).text(), point: $td.eq( 4 ).text().toInt(), now: now });
+		if ( busho ) {
+			list.push({ name: $td.eq( 2 ).text(), point: $td.eq( 4 ).text().toInt(), now: now });
+		}
+		else {
+			list.push({ name: $td.eq( 1 ).text(), point: $td.eq( 3 ).text().toInt(), now: now });
+		}
 	})
 
 	html = '<table class="common_table1 center" width="700">' +
@@ -16390,24 +16439,32 @@ main: function() {
 layouter: function() {
 	var storage = MetaStorage('ALLIANCE'),
 		id = ( location.search.match(/id=(\d+)/) || [,0] )[1],
-		olddata = {}, newdata = {}, total = 0;
+		olddata = {}, newdata = {}, total = 0, option;
 
 	if ( storage.get('id') == id ) {
 		olddata = storage.get('data');
 	}
 
+	if ( $('.busho_info_profile').length ) {
+		// a_idx, td_idx, colspan
+		option = [ 1, 3, 3 ];
+	}
+	else {
+		option = [ 0, 2, 2 ];
+	}
+
 	$('TABLE.common_table1').find('TR:gt(0)').each(function() {
 		var $this = $(this),
-			href  = $this.find('A').eq( 1 ).attr('href') || '',
+			href  = $this.find('A').eq( option[ 0 ] ).attr('href') || '',
 			userid = ( href.match( /user_id=(\d+)/ ) || [] )[1],
-			point = $this.find('TD').eq( 3 ).text().toInt();
+			point = $this.find('TD').eq( option[ 1 ] ).text().toInt();
 
 		if ( userid in olddata ) {
 			var diff = point - olddata[ userid ];
 			if ( diff != 0 ) {
 				if ( diff > 0 ) { diff = '+' + diff; }
 				//前回と比べて差があれば表示
-				$this.find('TD').eq( 3 ).append(' (' + diff + ')');
+				$this.find('TD').eq( option[ 1 ] ).append(' (' + diff + ')');
 			}
 		}
 
@@ -16416,7 +16473,7 @@ layouter: function() {
 	})
 	.end()
 	.append(
-		'<tr><th colspan="3" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
+		'<tr><th colspan="' + option[ 2 ] + '" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
 		+ (function() {
 			var html = '';
 
