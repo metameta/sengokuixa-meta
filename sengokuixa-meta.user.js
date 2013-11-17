@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.2.7.0
+// @version        1.3.0.0beta3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -384,7 +384,12 @@ getUserInfo: function( userid, receive ) {
 			base = [], camp = [], territory = 0, campc, text;
 
 		info.userId = userid;
-		info.name = $profile.find('.para:first').text().trim();
+		if ( $profile.find('.busho_info_profile').length ) {
+			info.name = $profile.find('.card_profile_para').text().trim();
+		}
+		else {
+			info.name = $profile.find('.para:first').text().trim();
+		}
 		info.lv = $profile.find('.pro1 .para').text().match(/\d+/)[ 0 ].toInt();
 		info.pop = $profile.find('.pro3 .ranking').remove().end().find('.pro3 .para').text().toInt();
 		text = $profile.find('.family_name .name').text();
@@ -1526,23 +1531,25 @@ keyBindCommon: function() {
 		}),
 
 		'e': Util.keyBindCallback(function() {
-			var $curr, $next, village;
+			var $curr, $next, href;
 
 			$curr = $('#imi_basename .on');
 			$next = $curr.next();
 			if ( $next.length == 0 ) { $next = $curr.parent().children('LI').first(); }
 
-			location.href = $next.find('A').attr('href');
+			href = $next.find('A').attr('href');
+			if ( href ) { location.href = href; }
 		}),
 
 		'q': Util.keyBindCallback(function() {
-			var $curr, $prev, village;
+			var $curr, $prev, href;
 
 			$curr = $('#imi_basename .on');
 			$prev = $curr.prev();
 			if ( $prev.length == 0 ) { $prev = $curr.parent().children('LI').last(); }
 
-			location.href = $prev.find('A').attr('href');
+			href = $prev.find('A').attr('href');
+			if ( href ) { location.href = href; }
 		}),
 
 		'1': Util.keyBindCallback(function() {
@@ -3734,6 +3741,9 @@ compass: [
 	{ name: '南西', x: -1, y: -1 }
 ],
 
+//. mapsize
+mapsize: [ 0, 180, 180, 180, 180, 150, 150, 170 ][ Env.chapter ] || 150,
+
 //. fortresses
 fortresses: (function() {
 	var data = [[
@@ -3752,7 +3762,7 @@ fortresses: (function() {
 		[108,108], [132, 84], [108,132], [132,108], [132,132]
 	]];
 
-	return [ [], data[0], data[0], data[0], data[0], data[1], data[1] ][ Env.chapter ] || [];
+	return [ [], data[0], data[0], data[0], data[0], data[1], data[1], data[0] ][ Env.chapter ] || [];
 })(),
 
 //. countries
@@ -3771,6 +3781,8 @@ countries: (function() {
 		['dummy', '織田家', '足利家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
 		//第６章
 		['dummy', '織田家', '黒田家', '武田家', '上杉家', '徳川家', '毛利家', '伊達家', '今川家', '長宗我部家', '島津家', '豊臣家', '石田家'],
+		//第７章
+		['dummy', '明智家', '真田家', '鈴木家', '上杉家', '徳川家', '毛利家', '伊達家', '北条家', '長宗我部家', '島津家', '豊臣家', '最上家'],
 	][ Env.chapter ] || [];
 })(),
 
@@ -3887,7 +3899,7 @@ getNpcPower: function() {
 		'8-33310': [124800, 124800, 124800, 124800]
 	},
 	{
-		//５章、６章
+		//５章、６章、７章
 		//★１
 		'1-10000': [245, 185, 155, 203],
 		'1-01000': [155, 245, 185, 173],
@@ -3933,7 +3945,7 @@ getNpcPower: function() {
 		'8-33342': { '鬼': 905, '天狗': 455 }
 	}];
 
-	data = [ {}, data[0], data[0], data[1], data[1], data[2], data[2] ][ Env.chapter ] || {};
+	data = [ {}, data[0], data[0], data[1], data[1], data[2], data[2], data[2] ][ Env.chapter ] || {};
 
 	if ( Env.chapter <= 4 ) {
 		Data.npcPower = data;
@@ -5823,7 +5835,7 @@ coordInfo: function( type, data ) {
 var MiniMap = (function() {
 
 var options = {
-		size: ( Env.chapter < 5 ) ? 180 : 150,
+		size: Data.mapsize,
 		pxsize: 1,
 		pointsize: 3,
 		fortresssize: 1,
@@ -5881,7 +5893,7 @@ function showZoom() {
 			pxsize = 0.5 * scale,
 			pointsize = Math.ceil( pxsize ) + 1,
 			fortresssize = Math.floor( pointsize / 2 ),
-			$map;
+			_$map;
 
 		if ( dialog ) {
 			dialog.close();
@@ -5889,11 +5901,11 @@ function showZoom() {
 			return;
 		}
 
-		$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
+		_$map = zoom({ pxsize: pxsize, pointsize: pointsize, fortresssize: fortresssize });
 
 		dialog = Display.dialog({
-			top: ( scale == 4 ) ? 30 : 50, width: $map.width() + 16, height: 'auto',
-			content: $map,
+			top: ( scale == 4 ) ? 30 : 50, width: _$map.width() + 16, height: 'auto',
+			content: _$map,
 			buttons: {
 				'閉じる': function() {
 					dialog.close();
@@ -5904,7 +5916,7 @@ function showZoom() {
 	});
 
 	$map
-	.css({ borderBottomWidth: '25px' })
+	.css({ borderBottomWidth: '25px', borderRadius: '0px 0px 0px 9px' })
 	.append( $select, $button );
 }
 
@@ -9363,8 +9375,8 @@ analyzeLarge: function( element ) {
 	this.skillList = $elem.find('.skill1, .skill2, .skill3').map(function() {
 		var $this = $(this),
 			text = $this.find('.ig_skill_name, .grayig_skill_name').text(),
-			array = text.match(/(.+)L[Vv](\d+)$/),
-			desk, type, targets, prob, effects;
+			array = text.match(/(.+)L[Vv](\d+)/),
+			desk, type, targets, prob1, effects;
 
 		if ( !array ) {
 			//レベルのないもの（感謝の饗宴、東西無双など）
@@ -9374,18 +9386,35 @@ analyzeLarge: function( element ) {
 		var [ all, name, lv ] = array;
 		name = name.trim().replace(/ +/g, ' ');
 
-		desk = $this.find('.ig_skill_desc').text();
+		desk = $this.find('.ig_skill_desc').html();
 		if ( desk.indexOf('速：') != -1 ) { type = '速'; }
 		else if ( desk.indexOf('攻：') != -1 ) { type = '攻'; }
 		else if ( desk.indexOf('防：') != -1 ) { type = '防'; }
 		else { type = '特'; }
 
 		targets = $this.find('.ig_skill_desc FONT').text().replace('級', '');
-		prob = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , 0 ] )[ 1 ].toFloat();
-		effects = ( desk.match(/(.)：(\d+(?:\.\d+)?)%上昇/g) || [] ).map(function( elem ) {
-			var [ all, type, effect ] = elem.match(/(.)：(\d+(?:\.\d+)?)%上昇/);
-			return { targets: targets, type: type, prob: prob, effect: effect.toFloat() };
-		});
+		array = desk.split('<br>');
+		desk = array.shift();
+
+		prob1 = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
+		effects = array.map(function( elem ) {
+			var [ all, type, effect, sw ] = elem.match(/(.)：(\d+(?:\.\d+)?)%(上昇|低下)/) || [],
+				prob2;
+
+			if ( !all ) { return; }
+
+			effect = effect.toFloat();
+			if ( sw == '低下' ) { effect *= -1; }
+
+			if ( prob1 > 0 ) {
+				prob2 = prob1;
+			}
+			else {
+				prob2 = ( elem.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
+			}
+
+			return { targets: targets, type: type, prob: prob2, effect: effect };
+		}).filter(function( elem ) { return elem; });
 
 		return { originName: text, name: name, lv: lv.toInt(), type: type, effects: effects };
 	}).get();
@@ -11392,6 +11421,27 @@ serverSelected: function() {
 
 });
 
+//■ /user/first_login
+Page.registerAction( 'user', 'first_login', {
+
+style: '' +
+'TABLE TD.castlespace { background-color: #ccc; }' +
+'',
+
+main: function() {
+	$('.castlespace IMG').each(function() {
+		var $this = $(this),
+			num = $this.attr('src').match(/img_castle_s_(\d)/)[ 1 ];
+
+		'l m s'.split(' ').forEach(function( scale ) {
+			var file = Env.externalFilePath + '/img/panel/castle_' + num + '_b_' + scale + '.png';
+			$this.after('<img src="' + file + '" style="margin: 0px 2px;" />');
+		});
+	});
+}
+
+});
+
 //■ /user/
 Page.registerAction( 'user', {
 
@@ -11412,7 +11462,12 @@ layouter: function() {
 		$a, text, html, href;
 
 	//城主名
-	$a = $tr.eq( 0 ).find('A');
+	if ( $('.busho_info_profile').length ) {
+		$a = $tr.eq( 0 ).find('.card_profile_para A');
+	}
+	else {
+		$a = $tr.eq( 0 ).find('A');
+	}
 	text = encodeURIComponent( $a.text() );
 
 	href = '/war/list.php?m=&s=1&name=lord&word=' + text + '&coord=map&x=&y=';
@@ -13503,53 +13558,67 @@ style: '' +
 
 //. main
 main: function() {
+	var self = this,
+		deck = $('#deck_file IMG[src$="btn_deck.png"]').length,
+		edit = $('#deck_file IMG[src$="btn_max.png"]').length,
+		$tr = $('#busho_info .tr_gradient').slice( 1 );
+
+	this.layouter();
+	if ( deck ) {
+		if ( edit ) { this.layouter2(); }
+	}
+	else {
+		this.unionMode();
+	}
+	this.cardOrderSelecter();
+	this.analyze( $tr, deck, edit );
+	this.autoPager( deck, edit );
+},
+
+//. autoPager
+autoPager: function( deck, edit ) {
 	var self = this;
 
-	$.Deferred().resolve()
-	.pipe(function() {
-		var num = $('#deck_file SELECT[name="show_num"]').val(),
-			groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
-			group = groupclass.match(/0(\d)/)[ 1 ];
-
-		if ( num != '100' ) { return; }
-		if ( $('UL.pager').length == 0 ) { return; }
-
-		//２頁目取得
-		return $.post( '/facility/set_unit_list.php', { show_num: num, p: 2, select_card_group: group })
-		.pipe(function( html ) {
+	$.autoPager({
+		container: '#frame_01_bottom',
+		next: function( html ) {
 			var $html = $(html),
-				$tr = $html.find('#busho_info > TBODY > TR').slice( 1 );
+				$pager = $html.find('.pager:first'),
+				source = $pager.find('LI.last A:eq(0)').attr('onClick') || '',
+				match = source.match(/input.name = "p"; input.value = "(\d+)"/),
+				nextPage;
+
+			if ( match ) {
+				nextPage = match[1].toInt();
+			}
+
+			return nextPage;
+		},
+		load: function( nextPage ) {
+			var page = nextPage,
+				ano = $('#assign_form INPUT[name="select_assign_no"]').val(),
+				dmo = $('#assign_form INPUT[name="deck_mode"]').val(),
+				num = $('#deck_file SELECT[name="show_num"]').val(),
+				groupclass = $('#btn_category').find('LI[class$="_on"]').attr('class') || '00',
+				group = groupclass.match(/0(\d)/)[ 1 ];
+
+			return $.post( '/facility/set_unit_list.php', { show_num: num, p: page, select_card_group: group })
+		},
+		loaded: function( html ) {
+			var $html = $(html),
+				$tr = $html.find('#busho_info .tr_gradient').slice( 1 );
 
 			//カード情報
 			$html.find('#ig_boxInner > DIV[id^="cardWindow"]').appendTo( '#ig_boxInner' );
 			$('#busho_info').append( $tr );
 
+			self.analyze( $tr, deck, edit );
 			unsafeWindow.unit_brigade_btn_func();
-		});
-	})
-	.pipe(function() {
-		var deck = $('#deck_file IMG[src$="btn_deck.png"]').length,
-			edit = $('#deck_file IMG[src$="btn_max.png"]').length,
-			$th = $('#busho_info > TBODY > TR').eq( 0 ).find('TH');
-
-		self.layouter();
-		if ( deck ) {
-			if ( edit ) { self.layouter2(); }
+			$('#imi_command_selecter').trigger('click');
+		},
+		ended: function() {
+			Display.info('全ページ読み込み完了');
 		}
-		else {
-			self.unionMode();
-		}
-		self.analyze( deck, edit );
-		self.cardOrderSelecter();
-
-		$th.eq( 0 ).width( 135 );
-		$th.eq( 3 ).hide();
-		$th.eq( 4 ).text('槍/弓');
-		$th.eq( 5 ).hide();
-		$th.eq( 6 ).text('馬/器');
-		$th.eq( 7 ).width( 90 );
-		$th.eq( 8 ).width( 155 );
-		$('.icon_rank:even').hide();
 	});
 },
 
@@ -13558,7 +13627,21 @@ layouter: function() {
 	var self = this,
 		$table = $('#busho_info'),
 		num = $('#deck_file SELECT[name="show_num"]').val(),
-		html;
+		$tr, $th, html;
+
+	$table.find('> TBODY > TR').not('.tr_gradient').remove();
+
+	$tr = $table.find('TR').eq( 0 );
+	//後の処理の為classを削除
+	$tr.removeClass('tr_gradient').css('background-color', '#272521');
+	$th = $tr.find('TH');
+	$th.eq( 0 ).width( 135 );
+	$th.eq( 3 ).hide();
+	$th.eq( 4 ).text('槍/弓');
+	$th.eq( 5 ).hide();
+	$th.eq( 6 ).text('馬/器');
+	$th.eq( 7 ).width( 90 );
+	$th.eq( 8 ).width( 155 );
 
 	$table
 	.on('change', 'SELECT', function() {
@@ -13588,13 +13671,6 @@ layouter: function() {
 
 		return false;
 	});
-
-	$table.find('> TBODY > TR').not('.tr_gradient').remove();
-
-	//表示件数とページャーを削除
-	if ( num == 100 ) {
-		$('UL.pager').remove();
-	}
 
 	//コマンド
 	html = '' +
@@ -13645,7 +13721,7 @@ layouter: function() {
 		var $selected = $(this).find('LI.imc_selected'),
 			selecter = $selected.attr('selecter'),
 			batch = $selected.attr('batch').toInt(),
-			$tr = $table.find('TR.tr_gradient').slice( 1 ),
+			$tr = $table.find('.tr_gradient'),
 			len = 0;
 
 		if ( selecter == '.imc_all' ) {
@@ -13972,9 +14048,9 @@ cardOrderSelecter: function() {
 
 //. unionMode
 unionMode: function() {
-	$('#busho_info .tr_gradient').slice( 1 )
-	.contextMenu( this.contextmenu )
-	.on('click', function( e ) {
+	$('#busho_info .tr_gradient').contextMenu( this.contextmenu, true );
+	$('#busho_info')
+	.on('click', '.tr_gradient', function( e ) {
 		var $this = $(this),
 			data = $this.data(),
 			$target = $( e.target );
@@ -14016,9 +14092,7 @@ unionMode: function() {
 },
 
 //. analyze
-analyze: function( deck, edit ) {
-	var $tr = $('#busho_info .tr_gradient').slice( 1 );
-
+analyze: function( $tr, deck, edit ) {
 	$tr.each(function() {
 		var $this  = $(this),
 			$input = $this.find('INPUT');
@@ -14035,10 +14109,10 @@ analyze: function( deck, edit ) {
 
 		$td.eq( 1 ).find('A DIV DIV').css({ position: 'relative', left: '1px' }).unwrap();
 
-//		$td.eq( 5 ).append( $td.eq( 6 ).children() );
-//		$td.eq( 7 ).append( $td.eq( 8 ).children() );
 		$td.eq( 6 ).prepend( $td.eq( 5 ).children() );
 		$td.eq( 8 ).prepend( $td.eq( 7 ).children() );
+		$td.eq( 5 ).hide();
+		$td.eq( 7 ).hide();
 
 		//兵士数
 		if ( card.solNum == card.maxSolNum ) {
@@ -14055,7 +14129,7 @@ analyze: function( deck, edit ) {
 			$this.addClass( data.class );
 		}
 		else {
-			$this.addClass('imc_none')
+			$this.addClass('imc_none');
 		}
 
 		//HP
@@ -15044,13 +15118,17 @@ style: '' +
 '.ig_battle_report_icon2 { float: left; width: 18px; height: 18px; }' +
 '.ig_battle_report_text { float: left; width: 440px; height: 18px; padding: 0px 5px; line-height: 18px; text-align: left; }' +
 
-( ( Env.chapter < 5 ) ?
-'#imi_map { position: relative; top: 4px; left: 606px; display: inline-block; }' +
+( ( Data.mapsize == 180 ) ?
+'#imi_map { position: relative; top: 2px; left: 606px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 3px; }' :
-'#imi_map { position: relative; top: 4px; left: 625px; display: inline-block; }' +
+  ( Data.mapsize == 170 ) ?
+'#imi_map { position: relative; top: 2px; left: 619px; display: inline-block; }' +
+'#imi_mapcontainer { border-width: 2px; }' :
+// 150
+'#imi_map { position: relative; top: 4px; left: 628px; display: inline-block; }' +
 '#imi_mapcontainer { border-width: 5px; }' ) +
 
-'#imi_map_scale { margin-right: 5px; }' +
+'#imi_map_scale { margin: 0px 5px; }' +
 
 /* style調整 */
 '#material { line-height: 14px; }' +
@@ -15334,7 +15412,12 @@ layouterUser: function() {
 	'<tr><td style="text-align: left;">' +
 	'<label><input type="checkbox" id="imi_rclick_link">右クリック連動</label>' +
 	'<label><input type="checkbox" id="imi_filter_link">同盟名フィルタ連動</label>' +
-	'</td></tr>' +
+	'</td>' +
+	'<th width="50">表示</th>' +
+	'<td style="padding: 0px 2px;"><button class="imc_display_clear">解除</button></td>' +
+	'<th width="60">キャッシュ</th>' +
+	'<td style="padding: 0px 2px;"><button class="imc_user_cache_clear">全削除</button></td>' +
+	'</tr>' +
 	'</table>' +
 	'</div>' +
 	'<div id="imi_user_info" style="width: 550px; margin: 0px 15px 10px 0px; float: left;"></div>' +
@@ -15354,6 +15437,15 @@ layouterUser: function() {
 
 		$.extend( settings, { filter1: filter1, link1: link1, link2: link2 } );
 		MetaStorage('SETTINGS').set('map', settings);
+	})
+	.on('click', '.imc_display_clear', function() {
+		$('#imi_user_info').trigger('update');
+	})
+	.on('click', '.imc_user_cache_clear', function() {
+		if ( !window.confirm('城主情報のキャッシュデータを全て削除してよろしいですか？') ) { return; }
+
+		MetaStorage('USER_INFO').clear();
+		$('#imi_user_info').trigger('update');
 	});
 
 	$('#imi_user_list')
@@ -15509,7 +15601,7 @@ layouterUser: function() {
 			info;
 
 		//同盟名フィルタと連動
-		if ( $this.attr('checked') ) {
+		if ( userid !== undefined && $this.attr('checked') ) {
 			info = Util.getUserInfo( userid );
 			$('#imi_base_conditions INPUT[name="imn_discriminant"]').first().attr('checked', true);
 			$('#imi_base_conditions INPUT[name="imn_alliance"]').val( info.alliance ).trigger('change');
@@ -15522,9 +15614,21 @@ layouterUser: function() {
 
 	$('#imi_user_info')
 	.on('update', function() {
-		var userid = arguments[ 1 ],
-			info = Util.getUserInfo( userid ),
-			found = false, html;
+		var userid = arguments[ 1 ],	// undefined：非表示、空文字：自分、userid：他城主
+			found = false, info, html;
+
+		if ( userid === undefined ) {
+			$(this).removeData('userid').empty();
+			$('.imc_user_list TD.imc_current').removeClass('imc_current');
+
+			MiniMap.showBasePoint( 'target', [] );
+			$('#imi_filter_link').trigger('update');
+			$('#imi_data_type').trigger('update');
+
+			return;
+		}
+
+		info = Util.getUserInfo( userid );
 
 		html = '' +
 		'<table class="imc_table">' +
@@ -16272,14 +16376,20 @@ main: function() {
 
 //. layouter
 layouter: function() {
-	var list = [], total = [ 0, 0, 0, 0 ], html;
+	var busho = $('.busho_info_profile').length,
+		list = [], total = [ 0, 0, 0, 0 ], html;
 
 	$('.common_table1 TR').slice( 1 ).each(function() {
 		var $this = $(this),
 			$td = $this.find('TD'),
 			now = $this.hasClass('now');
 
-		list.push({ name: $td.eq( 1 ).text(), point: $td.eq( 3 ).text().toInt(), now: now });
+		if ( busho ) {
+			list.push({ name: $td.eq( 2 ).text(), point: $td.eq( 4 ).text().toInt(), now: now });
+		}
+		else {
+			list.push({ name: $td.eq( 1 ).text(), point: $td.eq( 3 ).text().toInt(), now: now });
+		}
 	})
 
 	html = '<table class="common_table1 center" width="700">' +
@@ -16329,24 +16439,32 @@ main: function() {
 layouter: function() {
 	var storage = MetaStorage('ALLIANCE'),
 		id = ( location.search.match(/id=(\d+)/) || [,0] )[1],
-		olddata = {}, newdata = {}, total = 0;
+		olddata = {}, newdata = {}, total = 0, option;
 
 	if ( storage.get('id') == id ) {
 		olddata = storage.get('data');
 	}
 
+	if ( $('.busho_info_profile').length ) {
+		// a_idx, td_idx, colspan
+		option = [ 1, 3, 3 ];
+	}
+	else {
+		option = [ 0, 2, 2 ];
+	}
+
 	$('TABLE.common_table1').find('TR:gt(0)').each(function() {
 		var $this = $(this),
-			href  = $this.find('A:first').attr('href') || '',
+			href  = $this.find('A').eq( option[ 0 ] ).attr('href') || '',
 			userid = ( href.match( /user_id=(\d+)/ ) || [] )[1],
-			point = $this.find('TD:eq(2)').text().toInt();
+			point = $this.find('TD').eq( option[ 1 ] ).text().toInt();
 
 		if ( userid in olddata ) {
 			var diff = point - olddata[ userid ];
 			if ( diff != 0 ) {
 				if ( diff > 0 ) { diff = '+' + diff; }
 				//前回と比べて差があれば表示
-				$this.find('TD:eq(2)').append(' (' + diff + ')');
+				$this.find('TD').eq( option[ 1 ] ).append(' (' + diff + ')');
 			}
 		}
 
@@ -16355,7 +16473,7 @@ layouter: function() {
 	})
 	.end()
 	.append(
-		'<tr><th colspan="2" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
+		'<tr><th colspan="' + option[ 2 ] + '" style="line-height: 1.5">合計</th><td>' + total.toFormatNumber()
 		+ (function() {
 			var html = '';
 
