@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.0
+// @version        1.3.0.1
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5703,6 +5703,7 @@ toCamp: function() {
 
 	//陣建設
 	$.get( href )
+	.pipe(function() { return Util.wait( 1000 ); })
 	.pipe(function() {
 		Map.move( Map.info.x, Map.info.y, Map.info.country );
 	});
@@ -10873,8 +10874,11 @@ registerExtention: function() {
 },
 
 //.. form
-form: function( action, data ) {
-	var $form = $('<form/>').css('display', 'none').attr({ action: action, method: 'post' });
+form: function( action, data, new_tab ) {
+	var $form = $('<form/>');
+
+	$form.css('display', 'none').attr({ action: action, method: 'post' });
+	if ( new_tab ) { $form.attr('target', '_blank'); }
 
 	$.each( data, function( key, value ) {
 		if ( $.isArray( value ) ) {
@@ -10890,6 +10894,7 @@ form: function( action, data ) {
 	});
 
 	$form.appendTo( document.body ).submit();
+	$form.remove();
 },
 
 //.. ajax
@@ -10902,13 +10907,17 @@ ajax: function( url, options ) {
 			Display.alert('セッションタイムアウトしました。');
 			return $.Deferred().reject();
 		}
-		else if ( $html.find('TITLE').text().indexOf('メンテナンス中') >= 0 ) {
+		else if ( html.indexOf('<title>メンテナンス中 - 戦国IXA</title>') >= 0 ) {
 			Display.alert('メンテナンス中です。');
 			return $.Deferred().reject();
 		}
 
-		//移動状況を置き換える
-		$('TABLE.stateTable').replaceWith( $html.find('TABLE.stateTable') );
+		[ 'TABLE.stateTable', '#chatComment', '#chatComment_i', '#chatComment_g', '#chatComment_s5_h' ].forEach(function( selecter ) {
+			var $elem = $html.find( selecter );
+			if ( $elem.length == 0 ) { return; }
+			$( selecter ).replaceWith( $elem );
+		});
+		$('#commentBox').trigger('update');
 
 		return html;
 	});
@@ -11007,10 +11016,7 @@ addStyle: function() {
 
 //.. ajaxLoadingIcon
 ajaxLoadingIcon: function() {
-	$('<span class="imc_ajax_load" style="display: none;" />')
-	.append(
-		$('<img />').attr({ src: Data.images.ajax_load })
-	)
+	$('<span class="imc_ajax_load" style="display: none;"><img src="' + Data.images.ajax_load + '"></span>')
 	.appendTo('BODY')
 	.on('ajaxStart', function() {
 		$(this).show();
@@ -11029,65 +11035,64 @@ changeTitle: function() {
 
 //.. changeStatusBar
 changeStatusBar: function() {
-	//テキストノードを置き換えて、selecterで引っかかるようにする
-	$('#status_left LI').contents().filter(function() { return this.nodeType == 3 && this.nodeValue.trim() != ''; }).wrap('<span/>');
+	$('#status').prependTo('#header');
+	$('#status_left').css('width', '100%');
 
-	//蔵容量のバー表示
-	'wood stone iron rice'.split(' ').forEach(function( value ) {
-		var val = $( '#' + value ).removeAttr('class').text().toInt(),
-			max_val = $( '#' + value + '_max' ).text().toInt(),
-			out_val = $( '#output_' + value ).text().toInt(),
-			rate = Math.floor( val / max_val * 100 ) + '%',
-			period = ( max_val - val ) / out_val,
-			html_outer, html_inner;
+	var resource = Util.getResource(),
+		production = Util.getProduction(),
+		max = $('#wood_max').text().toInt(),
+		money_b = $('.money_b').text(),
+		money_c = $('.money_c').text(),
+		fame = $('#status_left LI').eq( 4 ).text(),
+		rate = [], period = [];
 
-		if ( period < 3 ) {
-			html_outer = '<span class="imc_outer_bar imc_overflow" />';
+	for ( var i = 0, len = resource.length; i < len; i++ ) {
+		rate[ i ] = Math.floor( resource[ i ] / max * 100 ) + '%';
+		period[ i ] = ( max - resource[ i ] ) / production[ i ];
+
+		if ( period[ i ] < 3 ) {
+			period[ i ] = 'imc_overflow';
 		}
-		else if ( period < 8 ) {
-			html_outer = '<span class="imc_outer_bar imc_alert" />';
+		else if ( period[ i ] < 8 ) {
+			period[ i ] = 'imc_alert';
 		}
 		else {
-			html_outer = '<span class="imc_outer_bar" />';
+			period[ i ] = '';
 		}
+	}
 
-		html_inner += '<span class="imc_inner_bar imc_' + value + '" style="width: ' + rate + '" />';
+	html = '' +
+	'<ul>' +
+	'<li><img align="middle" src="' + Env.externalFilePath + '/img/common/ico_wood.gif" alt="木" title="木">&nbsp;<span class="imc_outer_bar ' + period[ 0 ] + '"><span style="width: ' + rate[ 0 ] + '" class="imc_inner_bar imc_wood"><span class="imc_bar_contents"><span id="wood">' + resource[ 0 ] + '</span><span>&nbsp;/&nbsp;</span><span id="wood_max">' + max + '</span></span></span></span></li>' +
+	'<li><img align="middle" src="' + Env.externalFilePath + '/img/common/ico_wool.gif" alt="綿" title="綿">&nbsp;<span class="imc_outer_bar ' + period[ 1 ] + '"><span style="width: ' + rate[ 1 ] + '" class="imc_inner_bar imc_stone"><span class="imc_bar_contents"><span id="stone">' + resource[ 1 ] + '</span><span>&nbsp;/&nbsp;</span><span id="stone_max">' + max + '</span></span></span></span></li>' +
+	'<li><img align="middle" src="' + Env.externalFilePath + '/img/common/ico_ingot.gif" alt="鉄" title="鉄">&nbsp;<span class="imc_outer_bar ' + period[ 2 ] + '"><span style="width: ' + rate[ 2 ] + '" class="imc_inner_bar imc_iron"><span class="imc_bar_contents"><span id="iron">' + resource[ 2 ] + '</span><span>&nbsp;/&nbsp;</span><span id="iron_max">' + max + '</span></span></span></span></li>' +
+	'<li><img align="middle" src="' + Env.externalFilePath + '/img/common/ico_grain.gif" alt="糧" title="糧">&nbsp;<span class="imc_outer_bar ' + period[ 3 ] + '"><span style="width: ' + rate[ 3 ] + '" class="imc_inner_bar imc_rice"><span class="imc_bar_contents"><span id="rice">' + resource[ 3 ] + '</span><span>&nbsp;/&nbsp;</span><span id="rice_max">' + max + '</span></span></span></span></li>' +
+	'<li><img align="middle" src="' + Env.externalFilePath + '/img/common/ico_fame.gif" alt="名声" title="名声"><span>' + fame + '</span></li>' +
+	'<li class="sep"><span class="money_b">' + money_b + '</span><span class="money_c">' + money_c + '</span></li>' +
+	'<li class="sep">' +
+	'<a href="/facility/unit_status.php?dmo=all">全部隊</a>' +
+	'<span>&nbsp;</span>' +
+	'<span style="position: relative;">' +
+	'<a href="/facility/set_unit_list.php?show_num=100">全編成</a>' +
+	'<ul class="imc_pulldown">' +
+	'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&amp;select_card_group=1">【第一組】</a></li>' +
+	'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&amp;select_card_group=2">【第二組】</a></li>' +
+	'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&amp;select_card_group=3">【第三組】</a></li>' +
+	'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&amp;select_card_group=4">【第四組】</a></li>' +
+	'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&amp;select_card_group=5">【未設定】</a></li>' +
+	'</ul>' +
+	'</span>' +
+	'</li>' +
+	'</ul>';
 
-		$( '#' + value ).parent().children().not('IMG')
-		.wrapAll( html_outer ).wrapAll( html_inner ).wrapAll('<span class="imc_bar_contents" />');
-	});
-
-	//幅確保の為、セパレータをいくつか削除
-	$('#status_left').css('width', '100%').find('.sep').text('|').slice( 0, 4 ).remove();
-
-	var $clone, html;
-
-	//銅と金のクローン作製
-	$clone = $('#sideboxTop > DIV.sideBox:eq(0)').find('.substatus SPAN').clone().wrapAll('<li class="sep"/>').parent();
-
-	html = '<li class="sep">' +
-		'<a href="/facility/unit_status.php?dmo=all">全部隊</a>' +
-		'<span>&nbsp;</span>' +
-		'<span style="position: relative;">' +
-		'<a href="/facility/set_unit_list.php?show_num=100">全編成</a>' +
-		'<ul class="imc_pulldown">' +
-		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=1">【第一組】</a></li>' +
-		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=2">【第二組】</a></li>' +
-		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=3">【第三組】</a></li>' +
-		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=4">【第四組】</a></li>' +
-		'<li class="imc_pulldown_item"><a href="/facility/set_unit_list.php?show_num=100&select_card_group=5">【未設定】</a></li>' +
-		'</ul></span>' +
-	'</li>';
-
-	//メニュー追加
-	$('#status_left UL').append( $clone ).append( html );
-	$('#status').prependTo('#header');
+	$('#status_left').html( html );
 
 	//IXA占い
-	$('#status .rightF').css('padding-right', '3px').appendTo('#status_left')
-		.children('P')
-			.filter(':even').remove().end()
-		.css('padding', '0px').end()
+	$('#status .rightF')
+	.children('P')
+		.filter(':even').remove().end()
+	.css('padding', '0px').end()
+	.appendTo('#status_left')
 	.wrapAll('<a href="/user/uranai/uranai.php"/>');
 },
 
@@ -11105,20 +11110,17 @@ changeSideBar: function() {
 
 	//二重カウントダウン防止
 	$houkoku_div.find('SCRIPT').remove();
-	$sidebottom.prepend( $houkoku_div ).append( $card_div ).append( $seisan_div ).append( $kin_div );
+	$sidebottom.prepend( $houkoku_div ).append( $card_div, $seisan_div, $kin_div );
 
 	//生産量合計
-	$seisan_div.find('UL.side_make LI').each(function() {
-		var $this = $(this),
-			make = $this.text().toInt() + $this.find('SPAN.increase, SPAN.decrease').text().toInt();
-
-		$this.after('<li style="padding-left: 25px; color: #0c0;">=' + make + '</li>');
+	var production = Util.getProduction();
+	$seisan_div.find('UL.side_make LI').each(function( idx ) {
+		$(this).after('<li style="padding-left: 25px; color: #0c0;">=' + production[ idx ] + '</li>');
 	});
 
-	//取引のソート指定
-	$card_div.find('A[href="/card/trade.php"]').attr('href', '/card/trade.php?t=name&k=&s=no&o=a');
-	//カードアルバム
-	$card_div.find('A[href="/card/card_album.php"]').attr('href', '/card/card_album.php?rarity_type=3');
+	$card_div.find('A')
+	.eq( 1 ).attr('href', '/card/trade.php?t=name&k=&s=no&o=a').end()
+	.eq( 3 ).attr('href', '/card/card_album.php?rarity_type=3').end();
 
 	//合戦ボタン削除
 	$('.situationWorldTable').has('A[href="/war/war_situation.php"]').remove();
@@ -11140,20 +11142,24 @@ createCoordLink: function() {
 		pointReg = /-?\d{1,3}/g,
 		point, html;
 
-	$('#commentBody TD.msg > SPAN').each(function() {
-		var $this = $(this),
-			text = $this.text(),
-			array = text.match( coordReg );
+	$('#commentBox')
+	.on('update', function() {
+		$('#commentBody TD.msg > SPAN').each(function() {
+			var $this = $(this),
+				text = $this.text(),
+				array = text.match( coordReg );
 
-		if ( !array ) { return; }
+			if ( !array ) { return; }
 
-		for ( var i = 0, len = array.length; i < len; i++ ) {
-			point = array[ i ].match( pointReg );
-			html = '<span class="ime_coord imc_coord" x="' + point[0] + '" y="' + point[1] + '">' + array[ i ] + '</span>';
-			text = text.replace( array[ i ], html );
-			$this.html( text );
-		}
-	});
+			for ( var i = 0, len = array.length; i < len; i++ ) {
+				point = array[ i ].match( pointReg );
+				html = '<span class="ime_coord imc_coord" x="' + point[0] + '" y="' + point[1] + '">' + array[ i ] + '</span>';
+				text = text.replace( array[ i ], html );
+				$this.html( text );
+			}
+		});
+	})
+	.trigger('update');
 
 	$('.ime_coord').live('click', function() {
 		var $this = $(this),
