@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.3
+// @version        1.3.0.4
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -673,7 +673,7 @@ getVillageCurrent: function() {
 getVillageNearby: function( x, y, country ) {
 	var list  = Util.getVillageList(),
 		minDist = Number.MAX_VALUE,
-		village;
+		village, territory;
 
 	list.forEach(function( value ) {
 		if ( value.country != country ) { return; }
@@ -684,10 +684,28 @@ getVillageNearby: function( x, y, country ) {
 		if ( dist >= minDist ) { return; }
 
 		minDist = dist;
+		value.dist = dist;
 		village = value;
 	});
 
-	return village;
+	minDist = Number.MAX_VALUE;
+	list.forEach(function( value ) {
+		if ( value.country != country ) { return; }
+		if ( value.type != '領地' ) { return; }
+
+		var dist = Util.getDistance( { x: x, y: y }, value );
+		if ( dist >= minDist ) { return; }
+
+		minDist = dist;
+		value.dist = dist;
+		territory = value;
+	});
+
+	if ( village && territory && village.dist < territory.dist ) {
+		territory = undefined;
+	}
+
+	return { village: village, territory: territory };
 },
 
 //. getVillageChangeUrl
@@ -1582,7 +1600,7 @@ keyBindCommon: function() {
 				$('#imi_unit_tab LI').eq( 0 ).trigger('click');
 			}
 			else {
-				Deck.dialog( null, null, null, 0 );
+				Deck.dialog( null, null, null, null, 0 );
 			}
 		}),
 
@@ -1592,7 +1610,7 @@ keyBindCommon: function() {
 				$('#imi_unit_tab LI').eq( 1 ).trigger('click');
 			}
 			else {
-				Deck.dialog( null, null, null, 1 );
+				Deck.dialog( null, null, null, null, 1 );
 			}
 		}),
 
@@ -1602,7 +1620,7 @@ keyBindCommon: function() {
 				$('#imi_unit_tab LI').eq( 2 ).trigger('click');
 			}
 			else {
-				Deck.dialog( null, null, null, 2 );
+				Deck.dialog( null, null, null, null, 2 );
 			}
 		}),
 
@@ -1612,7 +1630,7 @@ keyBindCommon: function() {
 				$('#imi_unit_tab LI').eq( 3 ).trigger('click');
 			}
 			else {
-				Deck.dialog( null, null, null, 3 );
+				Deck.dialog( null, null, null, null, 3 );
 			}
 		}),
 
@@ -1622,7 +1640,7 @@ keyBindCommon: function() {
 				$('#imi_unit_tab LI').eq( 4 ).trigger('click');
 			}
 			else {
-				Deck.dialog( null, null, null, 4 );
+				Deck.dialog( null, null, null, null, 4 );
 			}
 		})
 
@@ -2976,6 +2994,82 @@ dialogRename: function( village ) {
 	$('#imi_village_name').focus();
 },
 
+//. dialogNearbyTerritory
+dialogNearbyTerritory: function( village, territory, coord ) {
+	var dfd = $.Deferred(),
+		fame = $('#status_left LI').eq( 4 ).text().split('/')[ 0 ].trim().toInt(),
+		html;
+
+	html = '<div style="margin-bottom: 10px; line-height: 16px;">';
+
+	if ( village ) {
+		html += '最寄りの拠点より近い領地を発見しました！<br/>';
+	}
+	else {
+		html += '最寄りの拠点は見つかりませんでした。<br/>';
+	}
+
+	html += '' +
+	'<span style="font-weight: bold;">この領地を陣に変更しますか？</span>' +
+	'</div>' +
+	'<table class="imc_table">' +
+		'<tr><th width="35">名声</th><td width="60">' + fame + '</td>' +
+		'<th width="51">目的地</th><td width="83">(' + coord + ')</td></tr>' +
+	'</table>' +
+	'<table class="imc_table" style="margin-top: 10px; width: 100%;">' +
+	'<tr><th width="35">種類</th><th>名前</th><th>座標</th><th>距離</th></tr>';
+
+	if ( village ) {
+		html += '' +
+		'<tr>' +
+			'<th>' + village.type + '</th>' +
+			'<td>' + village.name + '</td>' +
+			'<td>(' + village.x + ',' + village.y + ')</td>' +
+			'<td>' + village.dist.toFixed( 2 ) + '</td>' +
+		'</tr>';
+	}
+
+	html += '' +
+	'<tr>' +
+		'<th>領地</th>' +
+		'<td>' + territory.name + '</td>' +
+		'<td>(' + territory.x + ',' + territory.y + ')</td>' +
+		'<td style="font-weight: bold;">' + territory.dist.toFixed( 2 ) + '</td>' +
+	'</tr>' +
+	'</table>';
+
+	dialog = Display.dialog({
+		title: '領地の拠点化',
+		content: html,
+		top: 200, width: 350, height: 160,
+		buttons: {
+			'はい': function() {
+				var search = 'x=' + territory.x + '&y=' + territory.y + '&c=' + territory.country,
+					href = '/facility/to_camp.php?' + search + '&mode=build&type=223';
+
+				$.get( href )
+				.pipe(function() { return Util.wait( 1000 ); })
+				.pipe(function() {
+					// 拠点情報更新
+					Util.getVillageList();
+
+					var newVillage = Util.getVillageByCoord( territory.x, territory.y, territory.country );
+					dfd.resolve( newVillage );
+					dialog.close();
+				});
+			},
+			'いいえ': function() {
+				dfd.reject();
+				this.close();
+			},
+		}
+	});
+
+	if ( fame < 2 ) { dialog.buttons.eq( 0 ).attr('disabled', true); }
+
+	return dfd;
+},
+
 //. dialogFavoriteUnit
 dialogFavoriteUnit: function( data ) {
 	var list = MetaStorage('FAVORITE_UNIT').get('list') || [],
@@ -3576,13 +3670,17 @@ style: '' +
 '#imi_unit_dialog #imi_deck_info LI LABEL { width: 45px; height: 18px; line-height: 18px; background-color: #cc9; padding-left: 5px; display: inline-block; }' +
 '#imi_unit_dialog #imi_deck_info LI LABEL.imc_destory_label { width: 51px; text-align: right; margin-left: 58px; padding-right: 5px; }' +
 '#imi_unit_dialog #imi_deck_info LI LABEL.imc_unitskill_label { width: 51px; text-align: right; margin-left: 26px; padding-right: 5px; }' +
+'#imi_unit_dialog #imi_deck_info LI.imc_territory { border-color: #9cf; }' +
+'#imi_unit_dialog #imi_deck_info LI.imc_territory LABEL { background-color: #9cf; }' +
+'#imi_unit_dialog #imi_deck_info .imc_tocamp { display: inline-block; width: 61px; line-height: 18px; text-align: center; margin-left: 16px; border-radius: 3px; }' +
+'#imi_unit_dialog #imi_deck_info .imc_tocamp:hover { color: #fff; background-color: #09f; cursor: pointer; }' +
 '#imi_unit_dialog #imi_deck_info LI.imc_enemy { border-color: #f66; }' +
 '#imi_unit_dialog #imi_deck_info LI.imc_enemy LABEL { background-color: #f66; }' +
 '#imi_unit_dialog #imi_deck_info .imc_countdown_display { padding-left: 5px; }' +
 '#imi_unit_dialog #imi_unit_tab { float: left; padding: 3px 0px 0px 1px; width: 550px; height: 18px; }' +
 '#imi_unit_dialog #imi_unit_tab LI { width: 98px; }' +
 '#imi_unit_dialog #imi_card_container { padding: 3px 0px 2px 3px; border: solid 1px #76601D; width: 548px; height: 149px; background-color: #000; float: left; }' +
-'#imi_unit_dialog .imc_village { width: 131px; display: inline-block; margin-left: 5px; }' +
+'#imi_unit_dialog .imc_village_name { width: 131px; display: inline-block; margin-left: 5px; }' +
 '#imi_unit_dialog .imc_condition { margin-left: 5px; }' +
 '#imi_unit_dialog .imc_info1 { width: 30px; text-align: right; font-weight: bold; display: inline-block; margin-right: 5px; }' +
 '#imi_unit_dialog .imc_info1_free { width: 30px; text-align: right; display: inline-block; margin-right: 65px; }' +
@@ -3600,6 +3698,8 @@ style: '' +
 '#imi_unit_dialog .imc_info12,' +
 '#imi_unit_dialog .imc_info13 { width: 30px; text-align: right; display: inline-block; margin: 0px 1px; }' +
 '#imi_unit_dialog .imc_info14 { width: 35px; border-style: none; margin-left: 31px; ime-mode: disabled; }' +
+'#imi_unit_dialog .imc_info15 { width: 80px; display: inline-block; margin-left: 5px; }' +
+'#imi_unit_dialog .imc_info16 { width: 95px; display: inline-block; margin-left: 5px; }' +
 '#imi_unit_dialog #ig_deck_smallcardarea_out { border: solid 1px #b8860b; height: 355px; margin: 0px; padding: 4px; background-color: #000; overflow: auto; }' +
 /* カード */
 '#imi_unit_dialog.imc_infotype_2 .imc_status1 { display: none; }' +
@@ -5585,9 +5685,9 @@ send2: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = Map.analyzedData[ idx ],
-		village = Util.getVillageNearby( data.x, data.y, data.country );
+		near = Util.getVillageNearby( data.x, data.y, data.country );
 
-	if ( village ) {
+	if ( near.village ) {
 		Map.send( data.x, data.y, data.country, village );
 	}
 	else {
@@ -5722,7 +5822,7 @@ createUnit: function( data, brigade ) {
 	brigade |= 0;
 
 	if ( village ) {
-		Deck.dialog( village, brigade );
+		Deck.dialog( village, null, brigade );
 	}
 	else {
 		Display.alert( '拠点は見つかりませんでした。' );
@@ -5731,13 +5831,21 @@ createUnit: function( data, brigade ) {
 
 //.. createUnitNearby
 createUnitNearby: function( data, brigade ) {
-	var village = Util.getVillageNearby( data.x, data.y, data.country ),
+	var near = Util.getVillageNearby( data.x, data.y, data.country ),
+		village = near.village,
+		territory = near.territory,
 		coord = data.x + ',' + data.y;
 
 	brigade |= 0;
 
-	if ( village ) {
-		Deck.dialog( village, brigade, coord );
+	if ( !village && territory ) {
+		Display.dialogNearbyTerritory( village, territory, coord )
+		.done(function( newVillage ) {
+			Deck.dialog( newVillage, null, brigade, coord );
+		});
+	}
+	else if ( village ) {
+		Deck.dialog( village, territory, brigade, coord );
 	}
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
@@ -5777,9 +5885,9 @@ nearbyVillage: function() {
 	var $this = $(this),
 		idx   = $this.attr('idx').toInt(),
 		data  = Map.analyzedData[ idx ],
-		village = Util.getVillageNearby( data.x, data.y, data.country );
+		near = Util.getVillageNearby( data.x, data.y, data.country );
 
-	if ( village ) {
+	if ( near.village ) {
 		location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
 	}
 	else {
@@ -7385,7 +7493,7 @@ contextmenu: function() {
 });
 
 //. Deck.dialog
-Deck.dialog = function( village, brigade, coord, ano ) {
+Deck.dialog = function( village, territory, brigade, coord, ano ) {
 	var enemylist = MetaStorage('UNIT_STATUS').get('敵襲') || [],
 		now = Util.getServerTime(),
 		target_x, target_y,
@@ -7396,14 +7504,14 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		Deck.dialog.village = village;
 	}
 	else {
-		Deck.dialog.village = village = Util.getVillageCurrent();
+		Deck.dialog.village = Util.getVillageCurrent();
 	}
 
 	html = '' +
 	'<div id="imi_unit_dialog" class="imc_infotype_1">' +
 		'<div style="height: 175px; margin-bottom: 5px;">' +
 			'<ul id="imi_deck_info">' +
-				'<li><label>拠点</label><span class="imc_village" /><label>状態</label><span class="imc_condition" /></li>' +
+				'<li><label>拠点</label><span class="imc_village imc_village_name" /><label>状態</label><span class="imc_condition" /></li>' +
 				'<li><label>コスト</label><span class="imc_info1" />/<span class="imc_info1_free" /><label>部隊枠</label><span class="imc_info2" />/<span class="imc_info2_free" /></li>' +
 				'<li><label>攻撃力</label><span class="imc_info3" />/<span class="imc_info10" />(+<span class="imc_info12" />%)<label class="imc_destory_label">破壊力</label></li>' +
 				'<li><label>防御力</label><span class="imc_info4" />/<span class="imc_info11" />(+<span class="imc_info13" />%)<span class="imc_info6" /></li>' +
@@ -7511,10 +7619,17 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 			dist = Util.getDistance( unit.village, { x: target_x, y: target_y } );
 			time = ( speed == 0 ) ? 0 : Math.floor( 3600 * dist / speed );
 
-			$('.imc_info9').text( time.toFormatTime() + '／' + dist.toRound( 2 ) );
+			$('.imc_info9').text( time.toFormatTime() + '／' + dist.toFixed( 2 ) );
+
+			if ( territory ) {
+				dist = Util.getDistance( territory, { x: target_x, y: target_y } );
+				time = ( speed == 0 ) ? 0 : Math.floor( 3600 * dist / speed );
+				$('.imc_info16').text( time.toFormatTime() + '／' + dist.toFixed( 2 ) );
+			}
 		}
 		else {
 			$('.imc_info9').text('');
+			$('.imc_info16').text('');
 		}
 
 		$('#imi_card_container').empty();
@@ -8315,6 +8430,18 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		else {
 			Deck.setUnit( list, 1, type );
 		}
+	})
+	.on( 'click', '.imc_tocamp', function() {
+		Display.dialogNearbyTerritory( Deck.dialog.village, territory, coord )
+		.done(function( newVillage ) {
+			Deck.dialog.village = newVillage;
+			if ( Deck.currentUnit.condition == '新規' ) {
+				Deck.currentUnit.village = newVillage;
+			}
+			$('#imi_deck_info').trigger('update');
+			$('.imc_territory').remove();
+			territory = null;
+		});
 	});
 
 	options = {
@@ -8323,6 +8450,7 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		content: $content,
 		buttons: {
 			'目的地へ出陣': function() {
+				var village = Deck.dialog.village;
 				Map.send( target_x, target_y, village.country, village );
 			},
 			'編成を終了': function() {
@@ -8344,19 +8472,33 @@ Deck.dialog = function( village, brigade, coord, ano ) {
 		$('.imc_sc_panel').remove();
 	});
 
-	$('.imc_village').text( village.name );
 	if ( coord ) {
 		$('.imc_info8').val( coord );
 	}
 
+	if ( territory ) {
+		html = '<li class="imc_territory">' +
+			'<label>領地</label><span class="imc_info15">' + territory.x + ',' + territory.y + '</span>' +
+			'<label>時間</label><span class="imc_info16" />' +
+			'<span class="imc_tocamp">拠点化</span>' +
+		'</li>';
+		$('#imi_deck_info').append( html );
+	}
+
 	enemylist = enemylist.filter(function( value ) {
-		return ( value.ebase == village.name && value.arrival >= now );
+		return ( value.ex == village.x && value.ey == village.y && value.ec == village.country && value.arrival >= now );
 	}).sort(function( a, b ) {
 		return ( a.arrival > b.arrival );
 	});
 
 	if ( enemylist.length >= 1 ) {
-		var $li = $('<li class="imc_enemy imc_countdown"><label>敵襲</label><span class="imc_countdown_display" /></li>');
+		html = '<li class="imc_enemy imc_countdown">' +
+			'<label>敵襲</label>' +
+			'<span class="imc_village_name">' + enemylist[ 0 ].ebase + '</span>' +
+			'<span class="imc_countdown_display" />' +
+		'</li>';
+
+		var $li = $( html );
 		$li.data({ endtime: enemylist[ 0 ].arrival, alert: 120 });
 		$('#imi_deck_info').append( $li );
 		Util.countDown();
@@ -10581,7 +10723,7 @@ contextmenu: function() {
 				name = $this.find('SPAN').first().text();
 
 			if ( location.pathname != '/card/deck.php' ) {
-				menu[ '[' + name + ']部隊' ] = function() { Deck.dialog( village, null, null, ano ); };
+				menu[ '[' + name + ']部隊' ] = function() { Deck.dialog( village, null, null, null, ano ); };
 			}
 			else {
 				menu[ '[' + name + ']部隊' ] = $.contextMenu.nothing;
@@ -10612,13 +10754,13 @@ contextmenu: function() {
 
 	if ( location.pathname != '/card/deck.php' ) {
 		menu['部隊作成'] = {
-			'部隊作成【第一組】': function() { Deck.dialog( village, 1 ); },
-			'部隊作成【第二組】': function() { Deck.dialog( village, 2 ); },
-			'部隊作成【第三組】': function() { Deck.dialog( village, 3 ); },
-			'部隊作成【第四組】': function() { Deck.dialog( village, 4 ); },
-			'部隊作成【未設定】': function() { Deck.dialog( village, 5 ); },
-			'セパレーター': $.contextMenu.separator,
-			'部隊作成【全武将】': function() { Deck.dialog( village, 0 ); }
+			'部隊作成【第一組】': function() { Deck.dialog( village, null, 1 ); },
+			'部隊作成【第二組】': function() { Deck.dialog( village, null, 2 ); },
+			'部隊作成【第三組】': function() { Deck.dialog( village, null, 3 ); },
+			'部隊作成【第四組】': function() { Deck.dialog( village, null, 4 ); },
+			'部隊作成【未設定】': function() { Deck.dialog( village, null, 5 ); },
+ 			'セパレーター': $.contextMenu.separator,
+			'部隊作成【全武将】': function() { Deck.dialog( village, null, 0 ); }
 		};
 	}
 	else {
@@ -10651,7 +10793,7 @@ contextmenu: function() {
 
 		if ( location.pathname != '/card/deck.php' ) {
 			menu[ '[' + name + ']部隊' ] = {
-				'部隊編成': function() { Deck.dialog( village, null, null, ano ); },
+				'部隊編成': function() { Deck.dialog( village, null, null, null, ano ); },
 				'セパレーター': $.contextMenu.separator,
 				'部隊解散': function() {
 					if ( !window.confirm( '[' + name + ']部隊を解散させます。\nよろしいですか？') ) { return; }
@@ -16092,7 +16234,7 @@ layouterSituation: function() {
 		brigade |= 0;
 
 		if ( village ) {
-			Deck.dialog( village, brigade );
+			Deck.dialog( village, null, brigade );
 		}
 		else{
 			Display.alert( '拠点は見つかりませんでした。' );
