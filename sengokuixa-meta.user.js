@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.1
+// @version        1.3.0.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1478,13 +1478,13 @@ divide2: function( list, soldata, time ) {
 
 //. searchTradeCardNo
 searchTradeCardNo: function( card_no ) {
-	location.href = '/card/trade.php?t=no&k=' + card_no + '&s=price&o=a';
+	GM_openInTab( location.origin + '/card/trade.php?t=no&k=' + card_no + '&s=price&o=a');
 },
 
 //. searchTradeSkill
 searchTradeSkill: function( name ) {
 	name = encodeURIComponent( name );
-	location.href = '/card/trade.php?t=skill&k=' + name + '&s=price&o=a';
+	GM_openInTab( location.origin + '/card/trade.php?t=skill&k=' + name + '&s=price&o=a');
 },
 
 //. unionCardParam
@@ -5488,8 +5488,10 @@ contextmenu: function() {
 			'部隊作成【第二組】': function() { Map.contextmenu.createUnitNearby( data, 2 ); },
 			'部隊作成【第三組】': function() { Map.contextmenu.createUnitNearby( data, 3 ); },
 			'部隊作成【第四組】': function() { Map.contextmenu.createUnitNearby( data, 4 ); },
+			'部隊作成【未設定】': function() { Map.contextmenu.createUnitNearby( data, 5 ); },
+			'セパレーター1': $.contextMenu.separator,
 			'部隊作成【全武将】': function() { Map.contextmenu.createUnitNearby( data, 0 ); },
-			'セパレーター': $.contextMenu.separator,
+			'セパレーター2': $.contextMenu.separator,
 			'ここへ部隊出陣': Map.contextmenu.send2,
 			'拠点選択': Map.contextmenu.nearbyVillage
 		};
@@ -5500,8 +5502,10 @@ contextmenu: function() {
 			'部隊作成【第二組】': function() { Map.contextmenu.createUnitNearby( data, 2 ); },
 			'部隊作成【第三組】': function() { Map.contextmenu.createUnitNearby( data, 3 ); },
 			'部隊作成【第四組】': function() { Map.contextmenu.createUnitNearby( data, 4 ); },
+			'部隊作成【未設定】': function() { Map.contextmenu.createUnitNearby( data, 5 ); },
+			'セパレーター1': $.contextMenu.separator,
 			'部隊作成【全武将】': function() { Map.contextmenu.createUnitNearby( data, 0 ); },
-			'セパレーター': $.contextMenu.separator,
+			'セパレーター2': $.contextMenu.separator,
 			'ここへ部隊出陣': Map.contextmenu.send2,
 			'拠点選択': Map.contextmenu.nearbyVillage
 		};
@@ -5513,10 +5517,12 @@ contextmenu: function() {
 			'部隊作成【第二組】': function() { Map.contextmenu.createUnit( data, 2 ); },
 			'部隊作成【第三組】': function() { Map.contextmenu.createUnit( data, 3 ); },
 			'部隊作成【第四組】': function() { Map.contextmenu.createUnit( data, 4 ); },
-			'部隊作成【全武将】': function() { Map.contextmenu.createUnit( data, 0 ); },
+			'部隊作成【未設定】': function() { Map.contextmenu.createUnit( data, 5 ); },
 			'セパレーター1': $.contextMenu.separator,
-			'拠点部隊解散': function() { Map.contextmenu.breakUp( data ); },
+			'部隊作成【全武将】': function() { Map.contextmenu.createUnit( data, 0 ); },
 			'セパレーター2': $.contextMenu.separator,
+			'拠点部隊解散': function() { Map.contextmenu.breakUp( data ); },
+			'セパレーター3': $.contextMenu.separator,
 			'拠点選択': Map.contextmenu.changeVillage,
 			'拠点名変更': Map.contextmenu.renameVillage
 		};
@@ -7372,14 +7378,6 @@ contextmenu: function() {
 	});
 
 	menu['取引検索'] = submenu;
-
-	/*
-	if ( card.canExhibit() ) {
-		menu['出品する'] = function() { Card.exhibit( card_id ); };
-	}
-	*/
-
-	menu['カードを削除'] = function() { Card.delete( [ card_id ] ); };
 
 	return menu;
 }
@@ -9257,16 +9255,6 @@ skillRemove: function( card_id ) {
 //.. exhibit
 exhibit: function( card_id ) {
 	Page.form( '/card/exhibit_confirm.php', { exhibit_cid: card_id });
-	return;
-/*
-	$.post('/card/exhibit_confirm.php', { exhibit_cid: card_id })
-	.done(function( html ) {
-		//return $.post('/card/exhibit_confirm.php', { exhibit_cid: card_id, exhibit_price: 999999, exhibit_btn: '出品する' });
-	})
-	.done(function() {
-		//location.href = '/card/exhibit_list.php';
-	});
-*/
 },
 
 //.. delete
@@ -10183,11 +10171,6 @@ canSkillAdd: function() {
 //.. canSkillRemove
 canSkillRemove: function() {
 	return ( this.skillCount >= 2 );
-},
-
-//.. canExhibit
-canExhibit: function() {
-	return ( this.rarity !== '祝' && this.rarity !== '雅' && this.hp === this.maxHp && this.solNum === 0 );
 }
 
 });
@@ -10633,6 +10616,8 @@ contextmenu: function() {
 			'部隊作成【第二組】': function() { Deck.dialog( village, 2 ); },
 			'部隊作成【第三組】': function() { Deck.dialog( village, 3 ); },
 			'部隊作成【第四組】': function() { Deck.dialog( village, 4 ); },
+			'部隊作成【未設定】': function() { Deck.dialog( village, 5 ); },
+			'セパレーター': $.contextMenu.separator,
 			'部隊作成【全武将】': function() { Deck.dialog( village, 0 ); }
 		};
 	}
@@ -10685,7 +10670,7 @@ contextmenu: function() {
 	});
 
 	menu['セパレーター３'] = $.contextMenu.separator;
-	menu['名称変更'] = function() { Display.dialogRename( village ); };
+	menu['拠点名変更'] = function() { Display.dialogRename( village ); };
 
 	return menu;
 }
@@ -16048,8 +16033,10 @@ layouterSituation: function() {
 			'部隊作成【第二組】': function() { createUnit.call( this, 2 ); },
 			'部隊作成【第三組】': function() { createUnit.call( this, 3 ); },
 			'部隊作成【第四組】': function() { createUnit.call( this, 4 ); },
+			'部隊作成【未設定】': function() { createUnit.call( this, 5 ); },
+			'セパレーター1': $.contextMenu.separator,
 			'部隊作成【全武将】': function() { createUnit.call( this, 0 ); },
-			'セパレーター': $.contextMenu.separator,
+			'セパレーター2': $.contextMenu.separator,
 			'拠点選択': function() {
 				var { ex, ey, ec } = $(this).data(),
 					village = Util.getVillageByCoord( ex, ey, ec );
