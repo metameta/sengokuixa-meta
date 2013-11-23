@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.2
+// @version        1.3.0.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -13210,9 +13210,11 @@ main: function() {
 	if ( dmo == '' || dmo == 'all' ) {
 		Util.getUnitStatus( $('.ig_decksection_innermid') );
 		this.showModeCamp();
+		this.cancelAll();
 	}
 	else if ( dmo == 'sortie' ) {
 		this.showModeCamp();
+		this.cancelAll();
 	}
 	else if ( dmo == 'enemy' ) {
 		this.analyzeRaid();
@@ -13254,6 +13256,26 @@ showModeCamp: function() {
 			$img.attr('src', Data.images.gofight_mode_camp);
 		}
 	});
+},
+
+//. cancelAll
+cancelAll: function() {
+	$('<button style="float: right; margin-right: 20px; padding: 2px 10px;">全部隊キャンセル</button>')
+	.attr( 'disabled', ( $('IMG[alt="キャンセル"]').length ? false : true ) )
+	.on('click', function() {
+		var tasks = [];
+
+		$(this).attr('disabled', true);
+
+		$('IMG[alt="キャンセル"]').each(function() {
+			var href = $(this).parent().attr('href');
+			tasks.push( $.get( href ) );
+		});
+
+		$.when.apply( $, tasks )
+		.pipe(function() { location.href = '/facility/unit_status.php?dmo=all'; });
+	})
+	.appendTo('.ig_decksection_top');
 },
 
 //. analyzeRaid
