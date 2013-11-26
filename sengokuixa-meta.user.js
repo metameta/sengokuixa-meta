@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.5
+// @version        1.3.0.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -5704,7 +5704,7 @@ send2: function() {
 		near = Util.getVillageNearby( data.x, data.y, data.country );
 
 	if ( near.village ) {
-		Map.send( data.x, data.y, data.country, village );
+		Map.send( data.x, data.y, data.country, near.village );
 	}
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
@@ -5904,7 +5904,7 @@ nearbyVillage: function() {
 		near = Util.getVillageNearby( data.x, data.y, data.country );
 
 	if ( near.village ) {
-		location.href = Util.getVillageChangeUrl( village.id, '/map.php' );
+		location.href = Util.getVillageChangeUrl( near.village.id, '/map.php' );
 	}
 	else {
 		Display.alert( '最寄りの拠点は見つかりませんでした。' );
