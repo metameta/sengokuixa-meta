@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.7
+// @version        1.3.0.8
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -701,7 +701,7 @@ getVillageNearby: function( x, y, country ) {
 		territory = value;
 	});
 
-	if ( village && territory && village.dist < territory.dist ) {
+	if ( village && territory && village.dist <= territory.dist ) {
 		territory = undefined;
 	}
 
