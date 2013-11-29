@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.8
+// @version        1.3.0.9
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -14023,7 +14023,7 @@ cardOrderSelecter: function() {
 
 	//デッキ画面では両方マッチしてしまうためlastを使用
 	$('.center_posi, #selectarea').last().append( $span );
-	$('#ig_deck_cardlistmenu2, .center_posi').append( $div );
+	$('#deck_file, #ig_deck_cardlistmenu2, .center_posi').last().append( $div );
 
 	$span.toggle(
 		function() {
@@ -15059,17 +15059,56 @@ showPayment: function( $td ) {
 //■ /card/deck_card_delete
 Page.registerAction( 'card', 'deck_card_delete', {
 
+//. style
+style: '' +
+'.imc_selected { background-color: #ccc; }' +
+
+/* ソート条件選択用 */
+'#selectarea SELECT { margin-right: 8px; }' +
+'#imi_order_open { color: #000; margin-left: 20px; padding: 3px 2px 2px 3px; border: solid 1px #666; border-radius: 3px; cursor: pointer; }' +
+'#imi_order_open:hover { color: #fff; background-color: #09f; border-color: #069; }' +
+'#imi_order_open.imc_is_open:after { content: "▲" }' +
+'#imi_order_open.imc_is_close:after { content: "▼" }' +
+'#imi_cardorder_list { position: relative; clear: both; left: -7px; padding: 10px; width: 703px; min-height: 35px; background-color: #F3F2DE; border-radius: 0px 0px 5px 5px; box-shadow: 5px 5px 5px rgba(0,0,0,0.8); z-index: 10; }' +
+'#imi_cardorder_list LI { padding: 3px 5px; border-bottom: solid 1px #cc9; font-size: 12px; letter-spacing: 2px; color: #000; }' +
+'#imi_cardorder_list INPUT { width: 400px; }' +
+'#imi_cardorder_list .imc_order_title { display: inline-block; margin-bottom: -2px; padding-top: 1px; width: 503px; text-align: left; cursor: default; white-space: nowrap; overflow: hidden; }' +
+'#imi_cardorder_list .imc_command { display: inline-block; width: 186px; text-align: right; }' +
+'#imi_cardorder_list .imc_command SPAN { margin: 0px 2px; padding: 2px 4px; border-radius: 5px; cursor: pointer; }' +
+'#imi_cardorder_list .imc_command SPAN:hover { color: #fff; background-color: #09f; }' +
+'',
+
 //. main
 main: function() {
-	var self = this;
+	this.layouter();
+	this.autoPager();
+	this.cardOrderSelecter();
+},
 
-	$.Deferred().resolve()
-	.pipe(function() {
-		if ( $('UL.pager LI.last A:first').length == 0 ) { return; }
+//. autoPager
+autoPager: function() {
+	$.autoPager({
+		container: '.ig_decksection_innermid',
+		next: function( html ) {
+			var $html = $(html),
+				$pager = $html.find('.pager:first'),
+				source = $pager.find('LI.last A:eq(0)').attr('onClick') || '',
+				match = source.match(/input.name = "p"; input.value = "(\d+)"/),
+				nextPage;
 
-		//２頁目取得
-		return $.post( '/card/deck_card_delete.php', { show_num: 100, p: 2 } )
-		.pipe(function( html ) {
+			if ( match ) {
+				nextPage = match[1].toInt();
+			}
+
+			return nextPage;
+		},
+		load: function( nextPage ) {
+			var page = nextPage,
+				num = $('#deck_file INPUT[name="show_num"]').val();
+
+			return $.post( '/card/deck_card_delete.php', { show_num: num, p: page });
+		},
+		loaded: function( html ) {
 			var $html = $(html),
 				$tr = $html.find('DIV.ig_decksection_innermid TABLE.common_table1 TR').slice( 1 );
 
@@ -15077,32 +15116,47 @@ main: function() {
 			$html.find('#ig_boxInner > DIV').not('#ig_deckbox, #sidebar').appendTo( '#ig_boxInner' );
 
 			$('DIV.ig_decksection_innermid TABLE.common_table1').append( $tr );
-		});
-	})
-	.pipe(function() {
-		self.layouter();
+		},
+		ended: function() {
+			Display.info('全ページ読み込み完了');
+		}
 	});
 },
 
 //. layouter
 layouter: function() {
-	//表示件数とページャーを削除
-	$('DIV.ig_decksection_innermid > DIV').eq( 0 ).remove();
-	$('UL.pager').remove();
-
-	$('TABLE.common_table1').find('TR').slice( 1 )
-	.hover( Util.enter, Util.leave )
-	.click(function( e ) {
-		var tagName = e.target.tagName.toUpperCase();
-
-		if ( tagName == 'INPUT' || tagName == 'A' ) { return; }
-
-		var $input = $(this).find('INPUT'),
+	$('TABLE.common_table1')
+	.on('mouseenter', 'TR', Util.enter )
+	.on('mouseleave', 'TR', Util.leave )
+	.on('click', 'TR', function( e ) {
+		var tagName = e.target.tagName.toUpperCase(),
+			$tr = $(this).closest('TR'),
+			$input = $tr.find('INPUT'),
 			checked = $input.attr('checked');
 
-		$input.attr('checked', !checked);
+		if ( tagName == 'INPUT' || tagName == 'A' ) {
+			if ( checked ) {
+				$tr.addClass('imc_selected');
+			}
+			else {
+				$tr.removeClass('imc_selected');
+			}
+			return;
+		}
+
+		if ( checked ) {
+			$input.attr('checked', false);
+			$tr.removeClass('imc_selected');
+		}
+		else {
+			$input.attr('checked', true);
+			$tr.addClass('imc_selected');
+		}
 	});
-}
+},
+
+//. cardOrderSelecter
+cardOrderSelecter: Page.getAction( 'facility', 'set_unit_list', 'cardOrderSelecter' )
 
 });
 
