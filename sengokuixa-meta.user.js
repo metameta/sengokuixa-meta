@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.9
+// @version        1.3.0.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -7520,7 +7520,8 @@ Deck.dialog = function( village, territory, brigade, coord, ano ) {
 		Deck.dialog.village = village;
 	}
 	else {
-		Deck.dialog.village = Util.getVillageCurrent();
+		// villageは呼び出した時の拠点としてセットしておく
+		Deck.dialog.village = village = Util.getVillageCurrent();
 	}
 
 	html = '' +
