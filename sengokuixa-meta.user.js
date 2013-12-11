@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.10
+// @version        1.3.0.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -11412,10 +11412,13 @@ createPulldownMenu: function() {
 
 	menu.push({ title: '【一括兵士訓練】', action: Display.dialogTraining });
 	for ( var baseid in data ) {
-		var facility_list = data[ baseid ],
-			name = Util.getVillageById( baseid ).name,
-			href = base_href[ name ] || '';
+		let facility_list = data[ baseid ],
+			village = Util.getVillageById( baseid ),
+			href;
 
+		if ( !village ) { continue; }
+
+		href = base_href[ village.name ] || '';
 		for ( var key in facility_list ) {
 			var facility = facility_list[ key ],
 				new_href = '/facility/facility.php?x=' + facility.x + '&y=' + facility.y;
@@ -11426,7 +11429,7 @@ createPulldownMenu: function() {
 
 			key = key + ' LV.' + facility.lv;
 
-			menu.push({ title: name + ' [' + key + ']', action: new_href });
+			menu.push({ title: village.name + ' [' + key + ']', action: new_href });
 		}
 	}
 	createMenu($('#gnavi .gMenu01'), menu);
