@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.13
+// @version        1.3.0.14
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1500,6 +1500,34 @@ divide2: function( list, soldata, time ) {
 	facilities.totalnum = total;
 
 	return facilities;
+},
+
+//. searchFavoriteUnit
+searchFavoriteUnit: function( cards ) {
+	var list = MetaStorage('FAVORITE_UNIT').get('list') || [];
+
+	list = list.filter(function( unit ) {
+		return unit.cardlist.every(function( cardid ) {
+			return cards.some(function( elem ) { return elem.cardId == cardid; });
+		})
+	});
+
+	return list;
+},
+
+//. searchFavoriteUnitSkill
+searchFavoriteUnitSkill: function( cards ) {
+	var list, unitskill;
+
+	list = Util.searchFavoriteUnit( cards );
+	if ( list.length >= 1 ) {
+		unitskill = Math.max.apply( null, list.map(function( unit ) { return unit.skill; }) );
+	}
+	else {
+		unitskill = 0;
+	}
+
+	return unitskill;
 },
 
 //. searchTradeCardNo
@@ -13165,24 +13193,33 @@ style: '' +
 '.table_waigintunit { width: 700px; margin: 10px auto; }' +
 '.table_waigintunit .busho_name { min-width: 110px; }' +
 '.table_waigintunit TD.imc_command { width: 50px; }' +
-'.imc_command_button { border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }' +
+'.imc_command .imc_command_button { position: relative; height: 12px; border: solid 1px #ccc; padding: 3px 0px; background-color: #F2F1DD; }' +
 '.imc_command_button.imc_backup:hover  { background-color: #09c; color: #fff; }' +
 '.imc_command_button.imc_attack:hover  { background-color: #f66; }' +
 '.imc_command_button.imc_camp:hover    { background-color: #c33; color: #fff; }' +
 '.imc_command_button.imc_develop:hover { background-color: #390; color: #fff; }' +
 '.imc_command_button.imc_meeting:hover { background-color: #6cf; }' +
+'.imc_command_sub { display: none; position: absolute; left: -48px; width: 45px; height: 12px; border: solid 1px #ccc; padding: 3px 0px; color: #533939; background-color: #F2F1DD; z-index: 2; }' +
+'.imc_command_sub.imc_sub1 { top: -1px; }' +
+'.imc_command_sub.imc_sub2 { top: 19px; }' +
+'.imc_command_button:hover .imc_command_sub { display: block; }' +
+'.imc_command_button:hover .imc_command_sub:hover { color: inherit; background-color: inherit; }' +
 
 /* 出陣確認画面 */
-'TH.imc_speed { font-size: 12px; border: solid 1px #808080; }' +
+'#area_up_timer0 { display: inline-block; width: 110px; }' +
+'TH.imc_speed { font-size: 12px; font-weight: normal; border: solid 1px #808080; text-align: right; }' +
 '.imc_skill_header { font-weight: bold; text-shadow: 1px 0px 3px #333, -1px 0px 3px #333, 0px 1px 3px #333, 0px -1px 3px #333; }' +
 '.imc_button { position: relative; top: -15px; display: inline-block; margin-left: 10px; width: 100px; height: 34px; line-height: 34px; color: #333; font-size: 14px; font-weight: bold; text-align: center; text-shadow: 0px 1px 0px #fff; background: -moz-linear-gradient(top, #eee, #aaa); border: solid 1px #666; border-radius: 3px; box-shadow: inset 0px 0px 1px 1px #fff; cursor: pointer; }' +
 '.imc_button.imc_camp { color: #f33; text-shadow: 1px 1px 0px #600; }' +
+'.imc_input { width: 35px; text-align: right; border: solid 1px #ccc; background-color: #ccc; }' +
+'.imc_speed_disp { display: inline-block; width: 35px; }' +
+'.imc_time_disp { margin-right: 5px; font-weight: bold; padding: 0px 3px; }' +
 
 /* 部隊スキル */
 '#imi_speed { margin: 0px; }' +
-'.imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }' +
+'.gofight_detail .imc_unit_skill { background-color: #ddd; border-bottom: medium none; text-align: center; margin-top: 10px; }' +
+'.gofight_detail .imc_unit_skill BUTTON { margin-left: 5px; }' +
 '#imi_unit_skill { width: 40px; text-align: right; ime-mode: disabled; }' +
-'.imc_unit_skill BUTTON { margin-left: 5px; }' +
 '',
 
 //. main
@@ -13224,7 +13261,9 @@ layouter: function() {
 	$('.table_waigintunit')
 	.css({ cursor: 'pointer' })
 	.hover( Util.enter, Util.leave )
-	.click(function() {
+	.click(function( e ) {
+		if ( $( e.target ).is('A') ) { return; }
+
 		$(this).find('INPUT:radio').attr('checked', true);
 	})
 	.eq( 0 ).trigger('click');
@@ -13237,30 +13276,53 @@ showSpeed: function() {
 		y = $('INPUT[name="village_y_value"]').val(),
 		dist = Util.getDistance( village, { x: x, y: y } );
 
-	$('.table_waigintunit').each(function() {
-		var $this = $(this),
-			cards = [], speed, time, html;
+	$('.table_waigintunit')
+	.on('change', '.imc_input', function() {
+		var $input = $(this),
+			$table = $input.closest('TABLE'),
+			cards = $table.data('cards'),
+			unitskill, speed, time;
 
-		$this.find('.busho_name A.thickbox').each(function() {
+		unitskill = $input.val().toFloat();
+		if ( isNaN( unitskill ) ) {
+			unitskill = 0;
+		}
+
+		speed = Util.getSpeed( cards, unitskill );
+		time = Math.floor( 3600 * dist / speed );
+
+		$input.val( unitskill.toFixed( 1 ) );
+		$table.find('.imc_speed_disp').text( speed.toFixed( 1 ) );
+		$table.find('.imc_time_disp').text( time.toFormatTime() );
+	})
+	.each(function() {
+		var $table = $(this),
+			cards = [], list, unitskill, html;
+
+		$table.find('.busho_name A.thickbox').each(function() {
 			var href = $(this).attr('href') || '',
 				id = ( href.match(/cardWindow_\d+/) )[ 0 ],
 				$card = $( '#' + id );
 
 			cards.push( new Card( $card ) );
 		});
-
-		speed = Util.getSpeed( cards );
-		time = Math.floor( 3600 * dist / speed );
+		unitskill = Util.searchFavoriteUnitSkill( cards );
 
 		if ( x == '' || y == '' ) {
-			html = '<th colspan="4" class="imc_speed">目的地不明</th>';
+			html = '<th colspan="5" class="imc_speed">目的地不明</th>';
 		}
 		else {
-			html = '<th colspan="4" class="imc_speed">速度：' + speed.toRound( 1 ) + '　時間：' + time.toFormatTime() + '</th>';
+			html = '' +
+			'<th colspan="5" class="imc_speed">部隊速：<input class="imc_input" value="0.0"> %' +
+			'　速度：<span class="imc_speed_disp" />' +
+			'　時間：<span class="imc_time_disp" /></th>';
 		}
 
-		$this.find('TH').first().attr('colspan', 6).after( html );
-	});
+		$table.find('TH').first().attr('colspan', 5).after( html );
+		$table.find('.imc_input').val( unitskill.toFixed( 1 ) );
+		$table.data('cards', cards );
+	})
+	.find('INPUT').trigger('change');
 },
 
 //. commandButton
@@ -13271,15 +13333,22 @@ commandButton: function() {
 
 		switch ( type ) {
 			case '301':
-				return '<div class="imc_command_button imc_backup" data-type="301">加勢</div>';
+				return '<div class="imc_command_button imc_backup" data-type="301">加勢' +
+					'<div class="imc_command_sub imc_sub1 imc_quick">即出陣</div>' +
+					'<div class="imc_command_sub imc_sub2 imc_new_tab">別タブ</div></div>';
 			case '302':
-				return '<div class="imc_command_button imc_attack" data-type="302">攻撃</div>';
+				return '<div class="imc_command_button imc_attack" data-type="302">攻撃' +
+					'<div class="imc_command_sub imc_sub1 imc_quick">即出陣</div>' +
+					'<div class="imc_command_sub imc_sub2 imc_new_tab">別タブ</div></div>';
 			case '307':
-				return '<div class="imc_command_button imc_camp" data-type="307">陣張</div>';
+				return '<div class="imc_command_button imc_camp" data-type="307">陣張' +
+					'<div class="imc_command_sub imc_sub1 imc_quick">即出陣</div></div>';
 			case '308':
-				return '<div class="imc_command_button imc_develop" data-type="308">開拓</div>';
+				return '<div class="imc_command_button imc_develop" data-type="308">開拓' +
+					'<div class="imc_command_sub imc_sub1 imc_quick">即出陣</div></div>';
 			case '320':
-				return '<div class="imc_command_button imc_meeting" data-type="320">合流</div>';
+				return '<div class="imc_command_button imc_meeting" data-type="320">合流' +
+					'<div class="imc_command_sub imc_sub1 imc_new_tab">別タブ</div></div>';
 		}
 
 		return '';
@@ -13302,14 +13371,72 @@ commandButton: function() {
 		}
 	});
 
-	$('.imc_command_button').not('.imc_none').click(function() {
-		var $this = $(this);
+	$('.imc_command_button').not('.imc_none').click(function( e ) {
+		var $this = $(this),
+			$target = $( e.target ),
 			$table = $this.closest('TABLE'),
-			type = $this.data('type');
+			type = $this.data('type'),
+			x_value = $('INPUT[name="village_x_value"]').val(),
+			y_value = $('INPUT[name="village_y_value"]').val(),
+			unit = $table.find('INPUT[name="unit_select"]').val(),
+			href;
+
+		if ( type == 320 ) {
+			href = '/facility/confluence_list.php';
+		}
+		else {
+			href = '/facility/send_troop.php';
+		}
 
 		$table.find('INPUt:radio').attr('checked', true);
 		$('.select_act').find('INPUT[value=' + type + ']').attr('checked', 'true');
-		$('.btnarea A:first').click();
+
+		if ( $target.hasClass('imc_quick') ) {
+			Page.post( href, {
+				village_name: '',
+				village_x_value: x_value,
+				village_y_value: y_value,
+				unit_assign_card_id: '',
+				radio_move_type: type,
+				show_beat_bandit_flg: '',
+				unit_select: unit,
+				x: '',
+				y: '',
+				card_id: 204,
+				btn_send: 'true'
+			})
+			.pipe(function( html ) {
+				var $html = $(html),
+					text;
+
+				text = $html.find('.btnarea .red').map(function() {
+					return $(this).text().trim() || null;
+				}).get().join('<br/>');
+
+				if ( text ) {
+					Display.alert( text );
+					return $.Deferred().reject();
+				}
+			})
+			.done(function() {
+				$table.find('INPUt:radio').attr('disabled', true);
+				Map.move( x_value, y_value );
+			});
+		}
+		else if ( $target.hasClass('imc_new_tab') ) {
+			Page.form( href, {
+				village_x_value: x_value,
+				village_y_value: y_value,
+				radio_move_type: type,
+				unit_select: unit, 
+				x: '',
+				y: '',
+				btn_preview: 'true'
+			}, true );
+		}
+		else {
+			$('.btnarea A:first').click();
+		}
 	});
 },
 
@@ -13402,7 +13529,7 @@ unitSpeed: function() {
 
 	html = '' +
 	'<p class="imc_unit_skill">' +
-		'部隊スキル（速度）　+ <input id="imi_unit_skill" value="0" /> %　' +
+		'部隊スキル（速度）　+ <input id="imi_unit_skill" value="0.0" /> %　' +
 		'<button id="imi_unitskill_calc">再計算</button>' +
 		'<button id="imi_unitskill_clear">クリア</button>' +
 	'</p>';
@@ -13417,26 +13544,36 @@ unitSpeed: function() {
 			modify = match[ 0 ].toFloat();
 		}
 		else {
-			$('#imi_unit_skill').val('0');
+			$('#imi_unit_skill').val('0.0');
 			modify = 0;
 		}
 
 		speed = Util.getSpeed( cards, modify );
 		time = Math.floor( 3600 * dist / speed );
 
-		$('#imi_speed').text( speed.toRound( 1 ) + '　(+' + modify + '%)' );
+		$('#imi_speed').text( speed.toFixed( 1 ) + '　(+ ' + modify.toFixed( 1 ) + ' %)' );
 		$('#imi_arrival').text( '到着まで　' + time.toFormatTime() );
 
 		unsafeWindow.time_incr[ 0 ] = time;
+		$('#area_up_timer0').text('');
 
 		return false;
 	});
 
 	$('#imi_unitskill_clear').click(function() {
-		$('#imi_unit_skill').val('0');
-		$('#imi_unitskill_calc').click();
+		$('#imi_unit_skill').val('0.0');
+		$('#imi_unitskill_calc').trigger('click');
 
 		return false;
+	});
+
+	//タイミングの問題
+	$(window).on('load', function() {
+		var unitskill = Util.searchFavoriteUnitSkill( cards );
+		if ( unitskill > 0 ) {
+			$('#imi_unit_skill').val( unitskill.toFixed( 1 ) );
+			$('#imi_unitskill_calc').trigger('click');
+		}
 	});
 },
 
