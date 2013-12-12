@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.12
+// @version        1.3.0.13
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -6435,7 +6435,7 @@ union: {
 maxCost: 0,
 //.. useCost
 useCost: 0,
-//.. freeCost
+//.. freeCost 選択中の部隊で使用できる最大コスト
 freeCost: 0,
 
 //.. newano
@@ -7737,19 +7737,25 @@ Deck.dialog = function( village, territory, brigade, coord, ano ) {
 		'<div style="padding-left: 1px;">' +
 		'全部隊登録処理を行います。<br/>よろしいですか？' +
 		'</div>' +
+		'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
+		'<legend>登録方法</legend>' +
+		'<label><input name="imn_all_assign_type" type="radio" value="1" checked /> 新規部隊として登録</label><br/>' +
+		'<label><input name="imn_all_assign_type" type="radio" value="2" /> 既存部隊の小隊長を入れ替え</label><br/>' +
+		'</fieldset>' +
 		'<table id="imi_unitnum" class="imc_table" style="margin: 10px auto 0px auto;">' +
-			'<tr><th colspan="4">部隊毎の武将数指定</th></tr>' +
+			'<tr><th colspan="4">部隊毎の最大武将数指定</th></tr>' +
 			'<tr><td class="imc_selected" data-unitnum="4">４武将</td><td data-unitnum="3">３武将</td><td data-unitnum="2">２武将</td><td data-unitnum="1">１武将</td></tr>' +
 		'</table>' +
 		'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
 		'<legend>登録完了後</legend>' +
-		'<label><input name="imn_all_assign_option" type="radio" value="3" /> 部隊編成を続行</label><br/>' +
-		'<label><input name="imn_all_assign_option" type="radio" value="1" checked /> 秘境探索画面へ</label><br/>';
+		'<label><input name="imn_all_assign_option" type="radio" value="3" /> 部隊編成を続行</label><br/>';
 
 		if ( option2 ) {
-			html += '<label><input name="imn_all_assign_option" type="radio" value="2" /> 目的地へ出陣</label><br/>';
+			html += '<label><input name="imn_all_assign_option" type="radio" value="1" /> 秘境探索画面へ</label><br/>';
+			html += '<label><input name="imn_all_assign_option" type="radio" value="2" checked /> 目的地へ出陣</label><br/>';
 		}
 		else {
+			html += '<label><input name="imn_all_assign_option" type="radio" value="1" checked /> 秘境探索画面へ</label><br/>';
 			html += '<label style="color: #999;"><input name="imn_all_assign_option" type="radio" value="2" disabled /> 目的地へ出陣</label><br/>';
 		}
 
@@ -7767,15 +7773,16 @@ Deck.dialog = function( village, territory, brigade, coord, ano ) {
 
 		Display.dialog({
 			title: '全部隊登録',
-			width: 320, height: 'auto',
+			top: 150, width: 320, height: 'auto',
 			content: $html,
 			buttons: {
 				'決定': function() {
 					var unitnum = $('#imi_unitnum .imc_selected').data('unitnum').toInt(),
+						type = $('INPUT[name="imn_all_assign_type"]:checked').val(),
 						option = $('INPUT[name="imn_all_assign_option"]:checked').val();
 
 					this.close();
-					dfd.resolve( unitnum, option );
+					dfd.resolve( unitnum, type, option );
 				},
 				'キャンセル': function() {
 					this.close();
@@ -7785,41 +7792,156 @@ Deck.dialog = function( village, territory, brigade, coord, ano ) {
 		});
 
 		dfd
-		.pipe(function( unitnum, option ) {
-			var cardlist = Deck.targetList(),
-				assignlist = [],
-				namelist = {},
-				freecost = Deck.freeCost,
-				freecard = ( 5 - Deck.newano ) * unitnum;
+		.pipe(function( unitnum, type, option ) {
+			if ( type == '1' ) {
+				// 新規部隊
+				var units = [],
+					cardlist = Deck.targetList(),
+					assignlist = [],
+					namelist = {},
+					freecost = Deck.freeCost - Deck.currentUnit.cost,
+					freecard = ( 5 - Deck.newano ) * unitnum;
 
-			if ( freecost == 0 || freecard == 0 ) {
-				Display.alert('編成できませんでした。');
-				return $.Deferred().reject();
+				if ( freecost == 0 || freecard == 0 ) {
+					Display.alert('編成できませんでした。');
+					return $.Deferred().reject();
+				}
+
+				for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
+					let card = cardlist[ i ];
+					if ( !card.canAssign() ) { continue; }
+					if ( card.cost > freecost ) { continue; }
+					if ( namelist[ card.name ] ) { continue; }
+
+					namelist[ card.name ] = true;
+					freecost -= card.cost;
+					freecard--;
+					assignlist.push( card );
+				}
+
+				if ( assignlist.length == 0 ) {
+					Display.alert('編成できませんでした。');
+					return $.Deferred().reject();
+				}
+
+				var count = Math.ceil( assignlist.length / unitnum );
+				for ( var i = 0; i < count; i++ ) {
+					let unit = new Unit();
+					unit.village = Deck.dialog.village;
+					units.push( unit );
+				}
+
+				return [ units, assignlist, unitnum, option ];
 			}
+			else if ( type == '2' ) {
+				var ol = Display.dialog();
+				ol.message('デッキ1の情報を取得中...');
 
-			for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
-				let card = cardlist[ i ];
-				if ( !card.canAssign() ) { continue; }
-				if ( card.cost > freecost ) { continue; }
-				if ( namelist[ card.name ] ) { continue; }
+				// 既存部隊
+				return $.get( '/card/deck.php?ano=0' )
+				.pipe(function( html ) {
+					var $html = $(html),
+						len = $html.find('#ig_unitchoice LI').not(':contains("[---新規部隊を作成---]")').length,
+						units = [];
 
-				namelist[ card.name ] = true;
-				freecost -= card.cost;
-				freecard--;
-				assignlist.push( card );
+					units.push( new Unit( $html.find('#assign_form') ) );
+
+					for ( var i = 1; i < len; i++ ) {
+						let dfd;
+
+						ol.message('デッキ' + ( i + 1 ) + 'の情報を取得中...');
+
+						dfd = $.get( '/card/deck.php?ano=' + i )
+						.pipe(function( html ) {
+							return new Unit( $(html).find('#assign_form') );
+						});
+
+						units.push( dfd );
+					}
+
+					return $.when.apply( $, units );
+				})
+				.always(function() {
+					ol.close();
+				})
+				.pipe(function() {
+					var units = Array.prototype.slice.call( arguments );
+
+					units = units.filter(function( unit ) { return unit.condition == '待機'; });
+
+					return $.Deferred().resolve( 0 )
+					.pipe(function( idx ) {
+						var self = arguments.callee,
+							unit = units[ idx ];
+
+						if ( !unit ) { return units; }
+						if ( unit.list.length == 1 ) { return self( ++idx ); }
+
+						unit.withdraw = unit.list.splice( 1 );
+
+						return unit.assignCard()
+						.pipe(function( param ) {
+							Deck.assignedList = Deck.assignedList.filter(function( card ) {
+								return !unit.withdraw.some(function( card2 ) { return ( card.cardId == card2.cardId ); });
+							});
+
+							var cardlist = Deck.analyzedData;
+							for ( var i = 0, len = unit.withdraw.length; i < len; i++ ) {
+								let card = unit.withdraw[ i ];
+
+								cardlist[ card.cardId ] = card;
+								Deck.freeCost += card.cost;
+								Deck.useCost -= card.cost;
+							}
+
+							unit.clear();
+
+							var [ ol ] = param;
+							if ( ol && ol.close ) { ol.close(); }
+
+							return self( ++idx );
+						});
+					});
+				})
+				.pipe(function( units ) {
+					var cardlist = Deck.targetList(),
+						assignlist = [],
+						namelist = {},
+						freecost = Deck.freeCost - Deck.currentUnit.cost,
+						freecard = units.length * ( unitnum - 1 );
+
+					Deck.checkAssignCard( cardlist );
+
+					for ( var i = 0, len = cardlist.length; i < len && freecard > 0; i++ ) {
+						let card = cardlist[ i ];
+						if ( !card.canAssign() ) { continue; }
+						if ( card.cost > freecost ) { continue; }
+						if ( namelist[ card.name ] ) { continue; }
+
+						namelist[ card.name ] = true;
+						freecost -= card.cost;
+						freecard--;
+						assignlist.push( card );
+					}
+
+					if ( assignlist.length == 0 ) {
+						Display.alert('編成できませんでした。');
+						return $.Deferred().reject()
+						.fail(function() {
+							//小隊を外しているかもしれないので読み込み直す
+							var ano = $('#imi_unit_tab .imc_selected').data('ano');
+							Deck.dialog.loadUnit( ano );
+						});
+					}
+
+					return [ units, assignlist, unitnum, option ];
+				});
 			}
-
-			if ( assignlist.length == 0 ) {
-				Display.alert('編成できませんでした。');
-				return $.Deferred().reject();
-			}
-
-			return [ assignlist, unitnum, option ];
 		})
 		.pipe(function( param ) {
 			var self = arguments.callee,
 				village = Deck.dialog.village,
-				[ assignlist, unitnum, option ] = param,
+				[ units, assignlist, unitnum, option ] = param,
 				unit;
 
 			if ( assignlist.length == 0 ) {
@@ -7848,9 +7970,8 @@ Deck.dialog = function( village, territory, brigade, coord, ano ) {
 				return;
 			}
 
-			unit = new Unit();
-			unit.village = village;
-			for ( var i = 0; i < unitnum && assignlist.length > 0; i++) {
+			unit = units.shift();
+			for ( var i = 0; ( unit.list.length + unit.assignList.length ) < unitnum && assignlist.length > 0; i++ ) {
 				unit.assignList.push( assignlist.shift() );
 			}
 
