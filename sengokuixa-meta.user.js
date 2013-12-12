@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.14
+// @version        1.3.0.15
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -13457,29 +13457,66 @@ layouter2: function() {
 //. sendAll
 sendAll: function() {
 	var $list  = $('#input_troop :radio[name="unit_select"]'),
-		ol, tasks;
+		dfd = $.Deferred(),
+		html, ol, tasks;
 
 	if ( $list.length == 0 ) { return; }
-	if ( !window.confirm('部隊を全て出陣させます。\nよろしいですか？') ) { return; }
 
-	//オーバーレイ表示
-	ol = Display.dialog();
-	ol.message('全出陣処理開始...');
+	html = '' +
+	'<div style="padding-left: 1px;">' +
+	'部隊を全て出陣させます。<br />よろしいですか？' +
+	'</div>' +
+	'<fieldset style="margin: 8px 0px 2px 0px; padding: 3px 5px; border: 1px solid #999; border-radius: 3px;">' +
+	'<legend>出陣完了後</legend>' +
+	'<label><input name="imn_option" type="radio" value="map" checked /> 地図画面へ</label><br/>' +
+	'<label><input name="imn_option" type="radio" value="status" /> 出陣状況一覧画面へ</label><br/>' +
+	'</fieldset>' +
+	'';
 
-	tasks  = [];
-	$list.each(function() {
-		tasks.push( sendData.call( this ) );
+	Display.dialog({
+		title: '全部隊出陣',
+		width: 320, height: 'auto',
+		content: html,
+		buttons: {
+			'決定': function() {
+				var option = $('INPUT[name="imn_option"]:checked').val();
+
+				this.close();
+				dfd.resolve( option );
+			},
+			'キャンセル': function() {
+				this.close();
+				dfd.reject();
+			}
+		}
 	});
 
-	$.when.apply( $, tasks )
-	.done(function() {
-		ol.message('全出陣処理終了').message('ページを更新します...');
-	})
-	.fail(function() {
-		ol.message('全出陣処理失敗').message('処理を中断します。');
-	})
-	.always(function() {
-		Page.move( '/map.php' );
+	dfd
+	.done(function( option ) {
+		//オーバーレイ表示
+		ol = Display.dialog();
+		ol.message('全出陣処理開始...');
+
+		tasks  = [];
+		$list.each(function() {
+			tasks.push( sendData.call( this ) );
+		});
+
+		$.when.apply( $, tasks )
+		.done(function() {
+			ol.message('全出陣処理終了').message('ページを更新します...');
+		})
+		.fail(function() {
+			ol.message('全出陣処理失敗').message('処理を中断します。');
+		})
+		.always(function() {
+			if ( option == 'map' ) {
+				Page.move( '/map.php' );
+			}
+			else {
+				Page.move( '/facility/unit_status.php?dmo=all' );
+			}
+		});
 	});
 
 	function sendData() {
