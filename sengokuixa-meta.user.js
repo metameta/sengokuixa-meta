@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.0.11
+// @version        1.3.0.12
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -845,17 +845,21 @@ getUnitStatus: function( $table ) {
 			}
 
 			$a1 = $panel.find('TR:eq(2) TD:eq(0) A:eq(0)');
-			$a2 = $panel.find('TR:eq(2) TD:eq(1) A:eq(0)');
-
-			if ( $a1.length != 0 && $a2.length != 0 ) {
+			if ( $a1.length != 0 ) {
 				//拠点
 				base1 = $a1.text().trim();
-				base2 = $a2.text().trim();
 				//座標
 				startpoint  = $a1.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
-				targetpoint = $a2.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
 				startx  = startpoint[ 1 ].toInt();
 				starty  = startpoint[ 2 ].toInt();
+			}
+
+			$a2 = $panel.find('TR:eq(2) TD:eq(1) A:eq(0)');
+			if ( $a2.length != 0 ) {
+				//拠点
+				base2 = $a2.text().trim();
+				//座標
+				targetpoint = $a2.attr('href').match(/x=(-?\d+)&y=(-?\d+)&c=(\d+)/);
 				endx    = targetpoint[ 1 ].toInt();
 				endy    = targetpoint[ 2 ].toInt();
 				country = targetpoint[ 3 ].toInt();
@@ -886,6 +890,10 @@ getUnitStatus: function( $table ) {
 			}
 			else if ( mode.indexOf('_dungeon.png') != -1 ) {
 				mode = '探索';
+				base1 = target = $panel.find('TR:eq(1) TD:eq(2) SPAN').text().trim();
+			}
+			else if ( mode.indexOf('_raidboss.png') != -1 ) {
+				mode = '討伐';
 				base1 = target = $panel.find('TR:eq(1) TD:eq(2) SPAN').text().trim();
 			}
 			else if ( mode.indexOf('_move.png') != -1 ) {
@@ -10526,7 +10534,7 @@ countDown: function( type ) {
 		date = Util.getServerTime(),
 		classlist = {
 			'攻撃': 'imc_attack', '陣張': 'imc_camp', '合流': 'imc_meeting',
-			'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon',
+			'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon', '討伐': 'imc_dungeon',
 			'開拓': 'imc_develop', '国移': 'imc_move', '待機': 'imc_wait', '加待': 'imc_backup_wait'
 		};
 
@@ -12915,8 +12923,16 @@ Page.registerAction( 'facility', 'dungeon', {
 
 //. main
 main: function() {
-	this.layouter();
-	this.showSoldier();
+	var raidboss = $('.tab_raidboss_dungeon_on').length;
+
+	this.layouter( raidboss );
+
+	if ( raidboss ) {
+		this.raidboss();
+	}
+	else {
+		this.showSoldier();
+	}
 
 	if ( $('.table_waigintunit').length > 0 ) {
 		Util.getUnitStatusCD();
@@ -12924,18 +12940,13 @@ main: function() {
 },
 
 //. layouter
-layouter: function() {
-	var dungeon = MetaStorage('SETTINGS').get('dungeon');
-
-	$('.dungeon_list_header')
-	.click(function() {
-		var dungeon = $(this).find('INPUT:checked').val();
-		MetaStorage('SETTINGS').set( 'dungeon', dungeon );
-	})
-	.find('INPUT[value="' + dungeon + '"]').attr('checked', true);
+layouter: function( raidboss ) {
+	var dungeon = MetaStorage('SETTINGS').get('dungeon'),
+		$header;
 
 	//ボタンエリアを上部に複製
-	$('.dungeon_list_header').after( $('.btnarea').clone() );
+	$header = $('.dungeon_list_header, .dungeon_raidboss_select_troop_message').last();
+	$header.after( $('.btnarea').clone() );
 
 	//全部隊選択
 	$('.table_waigintunit').find('INPUT:checkbox').attr('checked', true);
@@ -12944,10 +12955,25 @@ layouter: function() {
 	$('.table_waigintunit')
 	.css({ cursor: 'pointer' })
 	.hover( Util.enter, Util.leave )
-	.click(function() {
-		var $input = $(this).find('INPUT:checkbox');
+	.click(function( e ) {
+		var $target = $(e.target),
+			$input = $(this).find('INPUT:checkbox');
+
+		if ( $target.is('A') || $target.parent().is('A') ) { return; }
+
 		$input.attr('checked', !$input.attr('checked'));
 	});
+
+	if ( raidboss ) {
+	}
+	else {
+		$('.dungeon_list_header')
+		.click(function() {
+			var dungeon = $(this).find('INPUT:checked').val();
+			MetaStorage('SETTINGS').set( 'dungeon', dungeon );
+		})
+		.find('INPUT[value="' + dungeon + '"]').attr('checked', true);
+	}
 },
 
 //. showSoldier
@@ -12978,6 +13004,28 @@ showSoldier: function() {
 			$td2.text( card.solNum );
 		});
 	});
+},
+
+//. raidboss
+raidboss: function() {
+	var count = 0, max = 0, html;
+
+	$('.dungeon_raidboss_unit_count_text .dungeon_bg_text').each(function() {
+		var $this = $(this);
+
+		count += $this.find('.raidboss_remained_unit_count').text().toInt();
+		max += $this.find('.raidboss_max_unit_count').text().toInt();
+	});
+
+	html = '<div class="dungeon_bg_text">' +
+		'<div class="raidboss_unit_type">合計</div>' +
+		'<div class="raidboss_unit_type_separator">:</div>' +
+		'<div class="raidboss_remained_unit_count">' + count + '</div>' +
+		'<div class="raidboss_unit_type_separator">/</div>' +
+		'<div class="raidboss_max_unit_count">' + max + '</div>' +
+	'</div>';
+
+	$('.dungeon_raidboss_unit_count_text').append( html );
 }
 
 });
@@ -13390,17 +13438,20 @@ layouter: function() {
 	$('TABLE.table_fightlist').each(function() {
 		$(this).find('TR').eq( 2 ).find('TD').each(function() {
 			var $td = $(this),
-				$a = $td.find('A').detach(),
-				text, href;
+				$a = $td.find('A').remove(),
+				text, href, html;
 
 			if ( $a.length == 0 ) { return; }
 
-			text = $td.find('SPAN').text().trim();
+			text = $td.text().trim();
 			href = $a.attr('href').replace('land', 'map');
 
-			$td.find('SPAN').empty()
-			.append( $a )
-			.append( $('<A style="margin-left: 10px;" />').text( text ).attr('href', href) );
+			html = '<span>' +
+			'<a href="' + $a.attr('href') + '">' + $a.text() + '</a>' +
+			'<a style="margin-left: 10px;" href="' + href + '">' + text + '</a>' +
+			'</span>';
+
+			$td.empty().append( html );
 		});
 	});
 },
@@ -16350,7 +16401,7 @@ layouterUnitStatus: function() {
 			list = MetaStorage('UNIT_STATUS').get('部隊') || [],
 			classlist = {
 				'攻撃': 'imc_attack', '陣張': 'imc_camp', '合流': 'imc_meeting',
-				'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon',
+				'加勢': 'imc_backup', '帰還': 'imc_return', '探索': 'imc_dungeon', '討伐': 'imc_dungeon',
 				'開拓': 'imc_develop', '国移': 'imc_move', '待機': 'imc_wait', '加待': 'imc_backup_wait'
 			},
 			$tr, classname, html;
@@ -16359,7 +16410,7 @@ layouterUnitStatus: function() {
 			let { name, mode, target, ex, ey, ec, arrival } = list[ i ];
 			classname = classlist[ mode ] || '';
 
-			if ( mode == '探索' ) {
+			if ( mode == '探索' || mode == '討伐' ) {
 				html = target;
 			}
 			else {
