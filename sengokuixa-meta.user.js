@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.1
+// @version        1.3.1.2
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -1587,6 +1587,8 @@ keyBindCommon: function() {
 		'e': Util.keyBindCallback(function() {
 			var $curr, $next, href;
 
+			if ( location.pathname == '/map.php' ) { return; }
+
 			$curr = $('#imi_basename .on');
 			$next = $curr.next();
 			if ( $next.length == 0 ) { $next = $curr.parent().children('LI').first(); }
@@ -1597,6 +1599,8 @@ keyBindCommon: function() {
 
 		'q': Util.keyBindCallback(function() {
 			var $curr, $prev, href;
+
+			if ( location.pathname == '/map.php' ) { return; }
 
 			$curr = $('#imi_basename .on');
 			$prev = $curr.prev();
@@ -1733,6 +1737,40 @@ keyBindMap: function() {
 
 		'z': Util.keyBindCallback(function() {
 			$('#imi_map_zoom').click();
+		}),
+
+		'e': Util.keyBindCallback(function() {
+			var $curr, $next, village;
+
+			$curr = $('#imi_basename .imc_selected');
+			if ( $curr.length == 0 ) { $curr = $('#imi_basename .on'); }
+
+			{
+				$next = $curr.next();
+				if ( $next.length == 0 ) { $next = $curr.parent().children('LI').first(); }
+				village = Util.getVillageByName( $next.children().first().text() );
+			} while( !village );
+
+			$curr.removeClass('imc_selected');
+			$next.addClass('imc_selected');
+			Map.move( village.x, village.y, village.country );
+		}),
+
+		'q': Util.keyBindCallback(function() {
+			var $curr, $prev, village;
+
+			$curr = $('#imi_basename .imc_selected');
+			if ( $curr.length == 0 ) { $curr = $('#imi_basename .on'); }
+
+			{
+				$prev = $curr.prev();
+				if ( $prev.length == 0 ) { $prev = $curr.parent().children('LI').last(); }
+				village = Util.getVillageByName( $prev.children().first().text() );
+			} while( !village );
+
+			$curr.removeClass('imc_selected');
+			$prev.addClass('imc_selected');
+			Map.move( village.x, village.y, village.country );
 		})
 	});
 },
@@ -3650,6 +3688,9 @@ style: '' +
 '#lordSiteArea.imc_countdown { background-color: #15b; }' +
 '#lordSiteArea.imc_countdown_alert { background-color: #c03; }' +
 '#lordSiteArea.imc_countdown_alert .imc_countdown_display { color: #fff; }' +
+
+/* サイドバー用 */
+'#imi_basename .imc_selected { border-right: solid 3px #f9dea1; margin-right: -3px; }' +
 
 /* サイドバーカウントダウン用 */
 '#imi_basename LI:hover { margin-left: 3px !important; border-left: solid 3px #ff8; }' +
