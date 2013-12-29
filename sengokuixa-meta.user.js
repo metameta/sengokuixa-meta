@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.2
+// @version        1.3.1.3
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9672,85 +9672,101 @@ analyze: function( element ) {
 //.. analyzeLarge
 analyzeLarge: function( element ) {
 	var $elem = $( element ),
-		$param, text, array, attr;
+		elem = $elem.get( 0 ),
+		$param, param, text, array, skilllist, attr;
 
 	$param = $elem.find('.parameta_area').children('SPAN');
 	if ( $param.length == 0 ) {
 		throw new Error('武将カード情報を取得できませんでした。');
 	}
 
+	param = $param.get();
 	//レア
-	text = $param.eq( 0 ).attr('class');
+	text = param[ 0 ].getAttribute('class');
 	this.rarity = Card.getRarityByClassName( text );
 	this.secret = /_new/.test( text );
 	//コスト ig_card_cost_overは大殿の饗宴用
-	this.cost = $param.eq( 1 ).text().toFloat();
+	this.cost = param[ 1 ].firstChild.nodeValue.toFloat();
 	//ランク・レベル
-	text = $param.eq( 2 ).find('.bg_star').attr('width') || '0';
+	text = param[ 2 ].firstChild.getAttribute('width') || '0';
 	this.rank = Math.round( text.match(/\d+/)[ 0 ].toInt() / 20 );
-	this.lv = $param.eq( 3 ).text().toInt();
+	this.lv = param[ 3 ].firstChild.nodeValue.toInt();
 	//名前
-	this.name = $param.eq( 4 ).text();
+	text = '';
+	for ( let i = 0, len = param[ 4 ].childNodes.length; i < len; i++ ) {
+		let node = param[ 4 ].childNodes[ i ];
+		if ( node.nodeType == 3 ) { text += node.nodeValue; }
+	}
+	this.name = text;
 	//統率
 	this.commands = {};
-	this.commands['槍'] = $param.eq( 5 ).attr('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
-	this.commands['弓'] = $param.eq( 7 ).attr('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
-	this.commands['馬'] = $param.eq( 6 ).attr('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
-	this.commands['器'] = $param.eq( 8 ).attr('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
+	this.commands['槍'] = param[ 5 ].getAttribute('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
+	this.commands['弓'] = param[ 7 ].getAttribute('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
+	this.commands['馬'] = param[ 6 ].getAttribute('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
+	this.commands['器'] = param[ 8 ].getAttribute('class').match(/lv_(\w+)/)[ 1 ].toUpperCase();
 	//HP
-	array = $param.eq( 9 ).text().split('/');
+	array = param[ 9 ].firstChild.nodeValue.split('/');
 	this.hp = array[ 0 ].toInt(),
 	this.maxHp = array[ 1 ].toInt();
 	//攻撃力・防御力
-	this.atk = $param.eq( 11 ).text().toInt();
-	this.def = $param.eq( 12 ).text().toInt();
-	this.int = $param.eq( 13 ).text().toFloat();
+	this.atk = param[ 11 ].firstChild.nodeValue.toInt();
+	this.def = param[ 12 ].firstChild.nodeValue.toInt();
+	this.int = param[ 13 ].firstChild.nodeValue.toFloat();
 	//card_no
-	this.cardNo = $param.eq( 14 ).text().toInt();
+	this.cardNo = param[ 14 ].firstChild.nodeValue.toInt();
 	//card_id
-	text = $param.eq( 15 ).attr('id');
+	text = param[ 15 ].getAttribute('id');
 	array = text.match(/(\d+)/);
 	if ( array != null ) { this.cardId = array[ 1 ]; }
 	//スタイルシート名から兵種を求める
-	text = $param.eq( 15 ).attr('class');
+	text = param[ 15 ].getAttribute('class');
 	this.solName = Soldier.getNameByClass( text );
 	this.solType = Soldier.getType( this.solName );
 	//指揮数 commandsol_no_overは大殿の饗宴用
-	text = $param.eq( 16 ).text();
-	array = text.split('/');
-	this.solNum = array[0].toInt();
-	this.maxSolNum = array[1].toInt();
+	this.solNum = param[ 16 ].firstChild.firstChild.nodeValue.toInt();
+	this.maxSolNum = param[ 16 ].childNodes[ 1 ].nodeValue.replace('/', '').toInt();
 
 	$param = $elem.find('.parameta_area_back').children('SPAN');
+	param = $param.get();
 	//職業
-	text = $param.eq( 0 ).attr('class').match(/jobtype_(\d)/)[ 1 ];
-	this.job = [ '', '将', '剣', '忍', '文' ][ text.toInt() ] || '';
+	text = param[ 0 ].getAttribute('class').match(/jobtype_(\d)/)[ 1 ];
+	this.job = [ '', '将', '剣', '忍', '文', '姫' ][ text.toInt() ] || '';
 	//経験値
-	this.exp = $param.eq( 2 ).text().toInt();
-	this.nextExp = $param.eq( 3 ).text();
+	this.exp = param[ 2 ].firstChild.nodeValue.toInt();
+	this.nextExp = param[ 3 ].firstChild.nodeValue;
 
 	//スキル
-	this.skillList = $elem.find('.skill1, .skill2, .skill3').map(function() {
-		var $this = $(this),
-			text = $this.find('.ig_skill_name, .grayig_skill_name').text(),
-			array = text.match(/(.+)L[Vv](\d+)/),
-			desk, type, targets, prob1, effects;
+	skilllist = [];
+	[ 'skill1', 'skill2', 'skill3' ].forEach(function( className ) {
+		var skill = elem.getElementsByClassName( className ),
+			dom, text, array;
+
+		if ( skill.length == 0 ) { return; }
+		skill = skill[ 0 ];
+
+		dom = skill.getElementsByClassName('ig_skill_name');
+		if ( dom.length == 0 ) { dom = skill.getElementsByClassName('grayig_skill_name'); }
+		text = ( dom.length == 0 ) ? '' : dom[ 0 ].firstChild.nodeValue;
+		array = text.match(/(.+)L[Vv](\d+)/);
 
 		if ( !array ) {
 			//レベルのないもの（感謝の饗宴、東西無双など）
-			return { originName: text, name: text.trim(), lv: 0 };
+			skilllist.push({ originName: text, name: text.trim(), lv: 0 });
+			return;
 		}
 
 		var [ all, name, lv ] = array;
 		name = name.trim().replace(/ +/g, ' ');
 
-		desk = $this.find('.ig_skill_desc').html();
+		dom = skill.getElementsByClassName('ig_skill_desc');
+		desk = ( dom.length == 0 ) ? '' : dom[ 0 ].innerHTML;
 		if ( desk.indexOf('速：') != -1 ) { type = '速'; }
 		else if ( desk.indexOf('攻：') != -1 ) { type = '攻'; }
 		else if ( desk.indexOf('防：') != -1 ) { type = '防'; }
 		else { type = '特'; }
 
-		targets = $this.find('.ig_skill_desc FONT').text().replace('級', '');
+		dom = skill.getElementsByTagName('FONT');
+		targets = ( dom.length == 0 ) ? '' : dom[ 0 ].innerHTML.replace('級', '');
 		array = desk.split('<br>');
 		desk = array.shift();
 
@@ -9774,13 +9790,16 @@ analyzeLarge: function( element ) {
 			return { targets: targets, type: type, prob: prob2, effect: effect };
 		}).filter(function( elem ) { return elem; });
 
-		return { originName: text, name: name, lv: lv.toInt(), type: type, effects: effects };
-	}).get();
+		skilllist.push({ originName: text, name: name, lv: lv.toInt(), type: type, effects: effects });
+	});
+	this.skillList = skilllist;
 	this.skillCount = this.skillList.length;
-	this.image = $elem.find('.ig_card_back').attr('src').split('/').pop();
 
-	this.lvup = $elem.find('.levelup_btn').length;
-	this.rankup = $elem.find('.rankup_btn').length;
+	dom = elem.getElementsByClassName('ig_card_back');
+	this.image = ( dom.length == 0 ) ? '' : dom[ 0 ].getAttribute('src').split('/').pop();
+
+	this.lvup = elem.getElementsByClassName('levelup_btn').length;
+	this.rankup = elem.getElementsByClassName('rankup_btn').length;
 
 	if ( this.hp < this.maxHp ) {
 		this.recoveryTime = Util.getServerTime() + this.getRecoveryTime();
@@ -9995,6 +10014,7 @@ layouterMini: function() {
 
 	html += this.layouterStatus3();
 	html += this.layouterStatus4();
+	html += '</div>';
 
 	$elem.html( html );
 },
