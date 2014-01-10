@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.5
+// @version        1.3.1.6
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -16202,7 +16202,13 @@ layouterUser: function() {
 				name = $a.text();
 
 				if ( type == 2 ) {
-					text = $tr.find('TD').eq( 6 ).text();
+					if ( $tr.find('.busho_info_profile').length ) {
+						text = $tr.find('TD').eq( 7 ).text();
+					}
+					else {
+						text = $tr.find('TD').eq( 6 ).text();
+					}
+
 					if ( text.indexOf('補佐') != -1 ) {
 						name += ' 【補佐】';
 					}
