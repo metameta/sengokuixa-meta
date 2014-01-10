@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.6
+// @version        1.3.1.7
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9565,16 +9565,17 @@ unionData: {
 
 //.. getRarityByClassName
 getRarityByClassName: function( className ) {
+	className = className.split('_')[ 1 ] || '';
+
 	return {
-		'rarerity_1': '序',
-		'rarerity_2': '上',
-		'rarerity_3': '特',
-		'rarerity_3_new': '特',
-		'rarerity_4': '極',
-		'rarerity_4_new': '極',
-		'rarerity_5': '天',
-		'rarerity_iwai': '祝',
-		'rarerity_miyabi': '雅'
+		'1': '序',
+		'2': '上',
+		'3': '特',
+		'4': '極',
+		'5': '天',
+		'iwai': '祝',
+		'miyabi': '雅',
+		'bake': '化'
 	}[ className ];
 },
 
@@ -9809,6 +9810,7 @@ analyzeLarge: function( element ) {
 
 	this.lvup = elem.getElementsByClassName('levelup_btn').length;
 	this.rankup = elem.getElementsByClassName('rankup_btn').length;
+	this.protect = elem.getElementsByClassName('card_protect_btn_unset').length;
 
 	if ( this.hp < this.maxHp ) {
 		this.recoveryTime = Util.getServerTime() + this.getRecoveryTime();
@@ -9956,6 +9958,8 @@ layouterSmall: function( unit ) {
 	html += this.layouterStatus1();
 	html += this.layouterStatus3();
 	html += this.layouterStatus4();
+	//カード保護アイコン用ダミー
+	html += '<span style="display: none;"><span id="card_protect_icon_' + this.cardId + '" /></span>';
 	html += '</div>';
 
 	$div.eq( 1 ).css({ marginBottom: '2px' }).html( html );
@@ -10527,24 +10531,28 @@ canUnion: function() {
 
 //.. useSlot2
 useSlot2: function() {
+	if ( this.protect ) { return false; }
 	if ( this.slot2 || this.rslot2 ) { return true; }
 	return this.canUnion();
 },
 
 //.. useSkillSlot2
 useSkillSlot2: function() {
+	if ( this.protect ) { return false; }
 	if ( this.slot2 ) { return true; }
 	return this.canUnion();
 },
 
 //.. useRankupSlot2
 useRankupSlot2: function() {
+	if ( this.protect ) { return false; }
 	if ( this.rslot2 ) { return true; }
 	return this.canUnion();
 },
 
 //.. useMaterial
 useMaterial: function() {
+	if ( this.protect ) { return false; }
 	if ( this.slot3 ) { return true; }
 	return this.canUnion();
 },
@@ -14110,6 +14118,9 @@ style: '' +
 '#busho_info INPUT.force_size { font-size: 13px; width: 45px; }' +
 '#busho_info .icon_rank DIV { margin: 3px auto; }' +
 '#busho_info .rank { color: #f00; }' +
+'#busho_info .img_face { width: 25px; background-image: none !important; }' +
+'#busho_info .img_face DIV { position: static; }' +
+'#busho_info .icon_protect { width: 24px; height: 20px; background-position: 3px 3px; background-repeat: no-repeat; }' +
 
 /* 兵種による色分け */
 '#busho_info .yari1 TD:nth-child(10) { background-color: #bd9; color: #000; font-size: 12px; }' +
@@ -14665,7 +14676,7 @@ unionMode: function() {
 		}
 
 		var idx = $this.children('TD').index( $target );
-		if ( !( 1 <= idx && idx <= 8 ) ) { return; }
+		if ( !( 2 <= idx && idx <= 8 ) ) { return; }
 
 		var len = $('TR.imc_selected').length;
 
@@ -14709,8 +14720,6 @@ analyze: function( $tr, deck, edit ) {
 			data = Soldier.getByName( card.solName );
 
 		$this.data( card );
-
-		$td.eq( 1 ).find('A DIV DIV').css({ position: 'relative', left: '1px' }).unwrap();
 
 		$td.eq( 6 ).prepend( $td.eq( 5 ).children() );
 		$td.eq( 8 ).prepend( $td.eq( 7 ).children() );
@@ -15563,8 +15572,10 @@ layouter: function() {
 	.on('click', 'TR', function( e ) {
 		var tagName = e.target.tagName.toUpperCase(),
 			$tr = $(this).closest('TR'),
-			$input = $tr.find('INPUT'),
+			$input = $tr.find('INPUT:visible'),
 			checked = $input.attr('checked');
+
+		if ( $input.length == 0 ) { return; }
 
 		if ( tagName == 'INPUT' || tagName == 'A' ) {
 			if ( checked ) {
