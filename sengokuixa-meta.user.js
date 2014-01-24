@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.9
+// @version        1.3.1.10
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -9763,7 +9763,7 @@ analyzeLarge: function( element ) {
 	skilllist = [];
 	[ 'skill1', 'skill2', 'skill3' ].forEach(function( className ) {
 		var skill = elem.getElementsByClassName( className ),
-			dom, text, array;
+			dom, text, array, targets1;
 
 		if ( skill.length == 0 ) { return; }
 		skill = skill[ 0 ];
@@ -9790,14 +9790,14 @@ analyzeLarge: function( element ) {
 		else { type = '特'; }
 
 		dom = skill.getElementsByTagName('FONT');
-		targets = ( dom.length == 0 ) ? '' : dom[ 0 ].innerHTML.replace('級', '');
+		targets1 = ( dom.length == 0 ) ? '' : dom[ 0 ].innerHTML.replace('級', '');
 		array = desk.split('<br>');
 		desk = array.shift();
 
 		prob1 = ( desk.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
 		effects = array.map(function( elem ) {
 			var [ all, type, effect, sw ] = elem.match(/(.)：(\d+(?:\.\d+)?)%(上昇|低下)/) || [],
-				prob2;
+				prob2, targets2;
 
 			if ( !all ) { return; }
 
@@ -9806,12 +9806,15 @@ analyzeLarge: function( element ) {
 
 			if ( prob1 > 0 ) {
 				prob2 = prob1;
+				targets2 = targets1;
 			}
 			else {
 				prob2 = ( elem.match(/確率：\+(\d+(?:\.\d+)?)%/) || [ , '0' ] )[ 1 ].toFloat();
+				targets2 = targets1;
+				if ( elem.indexOf('全速') != -1 ) { targets2 = '全'; }
 			}
 
-			return { targets: targets, type: type, prob: prob2, effect: effect };
+			return { targets: targets2, type: type, prob: prob2, effect: effect };
 		}).filter(function( elem ) { return elem; });
 
 		skilllist.push({ originName: text, name: name, lv: lv.toInt(), type: type, effects: effects });
@@ -14694,24 +14697,23 @@ unionMode: function() {
 
 		var len = $('TR.imc_selected').length;
 
-		if ( len == 0 && !data.useSlot2() ) {
-			Display.info('このカードは合成【スロット２】に使用できません。');
-			return;
-		}
-		else if ( !data.useMaterial() ) {
-			Display.info('このカードは合成【追加スロット】に使用できません。');
-			return;
-		}
-
 		if ( $this.hasClass('imc_selected') ) {
 			$this.removeClass('imc_selected imc_added');
 		}
 		else if ( len < 6 ) {
-			$this.addClass('imc_selected');
+			var added = $('TR.imc_added').length;
 
-			if ( $('.imc_added').length == 0 ) {
-				$this.addClass('imc_added');
+			if ( added == 0 && !data.useSlot2() ) {
+				Display.info('このカードは合成【スロット２】に使用できません。');
+				return;
 			}
+			else if ( added == 1 && !data.useMaterial() ) {
+				Display.info('このカードは合成【追加スロット】に使用できません。');
+				return;
+			}
+
+			$this.addClass('imc_selected');
+			if ( added == 0 ) { $this.addClass('imc_added'); }
 		}
 		else {
 			Display.info('これ以上選択できません。');
