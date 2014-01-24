@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           sengokuixa-meta
 // @description    戦国IXAを変態させるツール
-// @version        1.3.1.10
+// @version        1.3.1.11
 // @namespace      sengokuixa-meta
 // @include        http://*.sengokuixa.jp/*
 // @require        https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js
@@ -3645,16 +3645,6 @@ style: '' +
 
 /* 武将名 */
 '.ig_card_name { font-family: "ＭＳ 明朝"; }' +
-/* 統率微調整用 */
-'.lv_sss, .graylv_sss { background-position:    0px 0px; width: 33px; }' +
-'.lv_ss, .graylv_ss { background-position:  -35px 0px; width: 28px; }' +
-'.lv_s, .graylv_s { background-position:  -65px 0px; width: 19px; }' +
-'.lv_a, .graylv_a { background-position:  -86px 0px; width: 19px; }' +
-'.lv_b, .graylv_b { background-position: -107px 0px; width: 19px; }' +
-'.lv_c, .graylv_c { background-position: -128px 0px; width: 17px; }' +
-'.lv_d, .graylv_d { background-position: -147px 0px; width: 19px; }' +
-'.lv_e, .graylv_e { background-position: -168px 0px; width: 20px; }' +
-'.lv_f, .graylv_f { background-position: -190px 0px; width: 17px; }' +
 
 /* レアリティ */
 '.imc_ten  { color: #999; background-color: #fff; font-weight: bold; }' +
